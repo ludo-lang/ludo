@@ -1,47 +1,49 @@
--- PROTOTYPE — throwaway. Candidate B: Lua-flavoured but pragmatic.
+-- PROTOTYPE — throwaway. Candidate B: Lua-flavoured but pragmatic. WINNER.
 -- Keep the keyword feel and the low punctuation density; let the TYPE
 -- sublanguage take whatever form reads best (#3: types quarantined).
--- Blocks stay `do ... end`-shaped, but type syntax is free to use brackets.
+-- Revision 2: colon kept in parameter and field declarations (user call).
+--             compound assignment operators added (+= -= *= /= %=).
+--             implicit tail return kept (user call).
 
 persist world: World
 
 type Vec2 = struct
-  x f32
-  y f32
+  x: f32
+  y: f32
 end
 
 type Entity = struct
-  pos    Vec2
-  vel    Vec2
-  radius f32
+  pos:    Vec2
+  vel:    Vec2
+  radius: f32
 end
 
 type World = struct
-  rocks Pool[Entity]
-  frame u64
+  rocks: Pool[Entity]
+  frame: u64
 end
 
 -- Generics live entirely in the type sublanguage: `[T]` after the name.
 -- Nothing in the expression grammar changed to allow this.
-fn first_where[T](items Slice[T], pred fn(T) bool) Option[Handle[T]]
+fn first_where[T](items: Slice[T], pred: fn(T) -> bool) -> Option[Handle[T]]
   for h, it in items.each() do
     if pred(it) then return Some(h) end
   end
-  None
+  None            -- implicit tail return: last item is an expression
 end
 
-fn spawn(pool !Pool[Entity], at Vec2, speed f32) Handle[Entity]
+fn spawn(pool: !Pool[Entity], at: Vec2, speed: f32) -> Handle[Entity]
   e := { pos = at, vel = { x = speed, y = 0 }, radius = 4 }
   pool!.add(e)
 end
 
-fn overlaps(a Entity, b Entity) bool
+fn overlaps(a: Entity, b: Entity) -> bool
   d := a.pos.sub(b.pos)          -- UFCS
   r := a.radius + b.radius
   dot(d, d) < r * r              -- same function, plain spelling
 end
 
-fn boot(gpa !Allocator) World
+fn boot(gpa: !Allocator) -> World
   rocks := Pool.new(Entity, gpa!, 256)      -- must-use
   w := { rocks = rocks, frame = 0 }
   for i in 0..8 do
@@ -50,20 +52,23 @@ fn boot(gpa !Allocator) World
   w
 end
 
-fn tick(w !World, dt f32, frame_arena !Allocator)
+fn tick(w: !World, dt: f32, frame_arena: !Allocator)
   hits := List.new(Handle[Entity], frame_arena!, 16)
   defer hits.free()
 
+  budget := 64
   for h, e in w.rocks.each() do
-    e!.pos = e.pos.add(e.vel.scale(dt))
+    e!.pos += e.vel.scale(dt)     -- compound assignment; `+=` on a marked place
+    budget -= 1                   -- and on a plain local
     if e.pos.x > 320 then hits!.push(h) end
+    if budget == 0 then break end
   end
 
   for h in hits.each() do
     w.rocks!.remove(h)
   end
 
-  w!.frame = w.frame + 1
+  w!.frame += 1
   $.print("frame ", w.frame, " live ", w.rocks.len())
 end
 
@@ -82,9 +87,17 @@ end
 --------------------------------------------------------------------------------
 -- #explicit spelling of `spawn` — same AST, everything written out.
 --
--- fn spawn(pool !Pool[Entity], at Vec2, speed f32) Handle[Entity]
---   vel Vec2 = { x = speed, y = 0.0 }
---   e   Entity = { pos = at, vel = vel, radius = 4.0 }
---   h   Handle[Entity] = add(pool!, e)
+-- fn spawn(pool: !Pool[Entity], at: Vec2, speed: f32) -> Handle[Entity]
+--   vel: Vec2 = { x = speed, y = 0.0 }
+--   e:   Entity = { pos = at, vel = vel, radius = 4.0 }
+--   h:   Handle[Entity] = add(pool!, e)
 --   return h
 -- end
+--
+-- `#explicit` rejects `+=` (demands `a = a + 1`) and rejects the implicit
+-- tail return (demands `return h`). Both are sugar with no semantics of
+-- their own, which is exactly what `#explicit` refuses.
+--
+-- Tail-return rule: only an EXPRESSION in tail position returns. `if`, `for`
+-- and `while` stay statements, so a function ending in a branch writes
+-- `return` in each arm. No walk into nested blocks to find the live value.
