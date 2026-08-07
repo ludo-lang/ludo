@@ -1,0 +1,90 @@
+-- PROTOTYPE — throwaway. Candidate B: Lua-flavoured but pragmatic.
+-- Keep the keyword feel and the low punctuation density; let the TYPE
+-- sublanguage take whatever form reads best (#3: types quarantined).
+-- Blocks stay `do ... end`-shaped, but type syntax is free to use brackets.
+
+persist world: World
+
+type Vec2 = struct
+  x f32
+  y f32
+end
+
+type Entity = struct
+  pos    Vec2
+  vel    Vec2
+  radius f32
+end
+
+type World = struct
+  rocks Pool[Entity]
+  frame u64
+end
+
+-- Generics live entirely in the type sublanguage: `[T]` after the name.
+-- Nothing in the expression grammar changed to allow this.
+fn first_where[T](items Slice[T], pred fn(T) bool) Option[Handle[T]]
+  for h, it in items.each() do
+    if pred(it) then return Some(h) end
+  end
+  None
+end
+
+fn spawn(pool !Pool[Entity], at Vec2, speed f32) Handle[Entity]
+  e := { pos = at, vel = { x = speed, y = 0 }, radius = 4 }
+  pool!.add(e)
+end
+
+fn overlaps(a Entity, b Entity) bool
+  d := a.pos.sub(b.pos)          -- UFCS
+  r := a.radius + b.radius
+  dot(d, d) < r * r              -- same function, plain spelling
+end
+
+fn boot(gpa !Allocator) World
+  rocks := Pool.new(Entity, gpa!, 256)      -- must-use
+  w := { rocks = rocks, frame = 0 }
+  for i in 0..8 do
+    spawn(w.rocks!, { x = i * 20, y = 0 }, 1.5)
+  end
+  w
+end
+
+fn tick(w !World, dt f32, frame_arena !Allocator)
+  hits := List.new(Handle[Entity], frame_arena!, 16)
+  defer hits.free()
+
+  for h, e in w.rocks.each() do
+    e!.pos = e.pos.add(e.vel.scale(dt))
+    if e.pos.x > 320 then hits!.push(h) end
+  end
+
+  for h in hits.each() do
+    w.rocks!.remove(h)
+  end
+
+  w!.frame = w.frame + 1
+  $.print("frame ", w.frame, " live ", w.rocks.len())
+end
+
+fn main()
+  gpa   := $.mem.general()
+  frame := $.mem.arena(gpa!, 64 * 1024)
+  defer frame.free()
+
+  world = boot(gpa!)
+  while $.window.open() do
+    tick(world!, $.time.dt(), frame!)
+    frame!.reset()
+  end
+end
+
+--------------------------------------------------------------------------------
+-- #explicit spelling of `spawn` — same AST, everything written out.
+--
+-- fn spawn(pool !Pool[Entity], at Vec2, speed f32) Handle[Entity]
+--   vel Vec2 = { x = speed, y = 0.0 }
+--   e   Entity = { pos = at, vel = vel, radius = 4.0 }
+--   h   Handle[Entity] = add(pool!, e)
+--   return h
+-- end

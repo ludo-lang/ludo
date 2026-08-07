@@ -1,0 +1,87 @@
+-- PROTOTYPE — throwaway. Candidate C: Odin/Jai-leaning.
+-- `name: Type = value` declarations, braces, an explicitly systems look.
+-- Keeps only Lua's terseness of CONCEPT count, not its punctuation profile.
+
+persist world: World
+
+Vec2 :: struct {
+    x: f32,
+    y: f32,
+}
+
+Entity :: struct {
+    pos:    Vec2,
+    vel:    Vec2,
+    radius: f32,
+}
+
+World :: struct {
+    rocks: Pool(Entity),
+    frame: u64,
+}
+
+first_where :: proc(T: type, items: Slice(T), pred: proc(T) -> bool) -> Option(Handle(T)) {
+    for h, it in items.each() {
+        if pred(it) { return Some(h) }
+    }
+    return None
+}
+
+spawn :: proc(pool: !Pool(Entity), at: Vec2, speed: f32) -> Handle(Entity) {
+    e := Entity{ pos = at, vel = Vec2{ x = speed, y = 0 }, radius = 4 }
+    return pool!.add(e)
+}
+
+overlaps :: proc(a: Entity, b: Entity) -> bool {
+    d := a.pos.sub(b.pos)          // UFCS
+    r := a.radius + b.radius
+    return dot(d, d) < r * r       // same function, plain spelling
+}
+
+boot :: proc(gpa: !Allocator) -> World {
+    rocks := Pool.new(Entity, gpa!, 256)   // must-use
+    w := World{ rocks = rocks, frame = 0 }
+    for i in 0..<8 {
+        spawn(w.rocks!, Vec2{ x = i * 20, y = 0 }, 1.5)
+    }
+    return w
+}
+
+tick :: proc(w: !World, dt: f32, frame_arena: !Allocator) {
+    hits := List.new(Handle(Entity), frame_arena!, 16)
+    defer hits.free()
+
+    for h, e in w.rocks.each() {
+        e!.pos = e.pos.add(e.vel.scale(dt))
+        if e.pos.x > 320 { hits!.push(h) }
+    }
+
+    for h in hits.each() {
+        w.rocks!.remove(h)
+    }
+
+    w!.frame = w.frame + 1
+    $.print("frame ", w.frame, " live ", w.rocks.len())
+}
+
+main :: proc() {
+    gpa   := $.mem.general()
+    frame := $.mem.arena(gpa!, 64 * 1024)
+    defer frame.free()
+
+    world = boot(gpa!)
+    for $.window.open() {
+        tick(world!, $.time.dt(), frame!)
+        frame!.reset()
+    }
+}
+
+//------------------------------------------------------------------------------
+// #explicit spelling of `spawn` — same AST.
+//
+// spawn :: proc(pool: !Pool(Entity), at: Vec2, speed: f32) -> Handle(Entity) {
+//     vel: Vec2 = Vec2{ x = speed, y = 0.0 }
+//     e:   Entity = Entity{ pos = at, vel = vel, radius = 4.0 }
+//     h:   Handle(Entity) = add(pool!, e)
+//     return h
+// }

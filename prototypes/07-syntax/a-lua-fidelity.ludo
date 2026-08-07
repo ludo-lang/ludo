@@ -1,0 +1,101 @@
+-- PROTOTYPE — throwaway. Candidate A: maximal Lua fidelity.
+-- Rule: keep `local` / `function` / `end`. No braces for blocks. No semicolons.
+-- Types are added in the least intrusive way that still satisfies #5/#6/#8.
+
+-- Layer declaration: absent. Default layer is the file with no pragma.
+-- (`#explicit` variant of one function at the bottom of this file.)
+
+-- A binding that survives a hot reload (#17). Declaration, not a convention.
+persist local world: World
+
+struct Vec2
+  x: f32
+  y: f32
+end
+
+struct Entity
+  pos: Vec2
+  vel: Vec2
+  radius: f32
+end
+
+struct World
+  rocks: Pool(Entity)
+  frame: u64
+end
+
+-- Generics: type parameters go in a leading paren group. No angle brackets,
+-- because `<` is already a comparison and Lua has no `<>` anywhere.
+function first_where(T)(items: Slice(T), pred: fn(T) -> bool) -> Option(Handle(T))
+  for h, it in items.each() do
+    if pred(it) then return Some(h) end
+  end
+  return None
+end
+
+-- Mutation is marked at the declaration AND at the call site (#5 criterion 2).
+-- `!` on a parameter means "transient writable, does not escape" (#8).
+function spawn(pool: !Pool(Entity), at: Vec2, speed: f32) -> Handle(Entity)
+  local e = { pos = at, vel = { x = speed, y = 0 }, radius = 4 }
+  return pool!.add(e)
+end
+
+function overlaps(a: Entity, b: Entity) -> bool
+  local d = a.pos.sub(b.pos)           -- UFCS: sugar for sub(a.pos, b.pos)
+  local r = a.radius + b.radius
+  return dot(d, d) < r * r             -- plain call, same function
+end
+
+-- Allocation names an allocator; nothing is ambient (#5 criterion 2, #8).
+function boot(gpa: !Allocator) -> World
+  local rocks = Pool.new(Entity, gpa!, 256)   -- must-use: dropping this is a compile error
+  local w = { rocks = rocks, frame = 0 }
+  local i = 0
+  while i < 8 do
+    spawn(w.rocks!, { x = i * 20, y = 0 }, 1.5)
+    i = i + 1
+  end
+  return w
+end
+
+function tick(w: !World, dt: f32, frame_arena: !Allocator)
+  local hits = List.new(Handle(Entity), frame_arena!, 16)
+  defer hits.free()
+
+  for h, e in w.rocks.each() do
+    e!.pos = e.pos.add(e.vel.scale(dt))       -- UFCS chain
+    if e.pos.x > 320 then hits!.push(h) end
+  end
+
+  for h in hits.each() do
+    w.rocks!.remove(h)                        -- stale handles read as gone, not as memory
+  end
+
+  w!.frame = w.frame + 1
+  $.print("frame ", w.frame, " live ", w.rocks.len())   -- `$` is the reserved stdlib root
+end
+
+function main()
+  local gpa = $.mem.general()
+  local frame = $.mem.arena(gpa!, 64 * 1024)
+  defer frame.free()
+
+  world = boot(gpa!)
+  while $.window.open() do
+    tick(world!, $.time.dt(), frame!)
+    frame!.reset()
+  end
+end
+
+--------------------------------------------------------------------------------
+-- The same `spawn`, in a file that opened with `#explicit`.
+-- Same AST. Inference, sugar and defaulted arguments are refused; you spell it.
+--
+-- #explicit
+--
+-- function spawn(pool: !Pool(Entity), at: Vec2, speed: f32) -> Handle(Entity)
+--   local vel: Vec2 = { x = speed, y = 0.0 }
+--   local e: Entity = { pos = at, vel = vel, radius = 4.0 }
+--   local h: Handle(Entity) = add(pool!, e)   -- no UFCS, no elided types
+--   return h
+-- end
