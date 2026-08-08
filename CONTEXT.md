@@ -35,6 +35,21 @@ you link. Avoid using "engine" as a loose synonym for the whole stack.
 One platform's implementation of the platform layer — the Win32/D3D12/WASAPI set,
 or the Cocoa/Metal/CoreAudio set. A single platform-layer API has many backends.
 
+## Shader ludo
+
+Shaders written in ludo itself — a restricted dialect, bounded by what the
+shared shader IR can express. The authoring path for someone who does not
+already know a shader language.
+
+## Shader asset
+
+A shader supplied as a file in a foreign format (`.wgsl`) and ingested by the
+toolchain. An *asset*, in the sense that a `.png` is an asset — **not** a second
+ludo syntax and not a language dialect. Keep this distinction: describing WGSL
+as "a syntax ludo also accepts" reopens the grammar budget (issue #24) and the
+*two modes of one language* line (issue #16), both of which the asset framing
+leaves untouched.
+
 ## Runner
 
 The dev-mode process launched by the bare `ludo` command. It owns the program's

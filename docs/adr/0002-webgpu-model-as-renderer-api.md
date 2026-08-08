@@ -16,6 +16,15 @@ hardest design problem — inventing a portable GPU abstraction — into an adop
 decision, and it makes the deferred web backend nearly free rather than a second
 renderer.
 
+**On desktop there is no browser and no WebGPU runtime.** We adopt the model;
+our backends *are* the implementation, translating it into `MTLDevice`,
+`ID3D12Device` and `vkCreateGraphicsPipelines` calls. Dawn and wgpu-native are
+evidence the translation is tractable, not dependencies. The payoff is inverted
+from what the name suggests: desktop does not get WebGPU — rather, the deferred
+web backend becomes a thin pass-through instead of a second renderer.
+
+**Shaders are covered by ADR-0003**, not here.
+
 ## Considered options
 
 - **Vulkan everywhere, MoltenVK on macOS.** Rejected twice over: MoltenVK is a
