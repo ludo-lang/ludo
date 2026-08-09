@@ -58,6 +58,23 @@ language and the non-visual standard library, and is testable headless. *Full*
 is core plus the [drawing facade](#drawing-facade) over at least one
 [backend](#backend). The destination's completion test is measured against core.
 
+## Voice
+
+One sounding unit in the [drawing facade](#drawing-facade)'s audio half: a
+waveform or a clip, with its envelopes and its filter parameters. Carries fixed,
+`O(1)`, spec-sized state and allocates nothing, which is the line separating what
+the facade mandates from what the [engine](#engine) tier owns (ADR-0006).
+
+Not a channel and not a track — a voice routes to nothing.
+
+## Play cursor
+
+The count of sample frames the audio device has actually consumed, reported
+monotonically by the [platform layer](#platform-layer). Distinct from how much
+has been *pushed*: the difference between the two is the latency, so synchronising
+against the push position fires events early. Music sync is measured against the
+cursor.
+
 ## Engine
 
 Frame loop, component model, sprites, animation, collision, camera. The tier
