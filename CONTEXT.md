@@ -22,6 +22,29 @@ Distinguished from the platform layer because shipping a renderer is what makes 
 third-party [engine](#engine) possible — the Flutter/Flame relationship recorded
 in issue #12.
 
+## Drawing facade
+
+The small set of immediate-mode drawing, sound and input calls the spec mandates
+in the reserved `$.` root, sitting on the [renderer](#renderer). *Facade* is the
+operative word: it is a fixed, frozen surface over a tier that is free to evolve
+beneath it.
+
+Not the renderer — issue #28 mandates the facade and delegates the renderer, so
+using either word for the other loses the distinction the decision turns on.
+
+## Draw target
+
+What drawing calls are issued against. Carries the properties that must hold for
+a whole frame rather than a single call — anti-aliasing among them — and is
+passed, never ambient.
+
+## Core conformance / full conformance
+
+The two levels a ludo implementation can satisfy. *Core* is the compiler, the
+language and the non-visual standard library, and is testable headless. *Full*
+is core plus the [drawing facade](#drawing-facade) over at least one
+[backend](#backend). The destination's completion test is measured against core.
+
 ## Engine
 
 Frame loop, component model, sprites, animation, collision, camera. The tier
