@@ -35,8 +35,21 @@ using either word for the other loses the distinction the decision turns on.
 ## Draw target
 
 What drawing calls are issued against. Carries the properties that must hold for
-a whole frame rather than a single call — anti-aliasing among them — and is
-passed, never ambient.
+a whole frame rather than a single call — the [style](#style), the 2D transform,
+and the [logical canvas](#logical-canvas) — and is passed, never ambient.
+
+## Style
+
+The one aesthetic token a [draw target](#draw-target) carries: `crisp` (no
+anti-aliasing, nearest sampling) or `smooth` (anti-aliasing, linear sampling).
+One token rather than separate anti-aliasing and sampling settings, so a frame
+cannot mix the two aesthetics incoherently.
+
+## Logical canvas
+
+The coordinate space a program declares and draws in, letterboxed and scaled to
+whatever the real window is. Distinct from the window's actual pixels; the space
+in which integer coordinates are meaningful.
 
 ## Core conformance / full conformance
 
