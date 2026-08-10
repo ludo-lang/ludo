@@ -2,6 +2,11 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0007](0007-the-audio-facade-surface.md):** the naming rules this ADR
+> left open are now fixed for both facades, and the parked `nil`-pixel-array checkerboard
+> is kept and specced as a mandated *named* debug pattern. Drawing's call spellings are
+> issue #42.
+
 # The drawing facade's surface: top-left Y-down, straight alpha, and a target that carries the frame
 
 ADR-0004 fixed the *line* — the spec mandates a thin drawing facade and delegates

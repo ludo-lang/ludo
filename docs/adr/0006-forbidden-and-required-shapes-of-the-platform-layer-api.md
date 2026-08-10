@@ -2,6 +2,11 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0007](0007-the-audio-facade-surface.md):** the raw sample push's
+> justification is corrected — the caller-authored clip, not the push, is the pixel
+> array's analogue and the procedural path. ADR-0007 also records that the `O(1)`
+> voice clause bounds each voice, not how many exist: there is no voice cap.
+
 # The forbidden and required shapes of the platform-layer API
 
 ADR-0001 made the web a *shaping constraint* on the platform-layer API from day

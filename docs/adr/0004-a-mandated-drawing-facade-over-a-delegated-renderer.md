@@ -2,6 +2,14 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0006](0006-forbidden-and-required-shapes-of-the-platform-layer-api.md):**
+> the mandated audio surface was at the wrong altitude — one `sound` call is replaced by a
+> voice, a filter as a voice parameter, a raw sample push and a play cursor.
+>
+> **Amended by [ADR-0007](0007-the-audio-facade-surface.md):** the audio surface is spelled,
+> the facade's naming rules are fixed for both halves, and the `nil` pixel array's
+> checkerboard is kept as a mandated *named* debug pattern with no audio equivalent.
+
 # The spec mandates a thin drawing facade; the renderer and platform layer are delegated
 
 ADR-0001 committed us to writing the platform layer ourselves and recorded that
