@@ -2,6 +2,11 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0008](0008-the-shader-ludo-dialect-and-the-extern-shader-declaration.md):**
+> the dialect this ADR left open is specified — a strict subset covering vertex and
+> fragment only — and the *asset* framing is replaced by an `extern` shader declaration,
+> because "asset" collided with issue #12's out-of-scope asset pipeline.
+
 # Two shader authoring paths, one shader IR; WGSL ingested as an asset
 
 ADR-0002 adopted the WebGPU model for the renderer API but said nothing about

@@ -90,18 +90,34 @@ or the Cocoa/Metal/CoreAudio set. A single platform-layer API has many backends.
 
 ## Shader ludo
 
-Shaders written in ludo itself — a restricted dialect, bounded by what the
-shared shader IR can express. The authoring path for someone who does not
-already know a shader language.
+Shaders written in ludo itself — a strict subset of the language, covering the
+vertex and fragment stages only, bounded by what the shared shader IR can
+express. The authoring path for someone who does not already know a shader
+language.
 
-## Shader asset
+*Strict subset* is the operative phrase (ADR-0008): shader ludo differs from
+ordinary ludo in what is **permitted**, never in what anything **means**. A
+function that stays inside the subset and carries no stage marker is callable
+from both CPU and shader code.
 
-A shader supplied as a file in a foreign format (`.wgsl`) and ingested by the
-toolchain. An *asset*, in the sense that a `.png` is an asset — **not** a second
-ludo syntax and not a language dialect. Keep this distinction: describing WGSL
-as "a syntax ludo also accepts" reopens the grammar budget (issue #24) and the
-*two modes of one language* line (issue #16), both of which the asset framing
-leaves untouched.
+Not a dialect in the sense of variant semantics — saying "dialect" loosely
+reopens the *two modes of one language* line (issue #16) that the subset
+requirement exists to keep closed.
+
+## Extern shader declaration
+
+The declaration in ludo source that names a `.wgsl` file and its entry point,
+reaching a shader written in a foreign language. Modelled on the C FFI's
+`extern "SDL3" fn` (issue #29): the file is named in ludo source, there is no
+build step and no configuration anywhere else, and the compiler reads the file's
+declaration surface when it reads the declaration.
+
+**Not an asset, and the word is retired** (ADR-0008). "Asset" implied a
+processing stage between a file and your program, which is the asset pipeline
+issue #12 ruled out of scope. What the word was protecting still holds: WGSL is
+**not** a second ludo syntax and not a language dialect, and describing it as
+"a syntax ludo also accepts" reopens the grammar budget (issue #24) and issue
+#16's *two modes of one language* line.
 
 ## Runner
 
