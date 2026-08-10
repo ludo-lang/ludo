@@ -9,6 +9,10 @@ status: accepted
 > **Amended by [ADR-0007](0007-the-audio-facade-surface.md):** the audio surface is spelled,
 > the facade's naming rules are fixed for both halves, and the `nil` pixel array's
 > checkerboard is kept as a mandated *named* debug pattern with no audio equivalent.
+>
+> **Amended by [ADR-0009](0009-the-drawing-facades-call-spellings.md):** the outline half of
+> the mandated set is widened — ellipse and triangle gain stroke variants beside rect's —
+> and input is separated from the drawing facade into its own area.
 
 # The spec mandates a thin drawing facade; the renderer and platform layer are delegated
 

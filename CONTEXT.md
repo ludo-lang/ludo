@@ -36,7 +36,26 @@ using either word for the other loses the distinction the decision turns on.
 
 What drawing calls are issued against. Carries the properties that must hold for
 a whole frame rather than a single call — the [style](#style), the 2D transform,
-and the [logical canvas](#logical-canvas) — and is passed, never ambient.
+and the [logical canvas](#logical-canvas) — and is passed, never ambient. Spelled
+`Target`, and delivered by the runner to the per-frame entry point rather than
+constructed or fetched (ADR-0009).
+
+## Fill / stroke / draw
+
+The drawing facade's three verbs, with non-overlapping meanings (ADR-0009).
+*Fill* is a shape's area in one solid colour; *stroke* is a path with thickness,
+defined as the shape minus its inset shape; *draw* is a thing carrying its own
+appearance, and so neither filled nor stroked. A shape gets a fill/stroke pair
+only if it admits both — which is why lines and sprites are drawn, and text is
+filled.
+
+## Descriptor
+
+The single struct argument a facade call takes past two parameters, using
+named-field-only literals with field defaults. One type per call, never shared
+between calls: a struct whose meaningful fields depend on which call received it
+is an overload wearing a type. `VoiceDesc` for audio, `SpriteDesc` and its
+siblings for drawing.
 
 ## Style
 

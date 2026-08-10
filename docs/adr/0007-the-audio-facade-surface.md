@@ -2,6 +2,10 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0009](0009-the-drawing-facades-call-spellings.md):** the naming rules
+> gain two explicit case conventions (`PascalCase` types, `snake_case` enum members) and a
+> stated distinction between root-level type constructors and per-area modules.
+
 # The audio facade's surface: voices that play, a clip as the procedural path, and a push that is not it
 
 ADR-0006 fixed the *set* and the *line* for audio — the mandated facade gains a
