@@ -6,6 +6,10 @@ status: accepted
 > left open are now fixed for both facades, and the parked `nil`-pixel-array checkerboard
 > is kept and specced as a mandated *named* debug pattern. Drawing's call spellings are
 > issue #42.
+>
+> **Amended by [ADR-0009](0009-the-drawing-facades-call-spellings.md):** the call spellings
+> this ADR left open are fixed under `$.graphics`, and the target is delivered at the frame
+> entry rather than fetched.
 
 # The drawing facade's surface: top-left Y-down, straight alpha, and a target that carries the frame
 
