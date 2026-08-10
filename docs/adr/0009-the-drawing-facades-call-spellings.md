@@ -370,6 +370,20 @@ ambiguous between logical and texel space once the sprite is scaled. That is the
 policy class ADR-0004 deleted from the facade. RTS-style unit outlines are a
 documented drop-down case.
 
+**There is still no point primitive, and no `draw_point` was considered seriously.**
+ADR-0004 deleted it because point size has no portable meaning across backends —
+`love_PointSize` is one of the things LÖVE 12 broke — and the spelling work gives
+no reason to reopen it. Three things close it further under this ADR's own rules:
+a pixel is `fill_rect` with `size = $.vec2(1, 1)` and a dot is `fill_ellipse`, so
+it is covered twice already; a point has no interior to fill and no path to
+stroke, so it could only be spelled `draw_point`, which is the weakest possible
+member of the one verb this ADR uses exactly once; and the performance case it
+would serve belongs to `create_pixel_image` plus `get_pixels`, which carry
+ADR-0004's upload-cost-proportional-to-mutation guarantee, where a `draw_point`
+loop is the slow path pretending to be a primitive. *Pixel* would also be the
+wrong word: under a scaling transform or a non-1:1 logical canvas, one "pixel" is
+not one device pixel, which is the confusion the logical canvas exists to prevent.
+
 **`circle` is not a name.** A circle is an ellipse with equal extents, and a
 second name for it would be an alias, which #5 forbids — one spelling per entity.
 The set already names shapes by their general form and reaches the special case by
