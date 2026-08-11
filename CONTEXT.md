@@ -167,3 +167,23 @@ structural predicate, not a judgement about optimisation quality. A conforming
 implementation must not emit a call to one — the guarantee that makes the
 wrapper idiom free, and the spec's one bounded constraint on how an
 implementation compiles (ADR-0012).
+
+## Host language
+
+The language a ludo compiler is itself written in. Distinguished from the
+languages ludo *targets* and from the languages it *binds* — a compiler's host,
+its codegen output and its `extern` surface are three separate questions that
+discussions routinely collapse into one (ADR-0013).
+
+## Bootstrap compiler
+
+A ludo compiler written in a [host language](#host-language) rather than in
+ludo. Named for its role in the build chain, not its quality or its lifespan: a
+bootstrap compiler may be the production toolchain for years.
+
+## Self-hosting
+
+The state in which ludo's compiler is written in ludo, so that building from
+source runs the bootstrap compiler to produce a compiler that then compiles
+itself. A property of the toolchain only — it says nothing about the
+[platform layer](#platform-layer), which is written in ludo from the start.
