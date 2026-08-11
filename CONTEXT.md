@@ -149,3 +149,21 @@ holds a faulted program paused instead of exiting. `ludo build` drops it.
 The set of testable properties any conforming implementation must deliver —
 reload latency with state preserved, error-as-pause, single-command run, no
 unchecked escape path, machine-readable diagnostics. Issue #19 owns its wording.
+
+## Wrapper
+
+A user-written function over a mandated facade call, giving it a short,
+project-local name (`pixel`, `footstep`, `jump_pressed`). The intended
+counterpart to the facades' deliberate verbosity: the agent writes the
+qualified unabbreviated call, the human writes the wrapper over it (ADR-0012).
+Wrappers live in user namespace forever — never blessed into the reserved `$.`
+root, and not counted by #24's companion count. Third-party wrapper packages are
+permitted and unconstrained; this project publishes none.
+
+## Forwarding function
+
+A function whose body is a single call expression, with no captures. A
+structural predicate, not a judgement about optimisation quality. A conforming
+implementation must not emit a call to one — the guarantee that makes the
+wrapper idiom free, and the spec's one bounded constraint on how an
+implementation compiles (ADR-0012).
