@@ -202,3 +202,33 @@ the runner can supply** — which today means a single `screen: !Target`, fresh
 each frame with its transform reset to identity. An offscreen target is
 constructed by the program and never joins the list. Top-level code has no
 target and therefore cannot draw.
+
+## Module
+
+A file. The unit of compilation and the unit `use` and paths resolve into. A
+directory is a namespace node over modules. There is no separate package
+concept — a [backend](#backend), a [library](#library), and the second file of
+your own program are the same kind of thing (ADR-0014).
+
+## Library
+
+A directory that claims a root name, with one `library <name>` line at its root.
+That line is the whole difference between a library and a plain directory in
+your program. The name belongs to the library — no aliasing, no re-export, no
+rename — and two libraries claiming one name is a hard error with no escape
+hatch. Within one program a root name denotes exactly one library, which is what
+keeps nominal type identity intact across a dependency boundary; the cost is no
+in-program version pluralism. A library carries no version, hash or origin, so a
+vendored edited copy is a fork and *is* that library for that program
+(ADR-0014). Distinct from a [wrapper](#wrapper) package, which is one thing a
+library may contain.
+
+## Reference discipline
+
+The rule that a program reaches its own files **by path** and a library **by
+name**, and that a path reference may never cross a library boundary — you
+cannot path into a library, and a library cannot path out. It makes provenance
+legible at every reference site rather than in a directory listing, and it is
+the whole of what the language decides about code ownership: editing a
+library's files is legal and takes effect, and no language mechanism marks a
+directory as third-party (ADR-0014).
