@@ -68,7 +68,11 @@ cannot mix the two aesthetics incoherently.
 
 The coordinate space a program declares and draws in, letterboxed and scaled to
 whatever the real window is. Distinct from the window's actual pixels; the space
-in which integer coordinates are meaningful.
+in which integer coordinates are meaningful. Declared once by a top-level
+`$.graphics.set_canvas({...})` and **immutable for the process's life** — a
+canvas that could differ between frames would make every letterbox and
+integer-blit guarantee conditional (ADR-0013). The real window size is not
+exposed to the program.
 
 ## Core conformance / full conformance
 
@@ -187,3 +191,14 @@ The state in which ludo's compiler is written in ludo, so that building from
 source runs the bootstrap compiler to produce a compiler that then compiles
 itself. A property of the toolchain only — it says nothing about the
 [platform layer](#platform-layer), which is written in ludo from the start.
+
+## Drawing entry
+
+The entry that draws, and the only place a `Target` exists. Today it is the
+frame entry; if #28 later splits simulation from rendering, the drawing half
+keeps the parameter and the simulation half takes none (ADR-0013). Its signature
+is governed by one rule — **the entry's parameters are exactly the values only
+the runner can supply** — which today means a single `screen: !Target`, fresh
+each frame with its transform reset to identity. An offscreen target is
+constructed by the program and never joins the list. Top-level code has no
+target and therefore cannot draw.

@@ -7,6 +7,11 @@ status: accepted
 > `fill_sprite`/`stroke_sprite`, `draw_line` becomes `stroke_line`, and the
 > fill-and-stroke-or-else-`draw_` rule is deleted. The stroke definition widens to any path
 > with thickness, with shape-minus-inset-shape demoted to a consequence for closed shapes.
+>
+> **Amended by [ADR-0013](0013-the-drawing-entry-takes-the-screen-target.md):** "the runner
+> passes it into the per-frame entry point" is made precise — the parameter is `screen:
+> !Target` on the entry that *draws*, spelled and scoped by a rule about what the runner
+> alone can supply. Adds `$.graphics.set_canvas` and `$.graphics.to_logical`.
 
 # The drawing facade's call spellings: `$.graphics`, verb-first, a descriptor per call
 

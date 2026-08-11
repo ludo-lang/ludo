@@ -14,6 +14,11 @@ status: accepted
 > **Amended by [ADR-0010](0010-paint-and-the-two-verb-drawing-facade.md):** the byte-exact
 > blit clause is restated against the paint rather than the sprite, and widened to any 1:1
 > `stretch` texture paint at integer coordinates on a `crisp` target.
+>
+> **Amended by [ADR-0013](0013-the-drawing-entry-takes-the-screen-target.md):** the
+> caller-declared logical canvas and the `style:` token gain their declaration site — a
+> top-level `$.graphics.set_canvas({...})` — and become immutable for the process's life.
+> The target the runner passes is fresh each frame with its transform reset to identity.
 
 # The drawing facade's surface: top-left Y-down, straight alpha, and a target that carries the frame
 
