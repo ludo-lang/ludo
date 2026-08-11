@@ -13,6 +13,12 @@ status: accepted
 > **Amended by [ADR-0009](0009-the-drawing-facades-call-spellings.md):** the outline half of
 > the mandated set is widened — ellipse and triangle gain stroke variants beside rect's —
 > and input is separated from the drawing facade into its own area.
+>
+> **Amended by [ADR-0010](0010-paint-and-the-two-verb-drawing-facade.md):** the mandated set
+> gains a tenth call — the sprite takes a `fill_`/`stroke_` pair, reversing `stroke_sprite`
+> out of the renderer tier with a fixed alpha threshold and logical-unit thickness — and
+> fills take a `Paint`, whose `Mapping` field states the UV convention the admission test
+> requires.
 
 # The spec mandates a thin drawing facade; the renderer and platform layer are delegated
 

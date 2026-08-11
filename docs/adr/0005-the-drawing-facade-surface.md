@@ -10,6 +10,10 @@ status: accepted
 > **Amended by [ADR-0009](0009-the-drawing-facades-call-spellings.md):** the call spellings
 > this ADR left open are fixed under `$.graphics`, and the target is delivered at the frame
 > entry rather than fetched.
+>
+> **Amended by [ADR-0010](0010-paint-and-the-two-verb-drawing-facade.md):** the byte-exact
+> blit clause is restated against the paint rather than the sprite, and widened to any 1:1
+> `stretch` texture paint at integer coordinates on a `crisp` target.
 
 # The drawing facade's surface: top-left Y-down, straight alpha, and a target that carries the frame
 

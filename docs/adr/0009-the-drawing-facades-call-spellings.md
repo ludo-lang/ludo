@@ -2,6 +2,12 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0010](0010-paint-and-the-two-verb-drawing-facade.md):** `fill_` takes a
+> `Paint` rather than a `Color`, and the three verbs become two — `draw_sprite` becomes
+> `fill_sprite`/`stroke_sprite`, `draw_line` becomes `stroke_line`, and the
+> fill-and-stroke-or-else-`draw_` rule is deleted. The stroke definition widens to any path
+> with thickness, with shape-minus-inset-shape demoted to a consequence for closed shapes.
+
 # The drawing facade's call spellings: `$.graphics`, verb-first, a descriptor per call
 
 ADR-0005 fixed the drawing facade's *semantics* and explicitly left open "its call
