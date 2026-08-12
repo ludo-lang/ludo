@@ -119,7 +119,12 @@ under §1 it never will: with no program-visible concurrency, false-sharing has 
 program-visible cause.
 
 The item moves from parked to settled, so nobody reads it as a live question.
-`#align(n)` remains the one shipped attribute, at type level.
+`#align(n)` remains the one shipped **type-level** attribute. (As originally
+written this sentence said "the one shipped attribute", which was a drafting
+error: `#explicit` (#6) and the shader markers `#vertex` / `#fragment` (ADR-0008
+§4) are also shipped attributes. Corrected by
+[ADR-0029](0029-explicit-marks-a-module-and-forbids-a-spelling-that-omits-a-name.md)
+§7.)
 
 ### 7. No keywords are reserved
 

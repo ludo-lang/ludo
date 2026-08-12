@@ -224,6 +224,20 @@ directory is a namespace node over modules. There is no separate package
 concept — a [backend](#backend), a [library](#library), and the second file of
 your own program are the same kind of thing (ADR-0014).
 
+## `#explicit`
+
+The one attribute that marks a **module** rather than a declaration: one line at
+the top of a file, opting that file into the enforced floor of progressive
+disclosure. It **forbids a spelling that omits a name**, and nothing else — a
+closed list of four (a binding without its type, an aggregate literal without its
+type name, a call omitting a defaulted argument, a UFCS call). Descriptor field
+defaults, `+=`, the implicit tail return and `?T` are permitted, because none
+omits a name. It changes zero semantics; a violation is a hard error, never a
+warning. It binds only the file carrying it, so no check needs a whole-program
+view, and a layer choice never crosses a [library](#library) boundary in any
+direction — a library can neither force, forbid, nor see its consumers' choice
+(ADR-0029).
+
 ## Library
 
 A directory that claims a root name, with one `library <name>` line at its root.
