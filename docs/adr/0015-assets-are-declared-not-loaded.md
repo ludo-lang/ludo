@@ -40,7 +40,7 @@ for assets to be the exception.
 because it makes a missing file a *compile error* and deletes §3 and §4 outright.
 It fails on two counts: every art edit becomes a compiler invocation, which is
 the content build step issue #12 ruled out wearing different clothes; and it puts
-megabytes into the artifact ADR-0013's runner swaps at a frame boundary. Note the
+megabytes into the artifact issue #17's runner swaps at a frame boundary. Note the
 contrast with ADR-0008, where the compiler genuinely *must* read the `.wgsl` to
 run its three-comparison interface check. It has no such reason to read a PNG.
 
@@ -139,7 +139,7 @@ what makes a decode-from-path call a path-resolution call in disguise.
 unknown size, and allocation is by absence.
 
 **The declared set is runner-owned memory the program never names.** It must
-outlive reload the way ADR-0013's program-constant blob does, and making a
+outlive reload the way issue #17 §4's program-constant blob does, and making a
 beginner name an allocator for `player.png` restores the ceremony issue #15
 protected `{1,2,3}` from.
 
