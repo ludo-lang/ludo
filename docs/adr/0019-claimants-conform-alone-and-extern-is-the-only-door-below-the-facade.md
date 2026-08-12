@@ -56,12 +56,11 @@ not the end of the obligation.
 **Criterion 4 holds unweakened**, and the reason is that the space it would have
 to be softened for is empty.
 
-The worry was a program reaching past the mandated
-[drawing facade](../../CONTEXT.md#drawing-facade) into a delegated tier — a
-[renderer](../../CONTEXT.md#renderer) or the
-[platform layer](../../CONTEXT.md#platform-layer) — making that program portable
-in signature and unportable in behaviour, since ADR-0004 delegates both tiers and
-writes no behaviour for either.
+The worry was a program reaching past the mandated **drawing facade** into a
+delegated tier — a **renderer** or the **platform layer**, in `CONTEXT.md`'s
+sense of those terms — making that program portable in signature and unportable
+in behaviour, since ADR-0004 delegates both tiers and writes no behaviour for
+either.
 
 **That program cannot be written today.** A renderer needs the GPU device and
 swapchain; the platform layer owns them. ADR-0006's R1–R8 are **backend-facing**
