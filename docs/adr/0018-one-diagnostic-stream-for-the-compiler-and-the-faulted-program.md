@@ -95,9 +95,11 @@ the mechanism by which a "defined here" or "moved here" span rides along with th
 error it explains (§6).
 
 **Named consequence:** this is the first place the spec admits warnings exist at
-all. Whether warnings are configurable — promotable to errors, silenceable per
-site or per build — is **not decided here** and is parked as fog on the map. This
-ADR binds only that a warning is a severity a message may carry.
+all. This ADR binds only that a warning is a severity a message may carry.
+Whether warnings are configurable was settled afterwards by
+[ADR-0023](0023-the-spec-never-mandates-a-warning.md): the spec never mandates a
+warning, warnings have no language surface, and no flag may change the set of
+programs that compile.
 
 ## 5. The spec owns the codes for everything it mandates
 
