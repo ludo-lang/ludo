@@ -154,6 +154,20 @@ The set of testable properties any conforming implementation must deliver —
 reload latency with state preserved, error-as-pause, single-command run, no
 unchecked escape path, machine-readable diagnostics. Issue #19 owns its wording.
 
+## Diagnostic stream
+
+The machine-readable output of the toolchain, and the agent's half of the
+read-diagnostic → edit loop. One shape serves both producers: the compiler, when
+a program does not compile, and the [runner](#runner), when a program faults. A
+message carries a format version, a `compile`/`fault` producer discriminant, a
+severity from a closed set of three, a spec-owned stable code, a primary source
+location as file plus byte offset plus length, the named entity, and human text
+that carries no obligation. A `fault` message adds #18 §8's contents. The one
+mandatory encoding is JSON, one object per line; the human rendering is not part
+of it, and the stream carries messages and nothing else. A **suggestion** is a
+structured field — a source range and replacement text — and is omitted rather
+than guessed (ADR-0018).
+
 ## Wrapper
 
 A user-written function over a mandated facade call, giving it a short,
