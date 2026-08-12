@@ -18,7 +18,7 @@ The promises this discharges:
 - **ADR-0006** — the audio engine tier gets "the same treatment the renderer gets
   under ADR-0001 and ADR-0004: ours, own repository, blessed by reference,
   **unmandated**."
-- Issue #49 — the bootstrap compiler (ADR-0013) gets its own repo, outside the
+- Issue #49 — the bootstrap compiler (ADR-0020) gets its own repo, outside the
   spec tracker.
 
 ## The organisation
@@ -71,10 +71,10 @@ repositories to profile.
 
 ### `ludo-lang/ludo` — the toolchain
 
-Compiler and runner. The bootstrap prototype (ADR-0013, issue #49) is its early
+Compiler and runner. The bootstrap prototype (ADR-0020, issue #49) is its early
 history, and the keeper grows out of it rather than starting clean — "the
 prototype's frontend carries forward" is exactly the claim a fresh repository
-makes you re-litigate, and ADR-0013 rejected the minimal-throwaway
+makes you re-litigate, and ADR-0020 rejected the minimal-throwaway
 (Rust-from-OCaml) move for fighting it. *Throwaway* describes the interpreter and
 the driver, not the repository.
 

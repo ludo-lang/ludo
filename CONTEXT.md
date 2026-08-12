@@ -191,7 +191,7 @@ implementation compiles (ADR-0012).
 The language a ludo compiler is itself written in. Distinguished from the
 languages ludo *targets* and from the languages it *binds* — a compiler's host,
 its codegen output and its `extern` surface are three separate questions that
-discussions routinely collapse into one (ADR-0013).
+discussions routinely collapse into one (ADR-0020).
 
 ## Bootstrap compiler
 

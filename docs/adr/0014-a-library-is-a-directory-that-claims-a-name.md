@@ -116,7 +116,7 @@ option rather than a formality. It was rejected on three grounds:
   Under two, the categories genuinely *are* different kinds of thing and no rule
   fixes it.
 
-The named cost: the bootstrap compiler (ADR-0013) must resolve modules before it
+The named cost: the bootstrap compiler (ADR-0020) must resolve modules before it
 can compile `$.` at all. A baked-in stdlib would have let the bootstrap ship with
 `$.` hardcoded. That saving is a bootstrap convenience bought with a permanent
 split in the language.
@@ -287,7 +287,7 @@ generated here:
   vocabulary that escapes the count.
 - ADR-0006 R4 moves from reviewer discipline to a compiler-checked interface
   obligation (§9).
-- The bootstrap compiler (ADR-0013) must implement module resolution before it
+- The bootstrap compiler (ADR-0020) must implement module resolution before it
   can compile the standard library at all (§4).
 - The spec gains a stated invariant the type system silently depended on: one
   root name, one library, one nominal identity (§6).
