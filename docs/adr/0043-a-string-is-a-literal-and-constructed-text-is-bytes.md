@@ -2,6 +2,10 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0045](0045-a-generic-parameter-may-be-an-integer-and-it-may-only-be-a-length.md):**
+> §5's conditional is discharged — integer generic parameters are admitted, so `TextBuf` ships —
+> and the declaration is respelled `TextBuf[N: usize]`, the parameter's type being mandatory.
+
 # A string is a literal, and constructed text is bytes
 
 Issue #81 was re-scoped after [#80](https://github.com/adamico/ludo/issues/80) / ADR-0042 on
