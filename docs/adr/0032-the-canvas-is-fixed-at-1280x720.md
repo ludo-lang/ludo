@@ -2,6 +2,10 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0033](0033-a-stamp-can-go-stale-and-the-companion-count-is-reconciled.md):**
+> §1's "all 26 `$.graphics` calls" is 19 functions; the finding it supports — that none of
+> them reports the canvas size — is unaffected.
+
 # The canvas is fixed at 1280×720
 
 Every ludo program draws in a 1280×720 logical canvas. It is not declared, not

@@ -2,6 +2,9 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0015](0015-assets-are-declared-not-loaded.md):** the checkerboard among
+> the six further names is demoted to an explicitly-reached value, and renamed.
+>
 > **Amended by [ADR-0022](0022-the-spec-promises-only-what-is-derivable.md):** the
 > `stretch`-paint blit restatement stands and gains an implementation condition, but
 > **`fill_sprite`'s byte-exactness with a colour paint — the hit flash — is withdrawn**.
@@ -10,6 +13,9 @@ status: accepted
 > §3 makes the logical canvas a coordinate mapping, so the blit clause's *1:1 device extent*
 > precondition self-disables at any fit scale other than 1. The clause's fate is
 > [#69](https://github.com/adamico/ludo/issues/69), not ADR-0030.
+>
+> **Amended by [ADR-0033](0033-a-stamp-can-go-stale-and-the-companion-count-is-reconciled.md):**
+> the sixth further name is **`debug_image`**, not `checkerboard`.
 
 # `Paint` and the two-verb drawing facade: `fill_` and `stroke_`, and `draw_` deleted
 

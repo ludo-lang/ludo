@@ -6,9 +6,21 @@ status: accepted
 > gain two explicit case conventions (`PascalCase` types, `snake_case` enum members) and a
 > stated distinction between root-level type constructors and per-area modules.
 >
+> **Amended by [ADR-0015](0015-assets-are-declared-not-loaded.md):** the mandated
+> checkerboard-behaviour sentence is **removed** — the state it fixed up is unrepresentable,
+> and what survives is `$.graphics.debug_image`, a value reached explicitly.
+>
+> **Amended by [ADR-0016](0016-the-blessed-math-set-concrete-types-scalar-quantities-no-simd-mandate.md):**
+> `$.audio.cursor()` returns `SampleFrames`, not `int`, and conversion takes the device rate
+> as an argument.
+>
 > **Amended by [ADR-0022](0022-the-spec-promises-only-what-is-derivable.md):** *reload* is
 > defined as the in-process swap of game code, without which this ADR's play-cursor clause
 > is vacuous under one reading of the word.
+>
+> **Amended by [ADR-0033](0033-a-stamp-can-go-stale-and-the-companion-count-is-reconciled.md):**
+> "a clip adds no root name" is **superseded** — `Clip` is a root type, and the type count is
+> six rather than five.
 
 # The audio facade's surface: voices that play, a clip as the procedural path, and a push that is not it
 

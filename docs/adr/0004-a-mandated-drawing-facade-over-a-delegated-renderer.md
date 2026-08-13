@@ -23,6 +23,10 @@ status: accepted
 > **Amended by [ADR-0022](0022-the-spec-promises-only-what-is-derivable.md):** the upload
 > guarantee is restated at frame-and-view granularity, the backend floor is added, and
 > WebGL1 is excluded as a backend.
+>
+> **Amended by [ADR-0033](0033-a-stamp-can-go-stale-and-the-companion-count-is-reconciled.md):**
+> the bit-exact conformance-predicate bullet is **deleted** — ADR-0022 §2 and §3 deleted the
+> same two claims from ADR-0005 and did not reach this ADR.
 
 # The spec mandates a thin drawing facade; the renderer and platform layer are delegated
 

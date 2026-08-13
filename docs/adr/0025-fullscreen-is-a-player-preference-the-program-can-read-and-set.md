@@ -9,6 +9,14 @@ status: accepted
 > **Amended by [ADR-0030](0030-the-fit-is-a-uniform-transform-and-the-bars-are-not-the-programs.md):**
 > §2's citation of "ADR-0005's letterbox + integer scale" named a clause that did not exist;
 > it now does, with integer scale holding on `crisp` targets only.
+>
+> **Amended by [ADR-0031](0031-integer-scaling-loses-to-the-priority-ordering.md):** integer
+> scaling is **deleted** on every target, so the stamp above is superseded — the citation
+> survives as letterbox only, over a single uniform `k = min(w/W, h/H)`.
+>
+> **Amended by [ADR-0033](0033-a-stamp-can-go-stale-and-the-companion-count-is-reconciled.md):**
+> the ADR-0030 stamp above is the corpus's one instance of a **stale stamp**, and is the case
+> that produced §2's rule that a stamp is itself amendable content.
 
 # Fullscreen is a player preference the program can read and set
 

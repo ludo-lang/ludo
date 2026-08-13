@@ -2,6 +2,10 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0033](0033-a-stamp-can-go-stale-and-the-companion-count-is-reconciled.md):**
+> §4's `$.graphics.set_canvas({...})` example is stale — ADR-0032 §5 removed `CanvasDesc`
+> and the call takes the `style` token directly. The rule and its closed list are unaffected.
+
 # `#explicit` marks a module, and forbids a spelling that omits a name
 
 Issue #66 asked whether `#explicit` has any module- or library-level surface, or

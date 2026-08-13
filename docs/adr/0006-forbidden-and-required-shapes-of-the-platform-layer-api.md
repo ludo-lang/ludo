@@ -6,6 +6,10 @@ status: accepted
 > justification is corrected — the caller-authored clip, not the push, is the pixel
 > array's analogue and the procedural path. ADR-0007 also records that the `O(1)`
 > voice clause bounds each voice, not how many exist: there is no voice cap.
+>
+> **Amended by [ADR-0033](0033-a-stamp-can-go-stale-and-the-companion-count-is-reconciled.md):**
+> "drawing needs eight verbs" is a wrong count — nine at the time of writing, ten after
+> ADR-0010 — and the argument it decorates is untouched.
 
 # The forbidden and required shapes of the platform-layer API
 

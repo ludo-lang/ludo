@@ -12,6 +12,13 @@ status: accepted
 > passes it into the per-frame entry point" is made precise — the parameter is `screen:
 > !Target` on the entry that *draws*, spelled and scoped by a rule about what the runner
 > alone can supply. Adds `$.graphics.set_canvas` and `$.graphics.to_logical`.
+>
+> **Amended by [ADR-0015](0015-assets-are-declared-not-loaded.md):** the checkerboard is
+> demoted from a mandated behaviour to a mandated value reached explicitly, and renamed.
+>
+> **Amended by [ADR-0033](0033-a-stamp-can-go-stale-and-the-companion-count-is-reconciled.md):**
+> `$.graphics.checkerboard` is **`$.graphics.debug_image`**; the `Target`-not-`Canvas`
+> rationale cites a field ADR-0032 removed, and survives on its `Screen` ground alone.
 
 # The drawing facade's call spellings: `$.graphics`, verb-first, a descriptor per call
 

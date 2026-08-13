@@ -1,7 +1,10 @@
 # Context
 
-Glossary for the ludo language-design effort. Terms only — no decisions, no
-implementation detail. Decisions live in `docs/adr/` and in GitHub issues.
+Glossary for the ludo language-design effort. Terms only: what each word means
+and what it is deliberately not. No implementation detail, and no decision that
+is not already settled elsewhere — where an entry states a fixed property, it
+names the ADR that fixed it, and that ADR is the authority. Decisions live in
+`docs/adr/` and in GitHub issues.
 
 ## Platform layer
 
@@ -22,32 +25,61 @@ Distinguished from the platform layer because shipping a renderer is what makes 
 third-party [engine](#engine) possible — the Flutter/Flame relationship recorded
 in issue #12.
 
+## Facade
+
+A mandated area of the reserved `$.` root: one module, a fixed set of calls, a
+surface frozen by criterion 4. *Facade* is the operative word — it is a stable
+front over a tier that is free to evolve beneath it.
+
+There are four, each its own area with its own module and its own ADR:
+`$.graphics` (ADR-0009, ADR-0010), `$.audio` (ADR-0007), `$.input` (ADR-0011)
+and `$.storage` (ADR-0026). A fullscreen pair is mandated but unspelled
+(ADR-0025). They share ADR-0007's six naming rules and nothing else; input in
+particular shares only a backend with drawing.
+
 ## Drawing facade
 
-The small set of immediate-mode drawing, sound and input calls the spec mandates
-in the reserved `$.` root, sitting on the [renderer](#renderer). *Facade* is the
-operative word: it is a fixed, frozen surface over a tier that is free to evolve
-beneath it.
+The `$.graphics` facade specifically, sitting on the [renderer](#renderer): ten
+immediate-mode drawing calls plus text measurement, image slicing, pixel images,
+decoding, the canvas declaration and the coordinate conversions.
 
 Not the renderer — issue #28 mandates the facade and delegates the renderer, so
-using either word for the other loses the distinction the decision turns on.
+using either word for the other loses the distinction the decision turns on. Not
+the whole mandated surface either: sound and input are their own facades, and
+using "drawing facade" for all of them re-collapses the split ADR-0009 made.
 
 ## Draw target
 
 What drawing calls are issued against. Carries the properties that must hold for
-a whole frame rather than a single call — the [style](#style), the 2D transform,
-and the [logical canvas](#logical-canvas) — and is passed, never ambient. Spelled
-`Target`, and delivered by the runner to the per-frame entry point rather than
-constructed or fetched (ADR-0009).
+a whole frame rather than a single call — the [style](#style) and the 2D
+transform — and is passed, never ambient. The [logical canvas](#logical-canvas)
+is **not** among them: it is a language constant, not a property of a target
+(ADR-0032). Spelled `Target`, and delivered by the runner to the per-frame entry
+point rather than constructed or fetched (ADR-0009, ADR-0013).
 
-## Fill / stroke / draw
+## Fill / stroke
 
-The drawing facade's three verbs, with non-overlapping meanings (ADR-0009).
-*Fill* is a shape's area in one solid colour; *stroke* is a path with thickness,
-defined as the shape minus its inset shape; *draw* is a thing carrying its own
-appearance, and so neither filled nor stroked. A shape gets a fill/stroke pair
-only if it admits both — which is why lines and sprites are drawn, and text is
-filled.
+The drawing facade's **two** verbs, with non-overlapping meanings (ADR-0010).
+*Fill* is a shape's area, painted with a [paint](#paint); *stroke* is a path with
+thickness — for a closed shape, the shape grown by `thickness/2` minus the shape
+shrunk by `thickness/2`, and for an open path, round caps.
+
+**Every call is a fill or a stroke**, and the set is not "every shape has both":
+`fill_line` does not exist because a line has no area. A third verb `draw_` was
+spelled by ADR-0009, along with a rule adjudicating between the three; ADR-0010
+deleted both when `fill_` began taking a paint, so `draw_line` is `stroke_line`
+and `draw_sprite` is the `fill_sprite`/`stroke_sprite` pair. Using *draw* as a
+verb of the facade names a call that does not exist.
+
+## Paint
+
+What a fill or stroke is painted with: a sum of a `Color` and a `Texture`, the
+latter carrying an image, a `Mapping` (`stretch` or `tile`) and an offset
+(ADR-0010). Every descriptor carries one, so `Color` is no longer a field type
+anywhere — it survives as a paint variant and as `$.rgb8`/`$.rgbf`'s return type.
+
+*Pattern* is not a third variant: a pattern is the same pixels under a different
+mapping, which is what `Mapping.tile` says.
 
 ## Descriptor
 
@@ -97,14 +129,18 @@ pointer reports a position outside the canvas for (ADR-0011, ADR-0030).
 ## Core conformance / full conformance
 
 The two levels a ludo implementation can satisfy. *Core* is the compiler, the
-language and the non-visual standard library, and is testable headless. *Full*
-is core plus the [drawing facade](#drawing-facade) over at least one
-[backend](#backend). The destination's completion test is measured against core.
+language and the non-visual standard library, and is testable headless —
+`measure_text`'s purity and the storage slot's round-trip both land here. *Full*
+is core plus the [facades](#facade) that need a device — graphics, audio,
+input — over at least one [backend](#backend), and it is where the clauses that
+presuppose a window live: click-free reload, drain-then-silence, the runner's
+fullscreen affordance, and P13's fitted canvas, the first #19 property core
+cannot run. The destination's completion test is measured against core.
 
 ## Voice
 
-One sounding unit in the [drawing facade](#drawing-facade)'s audio half: a
-waveform or a clip, with its envelopes and its filter parameters. Carries fixed,
+One sounding unit in the `$.audio` [facade](#facade): a waveform or a clip, with
+its envelopes and its filter parameters. Carries fixed,
 `O(1)`, spec-sized state and allocates nothing, which is the line separating what
 the facade mandates from what the [engine](#engine) tier owns (ADR-0006).
 
@@ -168,6 +204,19 @@ The dev-mode process launched by the bare `ludo` command. It owns the program's
 process, drives the frame entry, holds `persist` state across a rebuild, and
 holds a faulted program paused instead of exiting. `ludo build` drops it.
 
+## Quiescence
+
+The state a program must be in for the [runner](#runner) to swap anything
+underneath it: **no ludo code on any stack, no `extern` call in flight, and the
+only live ludo state is `persist` plus declared assets plus resolved storage
+contents** (ADR-0024, ADR-0026).
+
+A **state predicate, not a location**. It holds between two invocations of the
+frame entry, after top level and before the first frame, and — as a theorem
+rather than a special case — forever in a faulted program, which is what lets a
+reload rescue one. Three mechanisms cite it: the dylib swap, the asset byte-swap
+behind a handle, and the backend re-point.
+
 ## Experience contract
 
 The set of testable properties any conforming implementation must deliver —
@@ -203,8 +252,9 @@ permitted and unconstrained; this project publishes none.
 A function whose body is a single call expression, with no captures. A
 structural predicate, not a judgement about optimisation quality. A conforming
 implementation must not emit a call to one — the guarantee that makes the
-wrapper idiom free, and the spec's one bounded constraint on how an
-implementation compiles (ADR-0012).
+wrapper idiom free (ADR-0012). One of **two** bounded constraints the spec places
+on how an implementation compiles, the other being ADR-0022 §4's copy-not-quad
+blit condition, which is pending issue #69 (ADR-0030, ADR-0033).
 
 ## Host language
 

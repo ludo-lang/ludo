@@ -11,6 +11,9 @@ status: accepted
 > size and its `CanvasDesc` — the canvas is fixed at 1280×720 — and `set_canvas` keeps its
 > name while taking the `style` token directly. §5's process-lifetime immutability argument
 > survives for `style`.
+>
+> **Amended by [ADR-0033](0033-a-stamp-can-go-stale-and-the-companion-count-is-reconciled.md):**
+> the companion-count delta omits `to_world`, which §8 ships; the reconciled count carries it.
 
 # The drawing entry takes the screen target, and the canvas is declared once at top level
 

@@ -2,9 +2,16 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0013](0013-the-drawing-entry-takes-the-screen-target.md):** the
+> ADR-0009 / #26 frame-entry conflict this ADR raises and leaves open is **resolved** —
+> the drawing entry takes `screen: !Target`.
+>
 > **Amended by [ADR-0030](0030-the-fit-is-a-uniform-transform-and-the-bars-are-not-the-programs.md):**
 > unchanged in text — the pointer-in-bars clause gains the graphics precondition it was
 > always written against, since nothing before it required bars to exist.
+>
+> **Amended by [ADR-0033](0033-a-stamp-can-go-stale-and-the-companion-count-is-reconciled.md):**
+> `to_world`, owed by this ADR and shipped by ADR-0013 §8, is counted for the first time.
 
 # The input facade: a virtual controller over ordinal buttons, with the raw devices beneath
 

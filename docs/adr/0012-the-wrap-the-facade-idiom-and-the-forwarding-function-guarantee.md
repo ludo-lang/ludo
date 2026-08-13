@@ -2,6 +2,11 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0033](0033-a-stamp-can-go-stale-and-the-companion-count-is-reconciled.md):**
+> the forwarding-function guarantee is one of **two** constraints on how an implementation
+> compiles, not one — ADR-0022 §4's copy-not-quad blit condition is the second, and is
+> pending [#69](https://github.com/adamico/ludo/issues/69).
+
 # The wrap-the-facade idiom, and the forwarding-function guarantee that makes it free
 
 ADR-0007, ADR-0009, ADR-0010 and ADR-0011 all spent verbosity deliberately: no

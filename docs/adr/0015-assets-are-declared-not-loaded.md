@@ -2,6 +2,10 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0033](0033-a-stamp-can-go-stale-and-the-companion-count-is-reconciled.md):**
+> §10's delta adds `debug_image` without subtracting `checkerboard` and omits the `Clip`
+> type §5 introduces; both are folded into the reconciled count.
+
 # Assets are declared, not loaded
 
 Issue #42 named `Image` and `Font` in the mandated drawing facade and explicitly
