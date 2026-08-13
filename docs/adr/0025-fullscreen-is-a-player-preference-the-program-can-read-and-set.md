@@ -17,6 +17,12 @@ status: accepted
 > **Amended by [ADR-0033](0033-a-stamp-can-go-stale-and-the-companion-count-is-reconciled.md):**
 > the ADR-0030 stamp above is the corpus's one instance of a **stale stamp**, and is the case
 > that produced §2's rule that a stamp is itself amendable content.
+>
+> **Amended by [ADR-0036](0036-the-window-opens-maximal-and-belongs-to-the-player.md):**
+> §7's *"at the runner's default size"* is **defined** — the largest 16:9 window fitting the
+> display's work area, persisted across relaunch; §2's resize permission gains an explicit
+> no-aspect-constraint clause; §3's two-mutator pattern applies to window size with the
+> program excluded.
 
 # Fullscreen is a player preference the program can read and set
 

@@ -2,6 +2,11 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0036](0036-the-window-opens-maximal-and-belongs-to-the-player.md):**
+> §2's deletion of the too-small-window case is restated as a positive clause — no floor, no
+> minimum window, no refusal to launch — and the cost §3 leaves implicit is named: at `k < 1`
+> a `crisp` target drops texels rather than blurring them.
+
 # Integer scaling loses to the priority ordering, and the fit is one formula
 
 [ADR-0030](0030-the-fit-is-a-uniform-transform-and-the-bars-are-not-the-programs.md)

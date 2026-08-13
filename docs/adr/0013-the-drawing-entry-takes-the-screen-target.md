@@ -21,6 +21,10 @@ status: accepted
 > ADR-0035 §1 accepts the 60Hz render ceiling permanently. §4's substance survives as a
 > counterfactual: it correctly named which half would keep the target, and that half is now
 > the only half. There is no simulation entry taking zero parameters.
+>
+> **Amended by [ADR-0036](0036-the-window-opens-maximal-and-belongs-to-the-player.md):**
+> §9 is unchanged and gains the audit that shows nothing needs the window size — every
+> plausible caller has a named call that is the right answer instead.
 
 # The drawing entry takes the screen target, and the canvas is declared once at top level
 
