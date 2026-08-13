@@ -68,13 +68,13 @@ window size, which the program cannot see (ADR-0031).
 
 ## Logical canvas
 
-The coordinate space a program declares and draws in, letterboxed and scaled to
-whatever the real window is. Distinct from the window's actual pixels; the space
-in which integer coordinates are meaningful. Declared once by a top-level
-`$.graphics.set_canvas({...})` and **immutable for the process's life** — a
-canvas that could differ between frames would make every letterbox and
-integer-blit guarantee conditional (ADR-0013). The real window size is not
-exposed to the program. It is a **coordinate mapping**, not an intermediate
+The coordinate space every program draws in, letterboxed and scaled to whatever
+the real window is. **Fixed at 1280×720 for every ludo program** — a language
+constant, not a declaration, so a library can lay out against the screen without
+being told its size (ADR-0032). Available as `$.graphics.canvas_size`. Distinct
+from the window's actual pixels; the space in which integer coordinates are
+meaningful. A non-16:9 game centres its play area inside the grid and owns the
+rest. The real window size is not exposed to the program. It is a **coordinate mapping**, not an intermediate
 framebuffer: the backend folds it into its own transform and rasterises at native
 device resolution (ADR-0030).
 

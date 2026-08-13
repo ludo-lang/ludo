@@ -7,6 +7,10 @@ status: accepted
 > stability above rendering fidelity* ordering — it cost a third of the screen at 1080p — and
 > §4's formula loses its `style` branch, its floor and its too-small-window case. §3, §6, §7
 > and §9 stand; P13 is restated.
+>
+> **Amended by [ADR-0032](0032-the-canvas-is-fixed-at-1280x720.md):** unchanged in
+> substance — the canvas is fixed at 1280×720, so `W` and `H` in the fit formula are now
+> constants rather than the program's declaration.
 
 # The fit is a uniform transform, and the bars are not the program's
 

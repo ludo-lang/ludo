@@ -6,6 +6,11 @@ status: accepted
 > §9's *the real window size is not exposed* is strengthened, not narrowed — the mapping it
 > relies on is now stated as arithmetic; §9's fog item on choosing a canvas from the display
 > stays closed.
+>
+> **Amended by [ADR-0032](0032-the-canvas-is-fixed-at-1280x720.md):** §5 loses the canvas
+> size and its `CanvasDesc` — the canvas is fixed at 1280×720 — and `set_canvas` keeps its
+> name while taking the `style` token directly. §5's process-lifetime immutability argument
+> survives for `style`.
 
 # The drawing entry takes the screen target, and the canvas is declared once at top level
 

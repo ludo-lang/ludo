@@ -34,6 +34,11 @@ status: accepted
 > `style` token gains an explicit statement that `crisp` is nearest sampling at **every**
 > scale, not only integer ones — its meaning may not depend on a window size the program
 > cannot see.
+>
+> **Amended by [ADR-0032](0032-the-canvas-is-fixed-at-1280x720.md):** the
+> **caller-declared logical canvas is overturned** — the canvas is a language constant of
+> 1280×720. This ADR's 16:9 objection is accepted as a cost rather than rebutted; what
+> changed is that a declared canvas leaves libraries unable to learn the screen size.
 
 # The drawing facade's surface: top-left Y-down, straight alpha, and a target that carries the frame
 
