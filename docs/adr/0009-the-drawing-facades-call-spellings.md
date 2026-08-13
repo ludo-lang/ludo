@@ -187,7 +187,7 @@ LineDesc            { start: Vec2, end: Vec2, thickness: f32 }
 SpriteDesc          { image: Image, position: Vec2, size: Vec2,
                       anchor: Vec2, rotation_anchor: Vec2, angle: Radians,
                       flip_horizontal: bool, flip_vertical: bool }
-TextDesc            { text: string, font: Font, font_size: f32,
+TextDesc            { text: []u8, font: Font, font_size: f32,
                       position: Vec2, anchor: Vec2 }
 ```
 

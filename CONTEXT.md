@@ -448,4 +448,39 @@ The core types every program has without asking, and the answer to where
 sixth [facade](#facade): a facade is a stable front over a tier free to evolve
 beneath it, and there is no tier beneath memory, no backend to delegate to, and
 core conformance is headless — so these must exist where no backend does
-(ADR-0042).
+(ADR-0042). [`format`](#text-buffer) and [`TextBuf`](#text-buffer) live here on
+the same reasoning: text formatting delegates to no tier and must work headless
+(ADR-0043).
+
+## String
+
+A view into the [runner](#runner)'s constant blob, and **only** that. Immutable
+UTF-8, not an indexable aggregate — no `s[i]`, and iteration goes through
+`chars()` (#15). A `string` may be stored, `persist`ed and used as a map key
+**because** its referent outlives every frame, reload and image swap, so the
+permission is derived rather than granted and no lifetime machinery appears
+(ADR-0043).
+
+**Nothing constructs one.** A `string` widens implicitly to `[]u8` at parameter
+position and there is no conversion back, because the type's meaning *is* the
+memory it points at. Constructed and player-entered text is therefore `[]u8`, and
+a text-entry program never names this type at all. The consequence, stated rather
+than discovered: a map cannot be keyed by text a player typed. Distinct from a
+[text buffer](#text-buffer), which is where constructed text lives.
+
+## Text buffer
+
+`TextBuf[N]` — a fixed-capacity `struct { bytes: [N]u8, len: usize }` and the
+home for constructed text. A plain value with no pointer, so it lives in
+`persist` and survives reload like any array. `append` truncates silently and
+returns nothing, so a player holding a key down at capacity sees nothing happen
+rather than an error, and no must-use fires at the call site.
+
+Beneath it is `format(dst: ![]u8, "...", ...)`, which writes into a caller-owned
+buffer and returns what it wrote. The format string is a **literal the compiler
+checks**, so a wrong hole count or argument type is a compile error — not a macro
+(ADR-0021 forbids those) but a compiler-known signature, the exception shape #15
+used for `Eq`/`Hash`/`Clone`. Holes are `{}` only, over a closed list of
+primitives; the math types are excluded because `Vec2` has no single obvious text
+form. Overflow truncates at a scalar boundary, so the destination is always valid
+UTF-8 (ADR-0043).

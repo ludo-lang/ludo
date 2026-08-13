@@ -291,7 +291,10 @@ because they honour neither the binding table nor the pad.
 
 ### `text()` is not an escape hatch
 
-`$.input.text()` returns the string composed this frame. It is promoted out of the
+`$.input.text()` returns the text composed this frame. **Stamped by ADR-0043**: the
+return type is `[]u8`, not `string` — a `string` is a view into the runner's
+constant blob and this text is not a literal — and the view is runner-owned
+memory valid until the frame entry returns. It is promoted out of the
 raw layer for two reasons: it is the **only** way to spell text entry at all —
 IME, dead keys and repeat cannot be reconstructed from key state — and it is the
 mandated idiom for the prompt problem below.
@@ -352,7 +355,7 @@ $.input.pointer_locked() -> bool
 $.input.key_down(k: Key) -> bool
 $.input.key_pressed(k: Key) -> bool
 $.input.key_released(k: Key) -> bool
-$.input.text() -> string
+$.input.text() -> []u8
 ```
 
 Five types: `Key`, `Button`, `Side`, `PointerButton`, `Source`.
