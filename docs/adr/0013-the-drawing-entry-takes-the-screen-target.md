@@ -14,6 +14,13 @@ status: accepted
 >
 > **Amended by [ADR-0033](0033-a-stamp-can-go-stale-and-the-companion-count-is-reconciled.md):**
 > the companion-count delta omits `to_world`, which §8 ships; the reconciled count carries it.
+>
+> **Amended by [ADR-0035](0035-the-render-ceiling-is-accepted-and-one-present-per-entry.md):**
+> §4's future tense is **stale and is closed** — *"if #28 later splits simulation from
+> rendering"* describes a door #28's immediate-mode resolution had already shut, and
+> ADR-0035 §1 accepts the 60Hz render ceiling permanently. §4's substance survives as a
+> counterfactual: it correctly named which half would keep the target, and that half is now
+> the only half. There is no simulation entry taking zero parameters.
 
 # The drawing entry takes the screen target, and the canvas is declared once at top level
 

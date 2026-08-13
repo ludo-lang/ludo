@@ -278,14 +278,42 @@ itself. A property of the toolchain only — it says nothing about the
 
 ## Drawing entry
 
-The entry that draws, and the only place a `Target` exists. Today it is the
-frame entry; if #28 later splits simulation from rendering, the drawing half
-keeps the parameter and the simulation half takes none (ADR-0013). Its signature
+The entry that draws, and the only place a `Target` exists. It **is** the frame
+entry, and there is no other — ADR-0035 accepts the [render ceiling](#render-ceiling),
+so simulation and rendering are never split and no second entry exists. Its signature
 is governed by one rule — **the entry's parameters are exactly the values only
 the runner can supply** — which today means a single `screen: !Target`, fresh
 each frame with its transform reset to identity. An offscreen target is
 constructed by the program and never joins the list. Top-level code has no
 target and therefore cannot draw.
+
+## Frame
+
+**One frame entry call, one simulated step, and one presented image — the same
+thing under three descriptions.** The collapse is definitional, not incidental:
+ADR-0035 fixes the render rate to the simulation rate, so the word has exactly
+one referent everywhere in the spec and never needs disambiguating from context.
+(*Sample frame* in audio is a different unit and keeps its own entry — see
+[play cursor](#play-cursor).)
+
+A frame that overruns the 60Hz step still yields exactly one entry call and
+exactly one late image: the simulation runs late and the framerate drops, and no
+catch-up call is made (#19 P7 with ADR-0035 §3).
+
+## Render ceiling
+
+The permanent equality of render rate and simulation rate at 60Hz (ADR-0035).
+Chosen rather than inherited: an immediate-mode [drawing facade](#drawing-facade)
+forecloses interpolation — which would need the renderer to read two states, and
+so a second entry and per-game double-buffering — and the map's ordering of
+**frame stability above rendering fidelity** resolves that trade against
+smoothness. The accepted cost is uneven cadence on a fixed-refresh high-refresh
+panel, or windowed where VRR does not engage.
+
+The [runner](#runner) presents **exactly one image per returned frame entry**,
+never twice and never skipped; *how* it paces — vsync, sleep, free-run — is
+unspecified, because how you wait is environment and how many images the player
+sees per simulated step is not.
 
 ## Module
 

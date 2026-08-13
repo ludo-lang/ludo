@@ -27,6 +27,15 @@ status: accepted
 > **Amended by [ADR-0033](0033-a-stamp-can-go-stale-and-the-companion-count-is-reconciled.md):**
 > the bit-exact conformance-predicate bullet is **deleted** — ADR-0022 §2 and §3 deleted the
 > same two claims from ADR-0005 and did not reach this ADR.
+>
+> **Amended by [ADR-0035](0035-the-render-ceiling-is-accepted-and-one-present-per-entry.md):**
+> this ADR gains the clause **#28 owed and never wrote**. Immediate mode forecloses splitting
+> rendering out of the frame entry later — interpolation needs the renderer to read two
+> states, and the command-list path needs primitive identity across frames, which an
+> immediate-mode facade does not have. ADR-0035 §1 therefore **accepts the 60Hz render
+> ceiling** as chosen rather than inherited, and §3 adds the presentation clause the corpus
+> never had: exactly one image is presented per returned frame entry, with pacing left to
+> runner discretion.
 
 # The spec mandates a thin drawing facade; the renderer and platform layer are delegated
 
