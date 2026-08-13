@@ -9,6 +9,13 @@ status: accepted
 > **texel-selection sentence**, becoming the corpus's whole statement of graphics exactness
 > on both the coverage and the sampling axis. §0's rule is what decides it, applied to §4
 > for the first time.
+>
+> **Amended by [ADR-0037](0037-a-backend-clears-a-floor-and-shaders-are-the-third-rung.md):** §1's final
+> sentence is **restated** — WebGL1 is not *"excluded as a backend"*, since there is no set
+> to be excluded from; it cannot satisfy this clause, and therefore cannot serve a
+> conforming implementation above core. The WebGPU and WebGL2 API names in the clause are
+> **evidence the floor is satisfiable, never a roster**, and "backend" there meant the
+> renderer component.
 
 # The spec promises only what is derivable, and says so where it cannot
 

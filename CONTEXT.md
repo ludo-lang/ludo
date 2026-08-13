@@ -126,16 +126,27 @@ The device pixels outside the fitted canvas rect. **Opaque black, never
 program-reachable** — rendering is clipped to the canvas rect — and the region a
 pointer reports a position outside the canvas for (ADR-0011, ADR-0030).
 
-## Core conformance / full conformance
+## Core conformance / full conformance / shader conformance
 
-The two levels a ludo implementation can satisfy. *Core* is the compiler, the
-language and the non-visual standard library, and is testable headless —
-`measure_text`'s purity and the storage slot's round-trip both land here. *Full*
-is core plus the [facades](#facade) that need a device — graphics, audio,
-input — over at least one [backend](#backend), and it is where the clauses that
-presuppose a window live: click-free reload, drain-then-silence, the runner's
-fullscreen affordance, and P13's fitted canvas, the first #19 property core
-cannot run. The destination's completion test is measured against core.
+The three levels a ludo implementation can satisfy, **totally ordered by
+containment**: core ⊂ full ⊂ shader. *Core* is the compiler, the language and the
+non-visual standard library, and is testable headless — `measure_text`'s purity
+and the storage slot's round-trip both land here. *Full* is core plus the
+[facades](#facade) that need a device — graphics, audio, input — over at least
+one [backend](#backend), and it is where the clauses that presuppose a window
+live: click-free reload, drain-then-silence, the runner's fullscreen affordance,
+and P13's fitted canvas, the first #19 property core cannot run. *Shader* is full
+plus ADR-0008's two authoring paths — [shader ludo](#shader-ludo) and the
+[extern shader declaration](#extern-shader-declaration). The destination's
+completion test is measured against core.
+
+A rung is a **partition of #19's existing properties**, not a set of extra ones
+(ADR-0037). The split between full and shader is available because the mandated
+facade is analytically specifiable and satisfiable by a CPU rasterizer, while the
+shader paths are the only place a programmable pipeline is load-bearing. A
+program's required rung is **readable from its source**: `extern shader` is an
+`extern`, and a shader declaration built against a lower-rung implementation is a
+compile error, never a runtime fault.
 
 ## Voice
 
@@ -166,6 +177,20 @@ you link. Avoid using "engine" as a loose synonym for the whole stack.
 
 One platform's implementation of the platform layer — the Win32/D3D12/WASAPI set,
 or the Cocoa/Metal/CoreAudio set. A single platform-layer API has many backends.
+
+A backend is a **triple**: window/input, renderer, audio device. Say **renderer
+component** for the graphics third — D3D12, Metal, Vulkan, WebGPU, a WebGL2
+context, a CPU rasterizer. ADR-0022 §1 and ADR-0002 both use "backend" for the
+component alone, and issue #74 found that half of its ambiguity was this
+collision and nothing else; the glossary definition is the one that holds.
+
+**There is no admissible set of either** (ADR-0037). A renderer component is
+admissible iff it can satisfy the spec's normative surface at the
+[rung](#core-conformance--full-conformance--shader-conformance) its
+implementation claims — so WebGL1's exclusion is a consequence of failing
+ADR-0022 §1's strided upload, not membership in anything, and WebGL2 is neither
+admitted nor refused. A **software rasterizer is admissible** at the full rung
+and is never mandated.
 
 ## Shader ludo
 

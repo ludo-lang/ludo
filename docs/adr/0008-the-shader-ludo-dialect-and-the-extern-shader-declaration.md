@@ -2,6 +2,13 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0037](0037-a-backend-clears-a-floor-and-shaders-are-the-third-rung.md):** the two
+> authoring paths specified here **define the shader conformance rung**. An `extern` shader
+> declaration or shader-ludo source, built against an implementation that does not claim
+> that rung, is a **compile error naming the declaration** under ADR-0018's envelope — not
+> a runtime fault, because ADR-0006 R3 makes the rung known at compile time. Criterion 4 is
+> not reopened: `extern` is visible in the signature, per ADR-0019 §2.
+
 # Shader ludo is a strict subset with a vacuous guarantee set; `.wgsl` is reached by an extern declaration, not ingested as an asset
 
 ADR-0003 settled the *shape* of the shader story — two authoring paths, one shader

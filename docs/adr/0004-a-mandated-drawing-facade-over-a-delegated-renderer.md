@@ -36,6 +36,14 @@ status: accepted
 > ceiling** as chosen rather than inherited, and §3 adds the presentation clause the corpus
 > never had: exactly one image is presented per returned frame entry, with pacing left to
 > runner discretion.
+>
+> **Amended by [ADR-0037](0037-a-backend-clears-a-floor-and-shaders-are-the-third-rung.md):** the
+> core/full conformance split gains a **third rung** — core ⊂ full ⊂ **shader**, the last
+> adding ADR-0008's two authoring paths — and a **software rasterizer is an admissible
+> renderer component** at the full rung, never a mandated one. The negative web obligation
+> holds for a stronger reason than it did: a wasm software rasterizer into a canvas needs
+> neither WebGPU nor WebGL, so the facade's browser-implementability stops resting on a
+> vendor's shipping schedule.
 
 # The spec mandates a thin drawing facade; the renderer and platform layer are delegated
 

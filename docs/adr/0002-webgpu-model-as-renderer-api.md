@@ -2,6 +2,15 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0037](0037-a-backend-clears-a-floor-and-shaders-are-the-third-rung.md):** the four API
+> names here are **non-normative evidence of tractability, not an admissible set** — issue
+> #74 found the corpus had no statement of the admissible set and none is added, because a
+> roster is the wording shape ADR-0019 §1 outlaws. The **ceiling stated below is scoped to
+> the shader conformance rung**; the mandated facade is analytically specifiable and needs
+> no GPU, so a facade-rung claimant is not bound by it. WebGL2 is consequently neither
+> admitted nor refused, and "backend" here means the **renderer component**, not
+> `CONTEXT.md`'s platform triple.
+
 # The renderer API adopts the WebGPU model, implemented over native backends
 
 ADR-0001 committed us to one platform-layer API with many backends, pinned to

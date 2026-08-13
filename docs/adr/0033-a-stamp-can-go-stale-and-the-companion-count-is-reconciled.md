@@ -10,6 +10,11 @@ status: accepted
 > follows, appending rather than reverting. ADR-0034 §4 finds a **third phantom clause** —
 > the texel-centre and tie-break convention, cited by three ADRs and never written — which
 > is this ADR's failure mode in its purest form.
+>
+> **Amended by [ADR-0037](0037-a-backend-clears-a-floor-and-shaders-are-the-third-rung.md):** §10's second
+> *deliberately unfixed* item — ADR-0022 §1's WebGL2 mention — is **discharged**. §10 read
+> the sentence correctly and could not fix it, because the fix needed a decision about the
+> admissible set and there was no set; ADR-0037 §1 supplies that absence as the decision.
 
 # A stamp can go stale, and the companion count is reconciled
 
