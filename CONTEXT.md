@@ -339,8 +339,9 @@ The entry that draws, and the only place a `Target` exists. It **is** the frame
 entry, and there is no other — ADR-0035 accepts the [render ceiling](#render-ceiling),
 so simulation and rendering are never split and no second entry exists. Its signature
 is governed by one rule — **the entry's parameters are exactly the values only
-the runner can supply** — which today means a single `screen: !Target`, fresh
-each frame with its transform reset to identity. An offscreen target is
+the runner can supply** — which today means two: `screen: !Target`, fresh each
+frame with its transform reset to identity, and `scratch: !Scratch`, the
+per-frame arena the runner resets at the frame boundary (ADR-0042). An offscreen target is
 constructed by the program and never joins the list. Top-level code has no
 target and therefore cannot draw.
 
@@ -415,3 +416,36 @@ legible at every reference site rather than in a directory listing, and it is
 the whole of what the language decides about code ownership: editing a
 library's files is legal and takes effect, and no language mechanism marks a
 directory as third-party (ADR-0014).
+
+## Allocator
+
+The type a function receives when it is allowed to allocate. A `struct` whose
+fields are non-capturing function pointers — a value, not a language concept, so
+it can be exchanged while the program runs without the boxed existential #11
+forbids. Three operations: allocate, grow, reset. There is **no per-allocation
+free** in the safe layer; release is bulk, which is what makes double-free
+structurally absent rather than merely discouraged. Exhaustion is an ordinary
+fallible return, never a fault — a fixed-capacity pool reaching its cap is a
+design condition, not a defect. Storable: a container captures one at
+construction and keeps it. Distinct from [scratch](#scratch), which is the same
+shape and may not be stored (ADR-0042).
+
+## Scratch
+
+The per-frame arena, and the one allocator a program never stores. **Transient
+and non-escaping** — parameter position only, never in a struct field, never
+returned, never outliving the call — which is the rule `[]T` views already carry
+and the reason a container built on it cannot survive to the next frame. The
+[runner](#runner) supplies it to the [drawing entry](#drawing-entry) and resets it
+at the frame boundary, so nothing in the program owns its lifetime and no
+forgotten reset can leak. Its restriction is on positions, not lifetimes: no
+regions and no borrow checking (ADR-0042).
+
+## Prelude
+
+The core types every program has without asking, and the answer to where
+[`Allocator`](#allocator) and [`Scratch`](#scratch) live. Deliberately **not** a
+sixth [facade](#facade): a facade is a stable front over a tier free to evolve
+beneath it, and there is no tier beneath memory, no backend to delegate to, and
+core conformance is headless — so these must exist where no backend does
+(ADR-0042).

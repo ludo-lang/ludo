@@ -5,6 +5,12 @@ status: accepted
 > **Amended by [ADR-0033](0033-a-stamp-can-go-stale-and-the-companion-count-is-reconciled.md):**
 > §10's delta adds `debug_image` without subtracting `checkerboard` and omits the `Clip`
 > type §5 introduces; both are folded into the reconciled count.
+>
+> **Amended by [ADR-0042](0042-an-allocator-is-a-struct-of-function-pointers-the-runner-owns.md):**
+> the bare `allocator` in the `decode_*` signatures is now a defined type — a struct of
+> function pointers — and the signatures are unchanged by that. `DecodeError` and its
+> siblings gain an `OutOfMemory` variant, because the calls allocate and allocation is
+> fallible.
 
 # Assets are declared, not loaded
 

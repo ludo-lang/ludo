@@ -25,6 +25,11 @@ status: accepted
 > **Amended by [ADR-0036](0036-the-window-opens-maximal-and-belongs-to-the-player.md):**
 > §9 is unchanged and gains the audit that shows nothing needs the window size — every
 > plausible caller has a named call that is the right answer instead.
+>
+> **Amended by [ADR-0042](0042-an-allocator-is-a-struct-of-function-pointers-the-runner-owns.md):**
+> the entry takes a **second** parameter, `scratch: !Scratch` — the per-frame arena. The
+> one rule governing the parameter list is unchanged and gains a member: only the runner
+> can supply memory it resets at a boundary it alone controls.
 
 # The drawing entry takes the screen target, and the canvas is declared once at top level
 
