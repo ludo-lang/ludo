@@ -143,7 +143,12 @@ derivable.
 **Presentation count is not a framebuffer readback.** A black-box conformance test
 cannot observe how many times the swap chain presented — it can observe the image,
 and the image is identical whether the runner presented once or twice. Adding an
-unfalsifiable P14 would be the exact move ADR-0022 declined.
+unfalsifiable fourteenth property would be the exact move ADR-0022 declined.
+
+**The contract's property list therefore ends at P13**, and this ADR deliberately
+does not write the numeral for the property it declines — a bare `P14` in prose is
+indistinguishable, to the grep that audits this corpus for exactly this drift, from
+a property that exists.
 
 The clause still does its job. It bounds §1's cost and makes §1's claim true; it
 does so as a normative statement a backend reviewer reads, not a test a harness
