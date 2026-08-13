@@ -470,7 +470,7 @@ than discovered: a map cannot be keyed by text a player typed. Distinct from a
 
 ## Text buffer
 
-`TextBuf[N]` — a fixed-capacity `struct { bytes: [N]u8, len: usize }` and the
+`TextBuf[N: usize]` — a fixed-capacity `struct { bytes: [N]u8, len: usize }` and the
 home for constructed text. A plain value with no pointer, so it lives in
 `persist` and survives reload like any array. `append` truncates silently and
 returns nothing, so a player holding a key down at capacity sees nothing happen
