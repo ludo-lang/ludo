@@ -91,14 +91,17 @@ agree exactly on issue #19's reload contract.
 
 ### `ludo-lang/spec` — the specification
 
-Today's `adamico/ludo`: the map, the ADRs, `CONTEXT.md`, the research corpus.
-Transferred **and renamed**, since `ludo` goes to the toolchain.
+Today's `adamico/ludo`: the map, the ADRs, `CONTEXT.md`, the spec, the research
+corpus. Transferred **and renamed**, since `ludo` goes to the toolchain.
 
-*Trigger: when the map is complete* — every ticket closed, not merely an empty
-frontier. The transfer churns every in-repo cross-link and a map body of roughly
-130KB of `adamico/ludo` URLs, so it happens once, against a finished document.
-In-repo links get rewritten in a single pass; issue links are left to GitHub's
-redirects.
+*Trigger: when the spec document is complete* — all eight chapters closed under
+ADR-0044 §5's test. This replaces the original trigger, *every ticket closed, not
+merely an empty frontier*, which ADR-0044 §4 left naming nothing: the map no
+longer ends at the absence of open questions, so "every ticket closed" is not an
+event anyone can wait for. The transfer churns every in-repo cross-link and a map
+body of roughly 130KB of `adamico/ludo` URLs, so it happens once, against a
+finished document. In-repo links get rewritten in a single pass; issue links are
+left to GitHub's redirects.
 
 ### `ludo-lang/stdlib` — the `$.` root
 

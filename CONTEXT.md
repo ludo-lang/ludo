@@ -484,3 +484,26 @@ used for `Eq`/`Hash`/`Clone`. Holes are `{}` only, over a closed list of
 primitives; the math types are excluded because `Vec2` has no single obvious text
 form. Overflow truncates at a scalar boundary, so the destination is always valid
 UTF-8 (ADR-0043).
+
+## Fog
+
+A named area of the language nobody has decided yet — enumerated in issue #1's
+*Not yet specified* section, and therefore **finite and countable**. Fog shrinks
+monotonically: closing a ticket removes an entry and adds none.
+
+Process vocabulary rather than language vocabulary, and kept here because it was
+being used for two different things (ADR-0044 §2). Distinct from a [hole](#hole),
+which is what people usually mean when they say the fog is growing.
+
+## Hole
+
+A contradiction or a gap surfaced by writing something concrete — a spec chapter,
+a piece of research, a ludo program. **Generated rather than enumerated, and
+unbounded by construction**: any corpus large enough to cite itself has more of
+them than anyone has looked for.
+
+A hole is not evidence about [fog](#fog). Most holes found so far were
+transcription defects rather than undecided design — three clauses cited by
+multiple ADRs and never authored (ADR-0044 §3). A hole is therefore repaired in
+the spec text directly, and earns an ADR only where it reverses a decision
+(ADR-0044 §6).
