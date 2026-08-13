@@ -43,7 +43,38 @@ program, and it makes *what does the screen look like* a runtime question in a
 language whose whole agent story is that such questions have answers you can read
 off the spec.
 
-## 2. What the reversal costs, stated in full
+## 2. Why 1280×720 and not 1920×1080
+
+1920×1080 is the dominant desktop resolution — roughly half of Steam's surveyed
+population — so fixing the grid there is the obvious candidate and is rejected on
+three grounds.
+
+**The canvas is not a resolution, so matching the display buys no sharpness.**
+ADR-0030 §3 made it a coordinate mapping rather than an intermediate framebuffer:
+everything rasterises at native device resolution regardless, so shapes, strokes
+and text are as sharp as the panel allows whatever the grid is. Only
+fixed-resolution art assets are limited, and that is a property of the sprite.
+The intuition that a 720p grid means a 720p picture is simply false here, and it
+is the main reason 1080p looks attractive.
+
+**A 1080p grid downscales in the configuration the spec mandates.** ADR-0025 §7
+guarantees every ludo game's first launch is **windowed**, and a window on a 1080p
+display is never 1080p — titlebar and taskbar take their cut. So a 1920×1080 grid
+yields `k < 1` on the most common panel: downscaling, the one direction that
+destroys information, in the default case. A 1280×720 grid upscales to `k = 1.5`
+there instead.
+
+**720p divides cleanly into the pixel-art canvases people actually use.**
+1280×720 halves to 640×360 and again to **320×180**, so §3's authored-scaled
+workflow lands on round multiples — 4× or 2× art in the grid. 1920×1080 quarters
+to 480×270, which is nobody's canvas.
+
+Recorded as the argument on the other side: at 1080p **fullscreen**, a 1920×1080
+grid gives `k = 1` exactly. ADR-0025 §7 guarantees the first launch is not
+fullscreen, and the map's ordering says *k = 1 is not a state to engineer
+toward*, so this does not carry the decision.
+
+## 3. What the reversal costs, stated in full
 
 **A non-16:9 game letterboxes itself inside the grid.** A 1:1 puzzler draws a
 720×720 play area centred in 1280×720 and owns the two side regions; a vertical
@@ -67,7 +98,7 @@ sharp edge of the trade and it is not softened here. The bet is that the ceremon
 and library costs of a per-program canvas outweigh the flexibility, which is the
 bet DragonRuby has been running in production for years.
 
-## 3. What survives unchanged
+## 4. What survives unchanged
 
 **ADR-0030 and ADR-0031's fit, entirely.** `k = min(w/W, h/H)` becomes
 `k = min(w/1280, h/720)` — the same uniform scale plus centring translation,
@@ -84,7 +115,7 @@ what to assert.
 **ADR-0013 §9** — *the real window size is not exposed* — is untouched and better
 motivated. ADR-0011's pointer reporting in logical space is untouched.
 
-## 4. `set_canvas` shrinks to the style token
+## 5. `set_canvas` shrinks to the style token
 
 The size is gone, but `style` still needs a declaration site and still must be
 immutable for the process's life — ADR-0013 §5's argument for that (a token that
@@ -102,7 +133,7 @@ token is a property *of* the canvas, ADR-0007's verb-first rule wants a verb tha
 says what it acts on, and a rename spends churn across every example in the
 corpus for a shade of accuracy.
 
-## 5. One constant ships
+## 6. One constant ships
 
 `$.graphics.canvas_size: Vec2`, so that no program types `1280`. A `Vec2` rather
 than two scalars because [ADR-0016](0016-the-blessed-math-set-concrete-types-scalar-quantities-no-simd-mandate.md)
@@ -114,7 +145,7 @@ const-eval floor folds it at compile time. It never engages
 admission test, which governs reads of *backend* state; this reads a number
 written in the spec and leaks zero bits about the player's hardware.
 
-## 6. Against issue #24: net negative
+## 7. Against issue #24: net negative
 
 - **`CanvasDesc` type: removed** (−1).
 - **`$.graphics.canvas_size` constant: added** (+1).
@@ -125,7 +156,7 @@ learn and a constant is not. A reversal this size paying nothing is worth
 recording: the budget counts surface, and this decision removes surface while
 removing a decision the programmer had to make.
 
-## 7. How it fares on the three lenses
+## 8. How it fares on the three lenses
 
 - **Simplicity.** The strongest result in the corpus so far. The zero-ceremony
   program is now literally zero — no canvas line, no size to choose before writing
@@ -144,7 +175,7 @@ removing a decision the programmer had to make.
   naming-failure finding keeps pointing at: give the agent facts it cannot get
   wrong rather than values it must go and find.
 
-## 8. The priority ordering
+## 9. The priority ordering
 
 Neutral. The canvas is a coordinate space, not a rendering path; nothing here
 changes throughput or frame pacing, and ADR-0031's demotion of pixel fidelity is
