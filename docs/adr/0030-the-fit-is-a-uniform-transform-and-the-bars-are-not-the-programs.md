@@ -11,6 +11,12 @@ status: accepted
 > **Amended by [ADR-0032](0032-the-canvas-is-fixed-at-1280x720.md):** unchanged in
 > substance — the canvas is fixed at 1280×720, so `W` and `H` in the fit formula are now
 > constants rather than the program's declaration.
+>
+> **Amended by [ADR-0034](0034-the-byte-exact-blit-is-withdrawn-and-the-texel-rule-replaces-it.md):**
+> §7's deferral is **discharged** — the byte-exact blit and ADR-0022 §4's copy-not-quad
+> condition are **withdrawn**, on §7's three grounds plus two more. §3's coordinate-mapping
+> finding turned out to be the strongest of them: composed with ADR-0031's real `k` and
+> ADR-0032's fixed canvas, the clause was reachable only at a window of exactly 1280×720.
 
 # The fit is a uniform transform, and the bars are not the program's
 

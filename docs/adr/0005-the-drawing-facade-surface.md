@@ -39,6 +39,13 @@ status: accepted
 > **caller-declared logical canvas is overturned** — the canvas is a language constant of
 > 1280×720. This ADR's 16:9 objection is accepted as a cost rather than rebutted; what
 > changed is that a declared canvas leaves libraries unable to learn the screen size.
+>
+> **Amended by [ADR-0034](0034-the-byte-exact-blit-is-withdrawn-and-the-texel-rule-replaces-it.md):**
+> the **byte-exact blit is withdrawn** — the sprite section's normative paragraph is deleted,
+> so the ADR-0010 stamp above is superseded along with the clause it restated. The trailing
+> citation of an "explicit texel-centre and tie-break convention" is deleted too: **no such
+> convention was ever written**, and ADR-0022 §2 plus ADR-0034 §3 cover the fractional and
+> rotated cases as implementation-defined.
 
 # The drawing facade's surface: top-left Y-down, straight alpha, and a target that carries the frame
 
@@ -157,13 +164,12 @@ both — `anchor_x`/`anchor_y` and `angle_anchor_x`/`angle_anchor_y` — which i
 evidence that one was not enough in practice. Normalized rather than pixel units,
 so an anchor survives a change of art size.
 
-**The byte-exact blit is normative in its own right:** a sprite drawn at integer
-logical coordinates, unrotated, under an identity or integer-translation
-transform, on a `crisp` target, is a byte-for-byte blit. This is the property
-pixel-art work actually depends on and the one people file bugs about, so it is
-a sentence in the spec rather than an emergent consequence of a rounding rule.
-Fractional and rotated cases get the explicit texel-centre and tie-break
-convention.
+*(**Deleted by [ADR-0034](0034-the-byte-exact-blit-is-withdrawn-and-the-texel-rule-replaces-it.md).**
+A paragraph here made the byte-exact blit normative in its own right, and closed by
+citing an "explicit texel-centre and tie-break convention" for the fractional and
+rotated cases. The blit is withdrawn on ADR-0034 §1's five grounds; the convention
+it cited **was never written anywhere in the corpus** — ADR-0034 §4. Exactness now
+rests entirely on ADR-0022 §2 and its texel-selection sentence.)*
 
 ## Text
 

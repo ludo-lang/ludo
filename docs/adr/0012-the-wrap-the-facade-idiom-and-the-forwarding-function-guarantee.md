@@ -6,6 +6,13 @@ status: accepted
 > the forwarding-function guarantee is one of **two** constraints on how an implementation
 > compiles, not one — ADR-0022 §4's copy-not-quad blit condition is the second, and is
 > pending [#69](https://github.com/adamico/ludo/issues/69).
+>
+> **Amended by [ADR-0034](0034-the-byte-exact-blit-is-withdrawn-and-the-texel-rule-replaces-it.md):**
+> the contingency in the stamp above is **discharged** — ADR-0022 §4 is deleted, so the
+> forwarding-function guarantee is again the spec's **one** constraint on how an
+> implementation compiles. The stamp above stands as written rather than being reverted:
+> §1's *"the spec owes exactly one normative thing"* is stronger for recording that a
+> second constraint was proposed, shipped and withdrawn.
 
 # The wrap-the-facade idiom, and the forwarding-function guarantee that makes it free
 

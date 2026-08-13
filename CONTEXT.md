@@ -252,9 +252,9 @@ permitted and unconstrained; this project publishes none.
 A function whose body is a single call expression, with no captures. A
 structural predicate, not a judgement about optimisation quality. A conforming
 implementation must not emit a call to one — the guarantee that makes the
-wrapper idiom free (ADR-0012). One of **two** bounded constraints the spec places
-on how an implementation compiles, the other being ADR-0022 §4's copy-not-quad
-blit condition, which is pending issue #69 (ADR-0030, ADR-0033).
+wrapper idiom free (ADR-0012). The **one** bounded constraint the spec places on
+how an implementation compiles: ADR-0022 §4's copy-not-quad blit condition was
+briefly a second, and ADR-0034 deleted it with the clause it served.
 
 ## Host language
 

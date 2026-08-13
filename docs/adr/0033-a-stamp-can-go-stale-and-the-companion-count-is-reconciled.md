@@ -2,6 +2,15 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0034](0034-the-byte-exact-blit-is-withdrawn-and-the-texel-rule-replaces-it.md):**
+> §6's pending stamp on ADR-0012 is **discharged** — the copy-not-quad condition is
+> withdrawn, so the forwarding-function guarantee is the spec's **one** compilation
+> constraint again — and §10's *deliberately unfixed* listing of the byte-exact blit is
+> closed. §2's rule that a stamp is itself amendable content is the mechanism ADR-0034 §5
+> follows, appending rather than reverting. ADR-0034 §4 finds a **third phantom clause** —
+> the texel-centre and tie-break convention, cited by three ADRs and never written — which
+> is this ADR's failure mode in its purest form.
+
 # A stamp can go stale, and the companion count is reconciled
 
 A full read of `CONTEXT.md` against all thirty-two ADRs found seven live

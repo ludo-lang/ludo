@@ -16,6 +16,12 @@ status: accepted
 >
 > **Amended by [ADR-0033](0033-a-stamp-can-go-stale-and-the-companion-count-is-reconciled.md):**
 > the sixth further name is **`debug_image`**, not `checkerboard`.
+>
+> **Amended by [ADR-0034](0034-the-byte-exact-blit-is-withdrawn-and-the-texel-rule-replaces-it.md):**
+> the `stretch`-paint blit restatement is **deleted in full**, so the ADR-0022 and ADR-0030
+> stamps above are discharged — the clause has no fate left to decide. Its citation of
+> ADR-0005's texel-centre and tie-break convention goes with it: that convention was never
+> written. `fill_sprite` and `stroke_sprite` are otherwise untouched.
 
 # `Paint` and the two-verb drawing facade: `fill_` and `stroke_`, and `draw_` deleted
 
@@ -279,26 +285,26 @@ mandate `fill_sprite`.
 
 ## The byte-exact blit, restated and strengthened
 
-ADR-0005 made it normative that a sprite drawn at integer logical coordinates,
-unrotated, under an identity or integer-translation transform, on a `crisp` target,
-is a byte-for-byte blit. "Sprite draw" is now a *default paint value* rather than a
-distinct call, so the clause is restated against the paint:
+> **Deleted by [ADR-0034](0034-the-byte-exact-blit-is-withdrawn-and-the-texel-rule-replaces-it.md).**
 
-> **A `stretch` texture paint whose source extent equals its destination extent in
-> device pixels, at integer logical coordinates, unrotated, under an identity or
-> integer-translation transform, on a `crisp` target, is a byte-for-byte blit.**
+This section restated ADR-0005's byte-exact blit against the paint rather than the
+sprite — *a `stretch` texture paint whose source extent equals its destination
+extent in device pixels, at integer logical coordinates, unrotated, under an
+identity or integer-translation transform, on a `crisp` target, is a byte-for-byte
+blit* — and called the restatement stronger and free.
 
-This is the **stronger** statement, and it costs nothing: the conditions doing the
-work in ADR-0005 were 1:1 extent, integer coordinates and `crisp` — "sprite" was
-never the operative term. Attaching the guarantee to `fill_sprite` alone would
-create a trap, where moving a draw from `fill_sprite` to `fill_rect` with an
-identical paint silently loses a guarantee for no stated reason. Under the restated
-clause the two are the same picture with the same promise.
+The restatement was sound as a *generalisation*; what it generalised was not true.
+ADR-0034 §1 withdraws the clause on five grounds, of which the one this section
+should have caught is that **it states no blend condition**, while ADR-0009 gives
+every descriptor `blend: Blend` defaulting to `alpha` — so the sentence promises a
+byte-for-byte blit for a semi-transparent texture over a non-black background.
+ADR-0022 §4 had already withdrawn this section's colour-paint claim (the hit flash)
+for riding the rasterised path, and missed that alpha blending disqualifies the
+untinted case identically.
 
-`fill_sprite` with a **colour** paint on a `crisp` target is byte-exact too, on
-ADR-0009's already-recorded analysis: no threshold, one shader constant. The
-fractional and rotated cases keep ADR-0005's texel-centre and tie-break convention
-unchanged.
+The section's closing citation of ADR-0005's *texel-centre and tie-break convention*
+is deleted as well: ADR-0034 §4 found that convention was never written in the
+first place — this section preserved a rule that did not exist.
 
 ## How it fares on the three lenses
 

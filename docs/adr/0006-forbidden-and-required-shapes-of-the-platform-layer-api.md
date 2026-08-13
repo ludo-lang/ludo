@@ -212,7 +212,11 @@ Three arguments settle it, and all three are ADR-0004's and ADR-0005's own:
 - **Specifiability.** ADR-0004 mandated circles because *specifying a shape is
   not specifying how it is built*. A square wave at frequency `f` is analytically
   statable in the same way, and sample-exact — a cleaner conformance target than
-  a rotated sprite, which needed a texel-centre tie-break rule.
+  a rotated sprite, which needed a texel-centre tie-break rule. *(**Corrected by
+  [ADR-0034](0034-the-byte-exact-blit-is-withdrawn-and-the-texel-rule-replaces-it.md)
+  §4:** no such rule was ever written. The contrast holds — and holds harder, since
+  the rotated sprite's boundary case is now explicitly implementation-defined rather
+  than governed by a convention this line assumed existed.)*
 - **Cost.** ADR-0004 already mandates **text**, forcing a font rasterizer and
   naming the default font by content hash. An oscillator set with envelopes is
   dramatically less code. Cost cannot be why audio got one call; the honest

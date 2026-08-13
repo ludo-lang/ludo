@@ -2,6 +2,14 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0034](0034-the-byte-exact-blit-is-withdrawn-and-the-texel-rule-replaces-it.md):**
+> **§4 is deleted in full** — the byte-exact blit and its copy-not-quad condition — on the
+> finding that §4's *no blending* premise is not expressible in the facade, so the reasoning
+> §4 used to withdraw the tinted hit flash disqualifies the untinted case too. §2 gains a
+> **texel-selection sentence**, becoming the corpus's whole statement of graphics exactness
+> on both the coverage and the sampling axis. §0's rule is what decides it, applied to §4
+> for the first time.
+
 # The spec promises only what is derivable, and says so where it cannot
 
 Issue #58 inherited four falsified graphics clauses from [issue
@@ -105,6 +113,21 @@ The replacement:
 > that all transform arithmetic be exactly representable in `f32`; identity and
 > integer translation satisfy this, arbitrary scale and rotation do not.
 
+**Added by [ADR-0034](0034-the-byte-exact-blit-is-withdrawn-and-the-texel-rule-replaces-it.md)
+§3.** The rule above governs *geometry coverage* — which pixels a shape covers — and
+said nothing about which source texel is read. With §4 withdrawn and ADR-0033 §3
+having deleted ADR-0004's bit-exactness bullet, this section is the corpus's sole
+statement of graphics exactness, so the sampling axis is stated here in the same
+shape:
+
+> Under `crisp`'s nearest sampling, where a sample point lies strictly inside a
+> texel, that texel is selected. Where a sample point lies on a texel boundary,
+> selection is **implementation-defined**.
+
+This promises *which texel*, never *what byte*: without §4's copy, WebGPU §23.2.7's
+store rounding is live, and §0 forbids promising through it. Selection is a function
+of coordinates alone and survives.
+
 The ordinary pixel-art program stays fully conformance-testable. The spec stops
 promising an exactness no backend delivers for a rotated ellipse.
 
@@ -136,37 +159,34 @@ for that inversion to be well conditioned.
 
 ## 4. The byte-exact blit holds, with its condition stated — and the tint's does not
 
-This is the one clause that survives, and #56's reasoning for why is exactly the
-reasoning for why §2's general claim does not. At `sampleCount: 1` with `nearest`
-filtering (both WebGPU defaults), no blending, an integer-aligned quad and an
-identity or integer-translation transform: every arithmetic input is exactly
-representable in `f32`, so the unspecified rounding mode and permitted
-reassociation are inert; the quad's edges lie on integer framebuffer coordinates
-while pixel centres sit at `fract(C) = (0.5, 0.5)`, so no pixel centre lies on an
-edge and the undefined tie is never reached; at count 1 the sample position is
-normatively `(0.5, 0.5)`; and nearest sampling at exact texel centres never
-reaches the unspecified texel-boundary tie.
+> **Deleted by [ADR-0034](0034-the-byte-exact-blit-is-withdrawn-and-the-texel-rule-replaces-it.md).**
+> Both halves go: the guarantee and the copy-not-quad implementation condition.
 
-One residual gap remains — WebGPU §23.2.7's implementation-defined float-to-unorm
-store — and it vanishes only if the blit is a copy rather than a draw. So the
-condition is stated rather than left to be rediscovered:
+This section kept the byte-exact blit as *"the one clause that survives"*, derived
+it at `sampleCount: 1` with nearest filtering, **no blending**, an integer-aligned
+quad and an identity or integer-translation transform, and then closed the residual
+WebGPU §23.2.7 float-to-unorm store gap by requiring backends to implement the case
+as a **texture-to-texture copy, not a rasterised quad**. It withdrew ADR-0010's
+colour-paint claim (the hit flash) for riding the rasterised path.
 
-> Backends must implement this case as a **texture-to-texture copy**, not as a
-> rasterised quad. A rasterised quad is permitted only where the backend
-> additionally pins float-to-normalised store rounding, which WebGPU §23.2.7
-> leaves implementation-defined.
+The derivation was correct and its premise was not available. **No blending is not
+expressible in this facade**: ADR-0009 gives every descriptor `blend: Blend`
+defaulting to `alpha`, over a closed enum with no `none` or `opaque` mode. Every
+expressible draw is blended and inherits §23.2.7 — so the reasoning that withdrew
+the tint withdraws the untinted case identically, and this section applied it to
+one and not the other. ADR-0034 §1 records that ground with four others, including
+that the clause states no blend condition at all and is therefore arithmetically
+false for any source with alpha < 1, and that ADR-0030 §3 plus ADR-0032 leave its
+1:1-device-extent precondition reachable only at a window of exactly 1280×720.
 
-ADR-0010's restatement in paint vocabulary — a `stretch` texture paint at 1:1
-device extent, integer coordinates, unrotated, `crisp` — is unaffected and
-remains the spelling of this guarantee.
+The copy-not-quad condition existed solely to close §23.2.7 for this clause, so it
+is deleted rather than narrowed to `k = 1`: it would otherwise be a second
+constraint on how an implementation compiles, kept alive for one window size.
+**ADR-0012's "exactly one" is restored.**
 
-**What is withdrawn:** ADR-0010 also claims byte-exactness for `fill_sprite` with
-a **colour** paint — the hit flash. A tinted sprite multiplies in a shader and
-therefore cannot be a texture-to-texture copy; it rides the rasterised path and
-inherits §23.2.7. **That claim is withdrawn.** The hit flash still works on every
-backend and remains a mandated call; it is no longer promised byte-identical
-across them. Neither ADR-0005 nor ADR-0010 currently distinguishes the copyable
-case from the drawn one, and this is the distinction.
+What survives from this section is §2, which gains ADR-0034 §3's texel-selection
+sentence — the half of the derivation above that does not depend on the draw being
+a copy. The hit flash's withdrawal stands and is unaffected.
 
 ## 5. Two riders
 
@@ -196,11 +216,13 @@ counts surface and this ADR changed only what the surface promises.
   (§1); the backend floor is added and WebGL1 excluded.
 - **ADR-0005** — the `crisp` bit-exactness sentence is **deleted** and replaced
   (§2); the coverage tolerance is **deleted** with no numeric replacement (§3);
-  the blit's implementation condition is added (§4); `copyExternalImageToTexture`
-  is named as forbidden (§5).
+  the blit's implementation condition is added (§4 — *itself deleted by ADR-0034,
+  along with ADR-0005's blit paragraph*); `copyExternalImageToTexture` is named as
+  forbidden (§5).
 - **ADR-0007** — reload is defined (§5).
 - **ADR-0010** — the `stretch`-paint blit restatement stands; the **colour-paint
-  hit flash's byte-exactness is withdrawn** (§4).
+  hit flash's byte-exactness is withdrawn** (§4). *(ADR-0034 deletes the
+  restatement too; only the hit flash's withdrawal survives from this line.)*
 - **ADR-0009** — unchanged. `get_pixels` keeps its published signature.
 
 ## How it fares on the three lenses
