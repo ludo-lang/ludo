@@ -25,6 +25,11 @@ status: accepted
 > **optional, player-invoked** target sized to `s · k`, a fraction of *device* resolution.
 > At `s = 1` an implementation MUST NOT require one, so §3's chosen path is still the
 > default path.
+>
+> **Amended by [ADR-0039](0039-stretch-to-fill-is-refused-and-no-player-exception-is-added.md):**
+> §9's rejection of the ADR-0025-mould **player preference** is confirmed and supplied with
+> the argument it lacked — every ground §9 states addresses the `fit:` field, not a player,
+> which is why ADR-0031 §4 read it as still open. The `fit:` holding is untouched.
 
 # The fit is a uniform transform, and the bars are not the program's
 

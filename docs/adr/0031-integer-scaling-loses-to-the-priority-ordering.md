@@ -13,6 +13,12 @@ status: accepted
 > answer satisfies it. Stability decides it: the resample from `s · k` to `k` is **linear on
 > both tokens**, because nearest at a non-integer ratio shimmers in motion, which is the
 > same argument §2 used to delete integer scaling. Content sampling is untouched.
+>
+> **Amended by [ADR-0039](0039-stretch-to-fill-is-refused-and-no-player-exception-is-added.md):**
+> §4's *recorded as open, and deliberately not decided here* is **closed** — stretch as a
+> player preference is **refused**, along with a zoom-and-crop variant §4 never named. §4's
+> three passing tests all hold; what refuses it is §4's own similarity-transform grounding,
+> which §4 stated and did not apply to the player case.
 
 # Integer scaling loses to the priority ordering, and the fit is one formula
 
