@@ -2,6 +2,13 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0038](0038-the-escape-hatch-is-a-player-set-render-scale.md):** §8's
+> hand-off is **discharged in full**. The fill-rate motive that survived the resolution
+> row's death ships as a **player-set render scale** `s ∈ [0.25, 1.0]`, rasterising at
+> `s · k` and resampling up to `k`. §4's clamp-never-reset precedent governs out-of-range
+> input; §7's finding that `get_pixels` takes an `Image` and never the screen is what makes
+> the scale unobservable by readback.
+
 # The window opens maximal, and belongs to the player
 
 [ADR-0025](0025-fullscreen-is-a-player-preference-the-program-can-read-and-set.md)

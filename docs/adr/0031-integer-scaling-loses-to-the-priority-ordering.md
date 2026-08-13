@@ -6,6 +6,13 @@ status: accepted
 > §2's deletion of the too-small-window case is restated as a positive clause — no floor, no
 > minimum window, no refusal to launch — and the cost §3 leaves implicit is named: at `k < 1`
 > a `crisp` target drops texels rather than blurring them.
+>
+> **Amended by [ADR-0038](0038-the-escape-hatch-is-a-player-set-render-scale.md):** §3's
+> rule that a style token may not mean different things on different monitors is
+> **satisfied by, and does not decide,** the render scale's upscale filter — any fixed
+> answer satisfies it. Stability decides it: the resample from `s · k` to `k` is **linear on
+> both tokens**, because nearest at a non-integer ratio shimmers in motion, which is the
+> same argument §2 used to delete integer scaling. Content sampling is untouched.
 
 # Integer scaling loses to the priority ordering, and the fit is one formula
 

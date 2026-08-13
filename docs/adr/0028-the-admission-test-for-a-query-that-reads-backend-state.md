@@ -6,6 +6,14 @@ status: accepted
 > corrected, not its conclusion — the logical canvas is no longer *caller-declared* but fixed
 > at 1280×720, which makes §8's argument that the canvas (not the admission test) is what
 > keeps a game's world hardware-independent stronger rather than weaker.
+>
+> **Amended by [ADR-0038](0038-the-escape-hatch-is-a-player-set-render-scale.md):** §6's
+> corpus table gains a **row** — the render-scale getter, admitted at limbs one and two: a
+> player preference returning a unitless ratio, zero hardware magnitude, never reaching
+> necessity. §6's refusals of display size and DPI are **reaffirmed against the new
+> `$.video` root**, which ADR-0038 §10 states is not a precedent for them. §5's invariance
+> clause decided the value's shape: the scale is quantised to a spec-fixed grid precisely so
+> two conforming implementations cannot disagree about what `set(0.3)` stored.
 
 # The admission test: reformulate, guard the return, then require necessity
 

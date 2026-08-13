@@ -15,6 +15,13 @@ status: accepted
 > *deliberately unfixed* item — ADR-0022 §1's WebGL2 mention — is **discharged**. §10 read
 > the sentence correctly and could not fix it, because the fix needed a decision about the
 > admissible set and there was no set; ADR-0037 §1 supplies that absence as the decision.
+>
+> **Amended by [ADR-0038](0038-the-escape-hatch-is-a-player-set-render-scale.md):** §9's
+> *Pending, and deliberately not counted* item is **discharged** — the fullscreen getter and
+> setter are spelled under a new `$.video` root and enter the companion count. The table
+> gains a fifth spelled module, `$.video` (4 functions, 0 types, 0 values). §9's second
+> paragraph, that the root's own contents are enumerated nowhere, is **unaffected and still
+> open**; ADR-0038 §10 cites it as the reason bare root names were rejected.
 
 # A stamp can go stale, and the companion count is reconciled
 

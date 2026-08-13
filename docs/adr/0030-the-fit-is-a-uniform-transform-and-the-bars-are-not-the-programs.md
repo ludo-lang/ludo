@@ -17,6 +17,14 @@ status: accepted
 > condition are **withdrawn**, on §7's three grounds plus two more. §3's coordinate-mapping
 > finding turned out to be the strongest of them: composed with ADR-0031's real `k` and
 > ADR-0032's fixed canvas, the clause was reachable only at a window of exactly 1280×720.
+>
+> **Amended by [ADR-0038](0038-the-escape-hatch-is-a-player-set-render-scale.md):** §3's
+> rejection of the intermediate framebuffer is **scoped, not overturned**. It holds for a
+> target that is mandatory, permanent and sized to the *canvas* — the thing that would cap
+> text and `smooth` content at canvas density for everyone. It does not reach an
+> **optional, player-invoked** target sized to `s · k`, a fraction of *device* resolution.
+> At `s = 1` an implementation MUST NOT require one, so §3's chosen path is still the
+> default path.
 
 # The fit is a uniform transform, and the bars are not the program's
 

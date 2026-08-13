@@ -23,6 +23,14 @@ status: accepted
 > display's work area, persisted across relaunch; §2's resize permission gains an explicit
 > no-aspect-constraint clause; §3's two-mutator pattern applies to window size with the
 > program excluded.
+>
+> **Amended by [ADR-0038](0038-the-escape-hatch-is-a-player-set-render-scale.md):** the
+> Budget section's **conditional module name is resolved** and the fullscreen pair is
+> **spelled** — `$.video.fullscreen` / `$.video.set_fullscreen`. The suggested `$.window`
+> root is **rejected**, because under ADR-0030, ADR-0032 and ADR-0036 §7 a *window* is a
+> noun the spec keeps out of the program's vocabulary and the root would make
+> `$.window.size()` an agent's natural next reach. §3's two-mutator rule and §6's relaunch
+> persistence now govern a **second** preference, the render scale.
 
 # Fullscreen is a player preference the program can read and set
 

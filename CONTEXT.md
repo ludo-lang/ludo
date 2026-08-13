@@ -31,11 +31,18 @@ A mandated area of the reserved `$.` root: one module, a fixed set of calls, a
 surface frozen by criterion 4. *Facade* is the operative word — it is a stable
 front over a tier that is free to evolve beneath it.
 
-There are four, each its own area with its own module and its own ADR:
-`$.graphics` (ADR-0009, ADR-0010), `$.audio` (ADR-0007), `$.input` (ADR-0011)
-and `$.storage` (ADR-0026). A fullscreen pair is mandated but unspelled
-(ADR-0025). They share ADR-0007's six naming rules and nothing else; input in
-particular shares only a backend with drawing.
+There are five, each its own area with its own module and its own ADR:
+`$.graphics` (ADR-0009, ADR-0010), `$.audio` (ADR-0007), `$.input` (ADR-0011),
+`$.storage` (ADR-0026) and `$.video` (ADR-0038). They share ADR-0007's six
+naming rules and nothing else; input in particular shares only a backend with
+drawing.
+
+`$.video` is the odd one: it holds no operations, only the two **player
+preferences** the runner owns and the program may read and set — fullscreen
+(ADR-0025) and the [render scale](#render-scale). It is named after the settings
+menu players already know, and that familiarity is a stated cost — `$.video` is
+**not** a precedent for `resolution()`, `size()` or `dpi()`, which stay refused
+on ADR-0028 §6's grounds.
 
 ## Drawing facade
 
@@ -118,7 +125,26 @@ preserved and no implementation may stretch to fill**, because a similarity
 transform is what keeps the world the same shape on every machine. `k` is
 `min(w/W, h/H)`, with **no `style` branch and no integer-scaling rule** — that
 was deleted as a fidelity guarantee costing a third of the screen at 1080p. There
-is no program-facing knob; the fit is spec-fixed (ADR-0030, ADR-0031).
+is no program-facing knob; the fit is spec-fixed (ADR-0030, ADR-0031). The
+[render scale](#render-scale) is not part of the fit and does not change `k`.
+
+## Render scale
+
+A player preference `s ∈ [0.25, 1.0]`, quantised to sixteenths, that rasterises
+the frame at `s · k` and resamples it up to `k` for presentation — the spec's
+**only performance escape hatch**, for the player or the program (ADR-0038).
+
+Down only: `s > 1` is supersampling, a fidelity feature costing throughput, and
+loses to the map's standing ordering. At `s = 1`, the default, an implementation
+**MUST NOT** require an intermediate render target; below 1 it **MAY** use one.
+The resample is **linear on both style tokens** — nearest at a non-integer ratio
+shimmers in motion — which is a distinct step from how draws sample textures,
+where [style](#style) still governs.
+
+Not the [fit](#fit) and not a resolution: it changes how many device pixels are
+shaded, never the world a program draws, never the coordinate mapping, and never
+where a pointer reports (ADR-0030 §4). Runner-owned and surviving relaunch, with
+who set it not recorded.
 
 ## Letterbox bars
 
