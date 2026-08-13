@@ -29,6 +29,11 @@ status: accepted
 > the letterbox rationale bullet is promoted to a normative clause stated as arithmetic; the
 > logical canvas is fixed as a coordinate mapping rather than an intermediate framebuffer;
 > content is clipped to the canvas rect and the bars are opaque black.
+>
+> **Amended by [ADR-0031](0031-integer-scaling-loses-to-the-priority-ordering.md):** the
+> `style` token gains an explicit statement that `crisp` is nearest sampling at **every**
+> scale, not only integer ones — its meaning may not depend on a window size the program
+> cannot see.
 
 # The drawing facade's surface: top-left Y-down, straight alpha, and a target that carries the frame
 

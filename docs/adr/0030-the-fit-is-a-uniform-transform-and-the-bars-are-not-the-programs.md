@@ -2,6 +2,12 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0031](0031-integer-scaling-loses-to-the-priority-ordering.md):** §5's
+> integer scaling on `crisp` targets is **deleted** under the map's *performance and frame
+> stability above rendering fidelity* ordering — it cost a third of the screen at 1080p — and
+> §4's formula loses its `style` branch, its floor and its too-small-window case. §3, §6, §7
+> and §9 stand; P13 is restated.
+
 # The fit is a uniform transform, and the bars are not the program's
 
 Issue #67 asked whether the letterbox guarantee ships as a normative clause. It

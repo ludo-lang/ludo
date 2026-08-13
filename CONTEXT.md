@@ -62,7 +62,9 @@ siblings for drawing.
 The one aesthetic token a [draw target](#draw-target) carries: `crisp` (no
 anti-aliasing, nearest sampling) or `smooth` (anti-aliasing, linear sampling).
 One token rather than separate anti-aliasing and sampling settings, so a frame
-cannot mix the two aesthetics incoherently.
+cannot mix the two aesthetics incoherently. **`crisp` is nearest sampling at
+every scale**, including fractional ones — its meaning never depends on the
+window size, which the program cannot see (ADR-0031).
 
 ## Logical canvas
 
@@ -80,10 +82,11 @@ device resolution (ADR-0030).
 
 The mapping from the [logical canvas](#logical-canvas) to the window: a uniform
 scale `k` plus a centring translation, and nothing else — **aspect ratio is
-preserved and no implementation may stretch to fill**. `k` is `min(w/W, h/H)` on
-a `smooth` target and `max(1, floor(...))` on a `crisp` one, where integer
-scaling avoids uneven pixel sizes. There is no program-facing knob; the fit is
-spec-fixed (ADR-0030).
+preserved and no implementation may stretch to fill**, because a similarity
+transform is what keeps the world the same shape on every machine. `k` is
+`min(w/W, h/H)`, with **no `style` branch and no integer-scaling rule** — that
+was deleted as a fidelity guarantee costing a third of the screen at 1080p. There
+is no program-facing knob; the fit is spec-fixed (ADR-0030, ADR-0031).
 
 ## Letterbox bars
 
