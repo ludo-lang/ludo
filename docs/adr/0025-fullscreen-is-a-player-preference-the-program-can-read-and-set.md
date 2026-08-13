@@ -31,6 +31,14 @@ status: accepted
 > noun the spec keeps out of the program's vocabulary and the root would make
 > `$.window.size()` an agent's natural next reach. §3's two-mutator rule and §6's relaunch
 > persistence now govern a **second** preference, the render scale.
+>
+> **Amended by [ADR-0040](0040-the-runner-reopens-on-the-last-display-and-names-none.md):**
+> §3's two-mutator rule is **pattern, not law** — it does not carry to the display choice,
+> which the program cannot see and which has exactly one mutator, the platform's own window
+> drag. No new runner MUST is minted, on the rule that a **MUST is earned by the failure it
+> prevents**: §7's windowed first launch guarantees the drag affordance already exists.
+> §6's relaunch persistence governs a **third** piece of runner-owned state, stated with no
+> ordinal.
 
 # Fullscreen is a player preference the program can read and set
 

@@ -14,6 +14,11 @@ status: accepted
 > `$.video` root**, which ADR-0038 §10 states is not a precedent for them. §5's invariance
 > clause decided the value's shape: the scale is quantised to a spec-fixed grid precisely so
 > two conforming implementations cannot disagree about what `set(0.3)` stored.
+>
+> **Amended by [ADR-0040](0040-the-runner-reopens-on-the-last-display-and-names-none.md):**
+> §7's hand-off is **discharged by declining to exercise it** — display count stays
+> admitted and no program-facing shape ships, so the test is never run; §3's return guard
+> is what kills all three candidate shapes, each dragging a count behind it.
 
 # The admission test: reformulate, guard the return, then require necessity
 

@@ -8,6 +8,12 @@ status: accepted
 > `s · k` and resampling up to `k`. §4's clamp-never-reset precedent governs out-of-range
 > input; §7's finding that `get_pixels` takes an `Image` and never the screen is what makes
 > the scale unobservable by readback.
+>
+> **Amended by [ADR-0040](0040-the-runner-reopens-on-the-last-display-and-names-none.md):**
+> §4's *position is not persisted* is **split** — position within a display stays
+> unpersisted on §4's own reasoning, but **which display is now persisted**, because
+> reopening on the wrong panel is not "for nothing". §4's staleness objection is answered
+> by minting no ordinal; §2's refusal of runner discretion is the precedent §2 there reuses.
 
 # The window opens maximal, and belongs to the player
 
