@@ -2,6 +2,10 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0026](0026-a-program-writes-bytes-to-declared-storage-slots.md):** the
+> quiescence predicate's live state gains the declared storage slots, which resolve once per
+> process.
+
 # Concurrency is a non-goal, and quiescence is a state predicate
 
 Issue #61 inherited an obligation rather than choosing one. Issue #29 recorded a

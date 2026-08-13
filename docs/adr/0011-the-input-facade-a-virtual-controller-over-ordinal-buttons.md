@@ -2,6 +2,10 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0030](0030-the-fit-is-a-uniform-transform-and-the-bars-are-not-the-programs.md):**
+> unchanged in text — the pointer-in-bars clause gains the graphics precondition it was
+> always written against, since nothing before it required bars to exist.
+
 # The input facade: a virtual controller over ordinal buttons, with the raw devices beneath
 
 ADR-0004 mandated "input query" in the same breath as the drawing calls, and

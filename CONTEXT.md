@@ -72,7 +72,24 @@ in which integer coordinates are meaningful. Declared once by a top-level
 `$.graphics.set_canvas({...})` and **immutable for the process's life** — a
 canvas that could differ between frames would make every letterbox and
 integer-blit guarantee conditional (ADR-0013). The real window size is not
-exposed to the program.
+exposed to the program. It is a **coordinate mapping**, not an intermediate
+framebuffer: the backend folds it into its own transform and rasterises at native
+device resolution (ADR-0030).
+
+## Fit
+
+The mapping from the [logical canvas](#logical-canvas) to the window: a uniform
+scale `k` plus a centring translation, and nothing else — **aspect ratio is
+preserved and no implementation may stretch to fill**. `k` is `min(w/W, h/H)` on
+a `smooth` target and `max(1, floor(...))` on a `crisp` one, where integer
+scaling avoids uneven pixel sizes. There is no program-facing knob; the fit is
+spec-fixed (ADR-0030).
+
+## Letterbox bars
+
+The device pixels outside the fitted canvas rect. **Opaque black, never
+program-reachable** — rendering is clipped to the canvas rect — and the region a
+pointer reports a position outside the canvas for (ADR-0011, ADR-0030).
 
 ## Core conformance / full conformance
 

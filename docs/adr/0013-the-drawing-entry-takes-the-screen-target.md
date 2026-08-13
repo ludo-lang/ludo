@@ -2,6 +2,11 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0030](0030-the-fit-is-a-uniform-transform-and-the-bars-are-not-the-programs.md):**
+> §9's *the real window size is not exposed* is strengthened, not narrowed — the mapping it
+> relies on is now stated as arithmetic; §9's fog item on choosing a canvas from the display
+> stays closed.
+
 # The drawing entry takes the screen target, and the canvas is declared once at top level
 
 Two accepted decisions contradicted each other, and ADR-0011 surfaced it while

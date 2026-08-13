@@ -19,6 +19,16 @@ status: accepted
 > caller-declared logical canvas and the `style:` token gain their declaration site — a
 > top-level `$.graphics.set_canvas({...})` — and become immutable for the process's life.
 > The target the runner passes is fresh each frame with its transform reset to identity.
+>
+> **Amended by [ADR-0022](0022-the-spec-promises-only-what-is-derivable.md):** the `crisp`
+> bit-exactness sentence is **deleted** and replaced by an interior/exterior rule; the
+> `smooth` coverage tolerance is **deleted** with no numeric replacement; the blit's
+> implementation condition is added; `copyExternalImageToTexture` is named as forbidden.
+>
+> **Amended by [ADR-0030](0030-the-fit-is-a-uniform-transform-and-the-bars-are-not-the-programs.md):**
+> the letterbox rationale bullet is promoted to a normative clause stated as arithmetic; the
+> logical canvas is fixed as a coordinate mapping rather than an intermediate framebuffer;
+> content is clipped to the canvas rect and the bars are opaque black.
 
 # The drawing facade's surface: top-left Y-down, straight alpha, and a target that carries the frame
 

@@ -5,6 +5,10 @@ status: accepted
 > **Amended by [ADR-0009](0009-the-drawing-facades-call-spellings.md):** the naming rules
 > gain two explicit case conventions (`PascalCase` types, `snake_case` enum members) and a
 > stated distinction between root-level type constructors and per-area modules.
+>
+> **Amended by [ADR-0022](0022-the-spec-promises-only-what-is-derivable.md):** *reload* is
+> defined as the in-process swap of game code, without which this ADR's play-cursor clause
+> is vacuous under one reading of the word.
 
 # The audio facade's surface: voices that play, a clip as the procedural path, and a push that is not it
 

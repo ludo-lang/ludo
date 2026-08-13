@@ -2,6 +2,15 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0022](0022-the-spec-promises-only-what-is-derivable.md):** the
+> `stretch`-paint blit restatement stands and gains an implementation condition, but
+> **`fill_sprite`'s byte-exactness with a colour paint — the hit flash — is withdrawn**.
+>
+> **Amended by [ADR-0030](0030-the-fit-is-a-uniform-transform-and-the-bars-are-not-the-programs.md):**
+> §3 makes the logical canvas a coordinate mapping, so the blit clause's *1:1 device extent*
+> precondition self-disables at any fit scale other than 1. The clause's fate is
+> [#69](https://github.com/adamico/ludo/issues/69), not ADR-0030.
+
 # `Paint` and the two-verb drawing facade: `fill_` and `stroke_`, and `draw_` deleted
 
 ADR-0009 fixed three verbs — `fill_` (the shape's area in one solid colour),

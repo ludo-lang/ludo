@@ -2,6 +2,14 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0028](0028-the-admission-test-for-a-query-that-reads-backend-state.md):**
+> §8's withdrawal of the blanket ban on reading backend state is **superseded** by the
+> admission test, and §4's "zero bits" becomes that test's operative guard.
+>
+> **Amended by [ADR-0030](0030-the-fit-is-a-uniform-transform-and-the-bars-are-not-the-programs.md):**
+> §2's citation of "ADR-0005's letterbox + integer scale" named a clause that did not exist;
+> it now does, with integer scale holding on `crisp` targets only.
+
 # Fullscreen is a player preference the program can read and set
 
 Issue #62 asked a narrow question inherited from #60: fullscreen, windowed and

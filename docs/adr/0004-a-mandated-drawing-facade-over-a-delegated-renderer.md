@@ -19,6 +19,10 @@ status: accepted
 > out of the renderer tier with a fixed alpha threshold and logical-unit thickness — and
 > fills take a `Paint`, whose `Mapping` field states the UV convention the admission test
 > requires.
+>
+> **Amended by [ADR-0022](0022-the-spec-promises-only-what-is-derivable.md):** the upload
+> guarantee is restated at frame-and-view granularity, the backend floor is added, and
+> WebGL1 is excluded as a backend.
 
 # The spec mandates a thin drawing facade; the renderer and platform layer are delegated
 
