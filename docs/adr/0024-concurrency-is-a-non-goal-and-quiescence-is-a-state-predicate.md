@@ -6,6 +6,11 @@ status: accepted
 > quiescence predicate's live state gains the declared storage slots, which resolve once per
 > process.
 
+> **Amended by [ADR-0041](0041-the-record-stops-assuming-a-process-and-re-entrancy-is-by-task.md):**
+> §5's *frame thread* is widened to *frame task*, since a browser re-enters by
+> task rather than by thread; §3's rescue story gains a tab-discard scope
+> sentence.
+
 # Concurrency is a non-goal, and quiescence is a state predicate
 
 Issue #61 inherited an obligation rather than choosing one. Issue #29 recorded a

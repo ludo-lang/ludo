@@ -2,6 +2,10 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0041](0041-the-record-stops-assuming-a-process-and-re-entrancy-is-by-task.md):**
+> §11's *Release still exits non-zero* is restated as abnormal termination by the
+> host's convention — the third site of a claim a tab cannot satisfy literally.
+
 # One diagnostic stream for the compiler and the faulted program
 
 Issue #53 asked whether a conforming implementation owes a **structured format**

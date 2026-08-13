@@ -2,6 +2,10 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0041](0041-the-record-stops-assuming-a-process-and-re-entrancy-is-by-task.md):**
+> §5's flush bound is restated as the last moment the host guarantees it can run
+> code, since a discarded browser tab has no exit hook.
+
 # A program writes bytes to declared storage slots
 
 Issue #64 recorded a hole nothing in the map had noticed: **nothing under `$.`

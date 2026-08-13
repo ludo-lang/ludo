@@ -268,6 +268,12 @@ rather than a special case — forever in a faulted program, which is what lets 
 reload rescue one. Three mechanisms cite it: the dylib swap, the asset byte-swap
 behind a handle, and the backend re-point.
 
+Ludo code may be entered **only from the frame task** — by task, never by thread,
+because a host with one thread still has many places it can call in from
+(ADR-0041 §7). The rescue is a theorem the host can still defeat: a discarded
+browser tab is described by no specification and fires no event, so no
+implementation can flush around it (ADR-0041 §8).
+
 ## Experience contract
 
 The set of testable properties any conforming implementation must deliver —
