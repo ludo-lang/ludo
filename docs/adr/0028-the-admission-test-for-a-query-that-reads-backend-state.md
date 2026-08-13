@@ -2,6 +2,11 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0032](0032-the-canvas-is-fixed-at-1280x720.md):** §8's premise is
+> corrected, not its conclusion — the logical canvas is no longer *caller-declared* but fixed
+> at 1280×720, which makes §8's argument that the canvas (not the admission test) is what
+> keeps a game's world hardware-independent stronger rather than weaker.
+
 # The admission test: reformulate, guard the return, then require necessity
 
 ADR-0025 §8 withdrew #60's blanket ban on program-visible backend state and
