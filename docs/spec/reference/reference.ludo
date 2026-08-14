@@ -3,7 +3,8 @@
 -- Grown one chapter at a time (ADR-0044 §7). Chapter 1 seeds it with the
 -- lexical and grammatical surface and nothing else: every construct below is
 -- spelled by docs/spec/01-grammar.md and parses against docs/spec/grammar.ebnf.
--- Semantics arrive with the chapters that own them.
+-- Chapter 2 adds the constructs whose *meaning* it fixes — absence, failure,
+-- the bug line, generics, function types, and text.
 --
 -- Until a frontend exists this file is checked by hand. It is written fresh:
 -- prototypes/07-syntax/b-lua-flavoured.ludo is not a starting point, and breaks
@@ -31,6 +32,13 @@ end
 type RockId = distinct u32
 
 type Seconds = distinct numeric f32
+
+-- One error set, declared in this file, so `rescue` with no set named elides to
+-- it (spec ch2 §10.6).
+type FieldError = enum
+  empty
+  too_many(usize)
+end
 
 pub fn add(a: Vec2, b: Vec2) -> Vec2
   { x = a.x + b.x, y = a.y + b.y }
@@ -67,6 +75,86 @@ pub fn extent(s: Shape) -> f32
   end
 end
 
+-- Absence is `?T`, and it is the only absence concept (ch2 §9.1). A generic
+-- function, with its type parameter unconstrained (ch1 §10.2). `return x`
+-- injects a present value; `none` is the prelude's nullary constructor
+-- (ch2 §9.11, §9.2).
+pub fn first[T](xs: []T) -> ?T
+  for x in xs do
+    return x
+  end
+  return none
+end
+
+-- `?T` is an ordinary sum type, so `match` handles it with the prelude
+-- constructors and no wildcard arm (ch2 §9.2, §4.5).
+pub fn radius_of(xs: []Rock) -> f32
+  match first(xs) do
+    none then
+      return 0.0
+    end
+    some(r) then
+      return r.radius
+    end
+  end
+end
+
+-- `?.` short-circuits and yields `?f32` for the chain; `or` unwraps it.
+-- The two words are not interchangeable: `or` handles absence, `rescue`
+-- handles failure (ch2 §10.13).
+pub fn lead_radius(xs: []Rock) -> f32
+  first(xs)?.radius or 0.0
+end
+
+-- A function value is a non-capturing `fn` pointer, and it is passed by name
+-- because every function is top-level and named (ch2 §7.1, §7.3). UFCS never
+-- applies to it: this body writes `keep(x)`, never `x.keep()` (ch2 §7.5).
+pub fn is_big(r: Rock) -> bool
+  r.radius > 8.0
+end
+
+pub fn count_where(xs: []Rock, keep: fn(Rock) -> bool) -> usize
+  n: usize = 0
+  for x in xs do
+    n += 1 if keep(x)
+  end
+  n
+end
+
+-- Failure is a value in the return type, and the set is elided to this file's
+-- one declared error enum (ch2 §10.1, §10.6). A failure is returned by
+-- returning a value of the error set, qualified (ch2 §10.6.1, §4.6.1).
+pub fn checked_count(xs: []Rock) -> usize rescue
+  return FieldError.empty if xs.len == 0
+  return FieldError.too_many(xs.len) if xs.len > MAX_ROCKS
+  xs.len
+end
+
+-- The three `rescue` tails, in order: a default, a bound handler, and a
+-- diverging tail (ch2 §10.8).
+pub fn report(xs: []Rock) -> usize
+  lenient := checked_count(xs) rescue 0
+
+  strict := checked_count(xs) rescue err then
+    match err do
+      empty then
+        return 0
+      end
+      too_many(n) then
+        return n
+      end
+    end
+  end
+
+  _ = lenient                        -- must-use is discharged by one token
+  strict
+end
+
+pub fn total(xs: []Rock) -> usize rescue
+  n := checked_count(xs) rescue return
+  n
+end
+
 -- Top level runs once, in the entry file only (#26). This is that file.
 
 $.print("reference program")
@@ -76,5 +164,26 @@ persist tick: u64 = 0
 frame(screen: !Target, scratch: !Scratch)
   tick! += 1
   return unless tick % 60 == 0       -- statement modifier over a bool condition
-  $.print("second ", tick / 60)
+
+  -- `string` is the type of a literal and of nothing else; it widens one way
+  -- to `[]u8` at parameter position (ch2 §17.1, §17.2).
+  label: string = "elapsed"
+
+  -- `chars()` decodes UTF-8 and yields `char`; `bytes()` does not exist
+  -- (ch2 §17.7, §2.6).
+  glyphs: usize = 0
+  for c in label.chars() do
+    _ = c
+    glyphs += 1
+  end
+
+  -- A cast is the only numeric conversion (ch2 §2.8). What this one yields for
+  -- a lossy or out-of-range value is undecided — spec ch2 §20, issue #98.
+  secs := (tick / 60) as f32
+
+  -- `format` writes into a buffer the caller owns and returns a view of what it
+  -- wrote; the format string is a literal the compiler checks (ch2 §17.5).
+  buf: [32]u8 = {}
+  line := format(buf!, "{}: {} ({} chars)", label, secs, glyphs)
+  $.print(line)
 end
