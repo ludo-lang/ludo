@@ -385,10 +385,24 @@ always-correct shape. Ranges are ordinary `Iter[int]` values, not grammar.
 **7.9** The postfix suffixes are field access `.`, optional chain `?.`, call
 `(...)`, index `[...]` and the mutation mark `!` (`Suffix`).
 
-**7.10** **`!` marks mutation at the place**: `pool!.add(e)`, `w!.frame += 1`,
-`w.rocks!`. The same glyph marks a mutable binding or parameter in type position
-(§9.2). `!Pool[Entity]` and `Pool[Entity]` are the same type, differently
-accessed. (#7; #11 Q3.)
+**7.10** **`!` marks mutation at the place, and it rides the root binding**:
+`pool!.add(e)`, `w!.frame += 1`, `format(buf!, ...)`. The mark sits immediately
+after the root binding and the suffix chain follows it, whatever the suffixes
+are — field, call, index or slice. The suffix is not required to be the mutating
+operation: `w!.frame += 1` marks `w`, and the assignment is what mutates. The
+same glyph marks a mutable binding or parameter in type position (§9.2).
+`!Pool[Entity]` and `Pool[Entity]` are the same type, differently accessed.
+(#7; #11 Q3; [#101](https://github.com/ludo-lang/ludo/issues/101).)
+
+**7.10a** **A writable sub-view is `name![a..<b]`.** The slice is a suffix like
+any other, so §7.10's rule fixes the spelling without a new clause:
+`integrate(pos![0..<live], vel[0..<live], dt)`. The mark is **not** legal on the
+resulting view — `name[a..<b]!` parses as a `Suffix*` chain but is an error, with
+the fix named: *the mutation mark belongs on the root: write `name![a..<b]`*. One
+spelling per meaning; a legal synonym would give agents two ways to write one
+thing, and a distinct meaning would mint a second sense for `!`.
+([#101](https://github.com/ludo-lang/ludo/issues/101);
+[ADR-0047](../adr/0047-a-returned-view-is-derived-from-its-receiver-and-mutation-kills-it.md) §5.)
 
 **7.11** **`?.` short-circuits**, yielding `?C` for the whole chain, and it works
 for UFCS calls as well as field access (`a?.f(b)`). (#9.)

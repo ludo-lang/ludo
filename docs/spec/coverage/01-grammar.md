@@ -124,6 +124,22 @@ here as routed rather than dropped.
 
 ---
 
+### #101 — Where the mutation mark sits on a sub-view
+
+Resolved after this chapter closed. It amends §7.10 rather than adding a source:
+`grammar.ebnf` is untouched, since both spellings already parse as `Suffix*`
+chains and the question was which one denotes a writable sub-view.
+
+| Source clause | Landed |
+|---|---|
+| The mark rides the root binding; the suffix chain follows | §7.10 (restated) |
+| The suffix need not be the mutating operation (`w!.frame += 1`) | §7.10 |
+| A writable sub-view is `name![a..<b]` | §7.10a |
+| `name[a..<b]!` parses but is an error, with the fix named | §7.10a |
+| `w.rocks!` was an unsourced exhibit and is removed | §7.10 (see §4 below) |
+
+---
+
 ## 2. Sources this chapter draws on without covering
 
 These are not #85's list. Each is owned by a later chapter, and this chapter
@@ -237,3 +253,13 @@ Three further findings that are **not** phantoms but recorded corrections:
 - **§14.10 — `TextBuf`'s declaration.** ADR-0045's inline brace rendering is
   normalised to the `type … = struct … end` form every other type declaration
   uses. The ADR's decision is unaffected.
+- **§7.10 — `w.rocks!` was this chapter's own invention.** Found while resolving
+  [#101](https://github.com/ludo-lang/ludo/issues/101). It occurred exactly once
+  in the corpus — in §7.10's exhibit list — and no source produces it: every
+  sourced exhibit marks the **root binding** (`pool!.add(e)`, `list!.push(e)`,
+  `xs!.push(e)`, `l!.push(e)`, `w!.frame += 1`, `format(buf!, …)`,
+  `get_pixels(img!)`). It is inconsistent with `w!.frame += 1`, which mutates
+  `w.frame` and still marks `w`, and it is ambiguous on sight: §7.12's UFCS makes
+  `w.rocks` a possible zero-arg call, so `w.rocks!` reads as a mutating call
+  named `rocks`. Removed, not reversed — nothing depended on it. This is a
+  chapter-authored defect rather than a phantom, since no source cited it.
