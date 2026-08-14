@@ -64,6 +64,10 @@ layer, and the runner.** This directory is the prototype #49 describes.
 
 ## An open conflict, flagged not settled
 
+Tracked as [#95](https://github.com/ludo-lang/ludo/issues/95), which carries the
+repair of `docs/project-structure.md` with it. This section goes when that
+closes.
+
 Two prior decisions put artifacts in repositories of their own, and ADR-0046 §3
 says `ludo-lang/ludo` *"holds everything"*. Neither has been reconciled, and
 this README does not reconcile them:
@@ -89,7 +93,7 @@ else — a statement about the work that exists, not a boundary anyone has drawn
   layout above has no place for it: it is not a lexer, parser, typechecker or
   diagnostic, and it is not the CLI. ADR-0020 does not place it either. A third
   directory beside `frontend/` and `driver/` is the obvious guess and is not a
-  decision anyone has made.
+  decision anyone has made — [#96](https://github.com/ludo-lang/ludo/issues/96).
 - Whether the interpreter survives as a `ludo eval` surface, or is genuinely
   discarded (#49).
 - The frontend's actual API. The seam above says where the boundary is, not
