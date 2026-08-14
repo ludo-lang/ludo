@@ -1,0 +1,447 @@
+(* ============================================================================
+   ludo — normative grammar
+   ============================================================================
+
+   This file is NORMATIVE. Where the prose of docs/spec/01-grammar.md disagrees
+   with a production here, the production wins and the prose is a defect
+   (docs/spec/01-grammar.md §0.3).
+
+   Shipped in the spec as required by issue #22 guarantee 7 (a machine-readable
+   grammar), and it is the artifact the issue #24 token count is computed from
+   (docs/spec/01-grammar.md §13).
+
+   METALANGUAGE — W3C EBNF (XML 1.0 §6 notation):
+
+     A ::= B          definition
+     "x"              literal terminal
+     A B              sequence
+     A | B            alternation
+     A?               zero or one
+     A*               zero or more
+     A+               one or more
+     ( A )            grouping
+     [a-z]            character range
+     A - B            A but not B
+     (* … *)          comment
+
+   The grammar is written to be parseable with bounded lookahead and WITHOUT
+   semantic information, per issue #22 guarantee 1. Two places need lookahead
+   past one token and both are called out at the production: MatchArm and
+   RescueTail. Two places produce one parse node that a later phase resolves
+   two ways, which is a checking question and not a parsing one: IdentPattern
+   (binding versus nullary variant) and GenericParam (type versus value).
+
+   Section 1 is the core grammar. Section 2 is the type sublanguage. The two
+   are fenced and counted separately, per issue #24 call 3, and the fence is
+   the point: no production in section 1 descends into section 2 except through
+   the named entry points TypeExpr and GenericArgs.
+
+   Section 3 is lexical structure.
+   ============================================================================ *)
+
+
+(* ============================================================================
+   1. CORE GRAMMAR
+   ============================================================================ *)
+
+(* ---- 1.1 Module ---------------------------------------------------------- *)
+
+Module          ::= ExplicitMarker? TopLevelItem*
+
+ExplicitMarker  ::= "#explicit"
+
+TopLevelItem    ::= LibraryDecl
+                  | UseDecl
+                  | Declaration
+                  | Statement
+
+(* Which TopLevelItems may appear in which file is not a grammar question:
+   a module carries declarations only, statements run in the entry file alone,
+   and `library` appears once at a library root. Chapters 4 and 5 own that. *)
+
+Declaration     ::= Visibility? DeclarationBody
+
+Visibility      ::= "pub"
+
+DeclarationBody ::= TypeDecl
+                  | ConstDecl
+                  | FnDecl
+                  | ExternDecl
+                  | PersistDecl
+                  | FrameDecl
+
+(* ---- 1.2 Attributes ------------------------------------------------------ *)
+
+Attribute       ::= "#" Identifier ( "(" AttributeArg ( "," AttributeArg )* ")" )?
+
+AttributeArg    ::= Literal | Identifier
+
+(* The attribute NAMES are a closed set fixed by other chapters — #align on a
+   type, #vertex and #fragment on a function, #explicit on a module. The
+   mechanism is one production and the names cost nothing against issue #24. *)
+
+(* ---- 1.3 Declarations ---------------------------------------------------- *)
+
+LibraryDecl     ::= "library" Identifier
+
+UseDecl         ::= "use" StringLiteral
+
+TypeDecl        ::= Attribute* "type" Identifier GenericParams? "=" TypeBody
+
+(* TypeBody, and everything it reaches, is section 2. *)
+
+ConstDecl       ::= "const" Identifier ( ":" TypeExpr )? "=" Expr
+
+FnDecl          ::= Attribute* "fn" Identifier GenericParams?
+                    "(" ParamList? ")" ReturnType? Block TailExpr? "end"
+
+TailExpr        ::= Expr
+
+(* TailExpr is the implicit tail return, and it hangs off FnDecl alone — not
+   off Block. That is what keeps #7's rule decidable: `if`, `for`, `while` and
+   `match` are statements, their blocks have no tail position, and a checker
+   never walks into a nested block hunting for the live value.
+
+   A trailing call parses as TailExpr rather than CallStatement; the two build
+   the same node and whether the value is returned follows from the declared
+   ReturnType, which is a checking question. *)
+
+ParamList       ::= Param ( "," Param )*
+
+Param           ::= Identifier ":" TypeExpr ( "=" Expr )?
+
+ReturnType      ::= "->" TypeExpr ( "," TypeExpr )*
+
+FrameDecl       ::= "frame" "(" ParamList? ")" Block "end"
+
+PersistDecl     ::= "persist" Identifier ":" TypeExpr ( "=" Expr )?
+
+ExternDecl      ::= "extern" ( ExternFn | ExternItem )
+
+ExternFn        ::= StringLiteral "fn" Identifier "(" ParamList? ")" ReturnType?
+
+ExternItem      ::= Identifier Identifier ( "=" StringLiteral )?
+
+(* ExternItem's first Identifier is the extern CLASS — image, font, shader,
+   storage — a closed set fixed by chapters 5 and 6. They are ordinary
+   identifiers, not reserved words, which is what makes ADR-0015, ADR-0026 and
+   ADR-0008 §11's zero-keyword claims true. *)
+
+(* ---- 1.4 Statements ------------------------------------------------------ *)
+
+Block           ::= Statement*
+
+Statement       ::= SimpleStatement
+                  | CompoundStatement
+
+(* A Block holds statements only. There is no local `type`, `const`, `fn`,
+   `persist` or `frame`: every declaration is top-level, which is what makes
+   #52's "every function is top-level and named" a grammatical fact rather
+   than a rule to enforce. *)
+
+SimpleStatement ::= ModifiableStatement ( ( "if" | "unless" ) Condition )?
+
+ModifiableStatement
+                ::= LetStatement
+                  | AssignStatement
+                  | CompoundAssign
+                  | CallStatement
+                  | ReturnStatement
+                  | "break"
+                  | "continue"
+                  | DeferStatement
+
+CompoundStatement
+                ::= IfStatement
+                  | WhileStatement
+                  | ForStatement
+                  | MatchStatement
+                  | UnsafeBlock
+
+LetStatement    ::= BindingTarget ":=" Expr
+                  | Identifier ":" TypeExpr "=" Expr
+
+BindingTarget   ::= BindingName ( "," BindingName )*
+
+BindingName     ::= Identifier | "_"
+
+AssignStatement ::= Place "=" Expr
+
+CompoundAssign  ::= Place ( "+=" | "-=" | "*=" | "/=" | "%=" ) Expr
+
+Place           ::= PostfixExpr
+
+CallStatement   ::= PostfixExpr
+
+ReturnStatement ::= "return" ( Expr ( "," Expr )* )?
+
+DeferStatement  ::= "defer" ModifiableStatement
+
+IfStatement     ::= "if" Condition "then" Block
+                    ( "elseif" Condition "then" Block )*
+                    ( "else" Block )?
+                    "end"
+
+WhileStatement  ::= "while" Condition "do" Block "end"
+
+ForStatement    ::= "for" BindingTarget "in" Expr "do" Block "end"
+
+Condition       ::= BindingCondition | Expr
+
+BindingCondition
+                ::= Identifier ":=" Expr
+
+UnsafeBlock     ::= "unsafe" "do" Block "end"
+
+(* ---- 1.5 match ----------------------------------------------------------- *)
+
+MatchStatement  ::= "match" Expr "do" MatchArm+ "end"
+
+MatchArm        ::= Pattern "then" Block "end"
+
+(* An arm is terminated by its own "end". Lookahead: after the arms, the
+   closing "end" of the MatchStatement is the token that follows an arm's
+   "end" and is not itself the start of a Pattern. *)
+
+Pattern         ::= VariantPattern
+                  | StructPattern
+                  | LiteralPattern
+                  | IdentPattern
+                  | "_"
+
+VariantPattern  ::= Identifier "(" Pattern ( "," Pattern )* ")"
+
+StructPattern   ::= "{" FieldPattern ( "," FieldPattern )* ","? "}"
+
+FieldPattern    ::= Identifier "=" Pattern
+
+LiteralPattern  ::= Literal
+
+IdentPattern    ::= Identifier
+
+(* IdentPattern is one parse node meaning either a fresh binding or a nullary
+   variant of the scrutinee's type. The distinction is a checking question, not
+   a parsing one, so #22 guarantee 1 holds. There are no guards, no
+   or-patterns and no range patterns (#11). *)
+
+(* ---- 1.6 Expressions ----------------------------------------------------- *)
+
+(* Precedence, loosest to tightest. Each level is left-associative except
+   RescueExpr, which is a tail and does not chain. *)
+
+Expr            ::= RescueExpr
+
+RescueExpr      ::= OrExpr ( "rescue" RescueTail )?
+
+RescueTail      ::= ReturnStatement
+                  | "break"
+                  | "continue"
+                  | Identifier "then" Block "end"
+                  | Expr
+
+(* Lookahead: the bind form is an Identifier followed by "then". Anything else
+   starting with an Identifier is the default-value form. *)
+
+OrExpr          ::= AndExpr ( "or" AndExpr )*
+
+AndExpr         ::= CompareExpr ( "and" CompareExpr )*
+
+CompareExpr     ::= BitOrExpr ( ( "==" | "!=" | "<" | "<=" | ">" | ">=" ) BitOrExpr )*
+
+BitOrExpr       ::= BitXorExpr ( "|" BitXorExpr )*
+
+BitXorExpr      ::= BitAndExpr ( "~" BitAndExpr )*
+
+BitAndExpr      ::= ShiftExpr ( "&" ShiftExpr )*
+
+ShiftExpr       ::= RangeExpr ( ( "<<" | ">>" ) RangeExpr )*
+
+RangeExpr       ::= AddExpr ( "..<" AddExpr )?
+
+AddExpr         ::= MulExpr ( ( "+" | "-" ) MulExpr )*
+
+MulExpr         ::= CastExpr ( ( "*" | "/" | "%" ) CastExpr )*
+
+CastExpr        ::= UnaryExpr ( "as" TypeExpr )*
+
+UnaryExpr       ::= ( "not" | "-" | "~" ) UnaryExpr
+                  | PostfixExpr
+
+PostfixExpr     ::= PrimaryExpr Suffix*
+
+Suffix          ::= "." Identifier
+                  | "?." Identifier
+                  | "(" ArgList? ")"
+                  | "[" Expr "]"
+                  | "!"
+
+ArgList         ::= Expr ( "," Expr )*
+
+PrimaryExpr     ::= Literal
+                  | AggregateLiteral
+                  | NamedType AggregateLiteral
+                  | Identifier
+                  | "$"
+                  | "_"
+                  | "(" Expr ")"
+
+AggregateLiteral
+                ::= "{" ( LiteralItem ( "," LiteralItem )* ","? )? "}"
+
+LiteralItem     ::= Identifier "=" Expr
+                  | "[" Expr "]" "=" Expr
+                  | Expr
+
+(* "$" is the reserved standard-library root and is reached only by "." — it is
+   a PrimaryExpr so that $.graphics.fill_text is an ordinary PostfixExpr chain
+   with no rule of its own. *)
+
+
+(* ============================================================================
+   2. TYPE SUBLANGUAGE
+
+   Fenced from section 1 and counted apart (issue #24 call 3). Section 1
+   descends into it at exactly three points — TypeBody, TypeExpr and
+   GenericArgs — and no production below appears in expression position.
+
+   The fence is one-way for the type grammar and not for values: FieldDecl and
+   Param carry a default Expr, and an array length is an Expr. Those are the
+   only descents back into section 1 and each is named at its production.
+   ============================================================================ *)
+
+(* ---- 2.1 Type bodies ----------------------------------------------------- *)
+
+TypeBody        ::= StructBody
+                  | EnumBody
+                  | DistinctBody
+                  | TypeExpr
+
+StructBody      ::= "struct" FieldDecl* "end"
+
+FieldDecl       ::= Identifier ":" TypeExpr ( "=" Expr )?
+
+EnumBody        ::= "enum" VariantDecl* "end"
+
+VariantDecl     ::= Identifier ( "(" TypeExpr ( "," TypeExpr )* ")" )?
+
+DistinctBody    ::= "distinct" "numeric"? TypeExpr
+
+(* ---- 2.2 Type expressions ------------------------------------------------ *)
+
+TypeExpr        ::= "!"? TypeCore
+
+TypeCore        ::= FallibleType
+
+FallibleType    ::= PrefixType ( "rescue" NamedType? )?
+
+PrefixType      ::= "?" PrefixType
+                  | "[" "]" PrefixType
+                  | "[" Expr "]" PrefixType
+                  | FnType
+                  | NamedType
+
+FnType          ::= "fn" "(" TypeList? ")" ( "->" TypeExpr )?
+
+TypeList        ::= TypeExpr ( "," TypeExpr )*
+
+NamedType       ::= QualifiedName GenericArgs?
+
+QualifiedName   ::= Identifier ( "." Identifier )*
+
+GenericArgs     ::= "[" TypeArg ( "," TypeArg )* "]"
+
+TypeArg         ::= TypeExpr | Expr
+
+GenericParams   ::= "[" GenericParam ( "," GenericParam )* "]"
+
+GenericParam    ::= TypeParam | ValueParam
+
+TypeParam       ::= Identifier ( ":" ConstraintList )?
+
+ValueParam      ::= Identifier ":" "usize"
+
+ConstraintList  ::= NamedType ( "+" NamedType )*
+
+(* GenericParam is one parse shape resolved by the annotation: the literal
+   token `usize` makes it a ValueParam (ADR-0045 §1 admits no other value
+   type), anything else is a constraint on a TypeParam. ValueParam is the one
+   production ADR-0045 §5 charges to the type sublanguage.
+
+   `[` Expr `]` in PrefixType is #15's fixed array; its Expr is restricted to
+   ADR-0021's const-eval floor, and a generic value parameter may appear in it
+   only bare (ADR-0045 §1 restriction 2). Both are static rules over a
+   production the grammar states without restriction. *)
+
+
+(* ============================================================================
+   3. LEXICAL STRUCTURE
+   ============================================================================ *)
+
+(* ---- 3.1 Whitespace and comments ----------------------------------------- *)
+
+(* Whitespace separates tokens and is otherwise insignificant: newlines do not
+   terminate statements and indentation carries no meaning. *)
+
+Whitespace      ::= ( " " | "\t" | "\r" | "\n" )+
+
+Comment         ::= "--" ( Char - ( "\r" | "\n" ) )*
+
+(* There is no block-comment form. *)
+
+(* ---- 3.2 Identifiers and keywords ---------------------------------------- *)
+
+Identifier      ::= ( Letter | "_" ) ( Letter | Digit | "_" )* - Keyword - "_"
+
+Letter          ::= [a-zA-Z]
+
+Digit           ::= [0-9]
+
+HexDigit        ::= [0-9a-fA-F]
+
+(* "_" alone is not an identifier: it is the discard token. *)
+
+Keyword         ::= "and" | "as" | "break" | "const" | "continue" | "defer"
+                  | "do" | "else" | "elseif" | "end" | "extern" | "false"
+                  | "fn" | "for" | "frame" | "if" | "in" | "library" | "match"
+                  | "not" | "or" | "persist" | "pub" | "rescue" | "return"
+                  | "then" | "true" | "type" | "unless" | "unsafe" | "use"
+                  | "while"
+
+TypeKeyword     ::= "distinct" | "enum" | "numeric" | "struct"
+
+(* TypeKeywords are reserved in every position, and are listed apart because
+   they are counted against the type sublanguage's budget (issue #24 call 3). *)
+
+(* ---- 3.3 Literals -------------------------------------------------------- *)
+
+Literal         ::= IntegerLiteral
+                  | FloatLiteral
+                  | StringLiteral
+                  | BoolLiteral
+
+BoolLiteral     ::= "true" | "false"
+
+IntegerLiteral  ::= DecimalInt | HexInt | BinaryInt
+
+DecimalInt      ::= Digit ( Digit | "_" )*
+
+HexInt          ::= "0x" HexDigit ( HexDigit | "_" )*
+
+BinaryInt       ::= "0b" [01] ( [01] | "_" )*
+
+FloatLiteral    ::= Digit ( Digit | "_" )* "." Digit ( Digit | "_" )* Exponent?
+                  | Digit ( Digit | "_" )* Exponent
+
+Exponent        ::= ( "e" | "E" ) ( "+" | "-" )? Digit+
+
+StringLiteral   ::= '"' ( StringChar | Escape )* '"'
+
+StringChar      ::= Char - ( '"' | "\\" | "\r" | "\n" )
+
+Escape          ::= "\\" ( "n" | "t" | "r" | "0" | "\\" | '"' )
+                  | "\\u{" HexDigit+ "}"
+
+(* A string literal is UTF-8 and may not span lines. There is no character
+   literal type and no raw-string form. *)
+
+Char            ::= (* any Unicode scalar value *)

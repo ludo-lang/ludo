@@ -1,0 +1,80 @@
+-- The ludo reference program.
+--
+-- Grown one chapter at a time (ADR-0044 §7). Chapter 1 seeds it with the
+-- lexical and grammatical surface and nothing else: every construct below is
+-- spelled by docs/spec/01-grammar.md and parses against docs/spec/grammar.ebnf.
+-- Semantics arrive with the chapters that own them.
+--
+-- Until a frontend exists this file is checked by hand. It is written fresh:
+-- prototypes/07-syntax/b-lua-flavoured.ludo is not a starting point, and breaks
+-- six ways against the current corpus (ADR-0044 §7).
+
+const MAX_ROCKS = 64
+
+type Vec2 = struct
+  x: f32 = 0.0
+  y: f32 = 0.0
+end
+
+type Rock = struct
+  pos:    Vec2
+  vel:    Vec2
+  radius: f32 = 4.0
+end
+
+type Shape = enum
+  point
+  circle(f32)
+  box(Vec2, Vec2)
+end
+
+type RockId = distinct u32
+
+type Seconds = distinct numeric f32
+
+pub fn add(a: Vec2, b: Vec2) -> Vec2
+  { x = a.x + b.x, y = a.y + b.y }
+end
+
+pub fn scale(v: Vec2, k: f32) -> Vec2
+  { x = v.x * k, y = v.y * k }
+end
+
+pub fn overlaps(a: Rock, b: Rock) -> bool
+  dx := a.pos.x - b.pos.x
+  dy := a.pos.y - b.pos.y
+  r  := a.radius + b.radius
+  dx * dx + dy * dy < r * r          -- implicit tail return: an expression
+end
+
+pub fn advance(r: !Rock)
+  r!.pos = r.pos.add(r.vel)          -- UFCS, and the mutation mark on the place
+end
+
+-- `match` is a statement, so it has no tail position: each arm returns.
+-- This is §6.7's rule as a worked case, not an oversight.
+pub fn extent(s: Shape) -> f32
+  match s do
+    point then
+      return 0.0
+    end
+    circle(radius) then
+      return radius
+    end
+    box(lo, hi) then
+      return hi.x - lo.x
+    end
+  end
+end
+
+-- Top level runs once, in the entry file only (#26). This is that file.
+
+$.print("reference program")
+
+persist tick: u64 = 0
+
+frame(screen: !Target, scratch: !Scratch)
+  tick! += 1
+  return unless tick % 60 == 0       -- statement modifier over a bool condition
+  $.print("second ", tick / 60)
+end
