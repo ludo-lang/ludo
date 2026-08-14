@@ -6,7 +6,7 @@ A game-development-oriented programming language: Lua-simple syntax, Rust/Odin/C
 
 ### Issue tracker
 
-Issues live as GitHub issues in `adamico/ludo`, managed with the `gh` CLI. See `docs/agents/issue-tracker.md`.
+Issues live as GitHub issues in `ludo-lang/ludo`, managed with the `gh` CLI. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
