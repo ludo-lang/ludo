@@ -1,5 +1,17 @@
 # Project structure
 
+> **Contradicted by [ADR-0046](adr/0046-the-repository-becomes-a-public-monorepo-in-the-ludo-lang-org.md)
+> §3, and not yet repaired — see [#95](https://github.com/ludo-lang/ludo/issues/95).**
+> ADR-0046 makes `ludo-lang/ludo` a monorepo that *"holds everything"*, and the transfer
+> in its §11 has happened: the ADRs, the spec, `CONTEXT.md` and the C bootstrap are all in
+> that one repository today. This document still charts them across `ludo-lang/spec`,
+> `ludo-lang/ludo` as a toolchain repo, `ludo-lang/stdlib` and the platform, renderer and
+> audio tiers, and still describes `adamico/ludo` as current. **Where the sections below
+> disagree with ADR-0046 §3, ADR-0046 wins.** What ADR-0046 §3 did *not* consider is that
+> ADR-0001, ADR-0004, ADR-0006 and #49 each promise an own repository; whether those
+> survive the monorepo is exactly what #95 decides, and this file is repaired in the same
+> commit as that answer rather than patched piecemeal now.
+
 Where the project's repositories live, what each holds, and when each comes into
 existence.
 
