@@ -43,7 +43,7 @@ ticket — while being cited throughout the corpus.
 | [#9](https://github.com/ludo-lang/ludo/issues/9) | Decide the fate of nil | **authoritative, contradicted** | `persist` without an initialiser is a **live contradiction** with ADR-0045 §1/§8. Unresolved by design — spec ch1 §14.5 defers it to chapter 5. |
 | [#10](https://github.com/ludo-lang/ludo/issues/10) | Choose the error model | authoritative | Errors as values, `rescue`, closed nominal error sets. |
 | [#11](https://github.com/ludo-lang/ludo/issues/11) | Set the depth of the type system | **authoritative, narrowed and extended** | **Narrowed** by ADR-0045: integer generic parameters are *not* constraint-bounded, "a narrow, stated exception to #11". **Extended** by ADR-0017 §3 (a `fn` type satisfies a single-function interface by a blessed rule) and ADR-0017 §6 (UFCS never applies to a function value). |
-| [#15](https://github.com/ludo-lang/ludo/issues/15) | Decide what replaces Lua's one-table aggregate | **authoritative, under challenge** | Q11's string rule is **superseded by ADR-0043** (`string` is a view into the runner's constant blob). Q10's view rule is **unchanged** — ADR-0043 §1 took a narrowing specifically to avoid a carve-out in it — but is under open challenge in [#83](https://github.com/ludo-lang/ludo/issues/83). |
+| [#15](https://github.com/ludo-lang/ludo/issues/15) | Decide what replaces Lua's one-table aggregate | **authoritative, under challenge** | Q11's string rule is **superseded by ADR-0043** (`string` is a view into the runner's constant blob). Q10's view rule is **re-cut by [ADR-0047](0047-a-returned-view-is-derived-from-its-receiver-and-mutation-kills-it.md)**, which resolved the #83 challenge: *never returned* is reversed (a view may be returned when it derives from the receiver or the constant blob), *parameter position only* is clarified to permit a local binding, and the struct-field, `persist` and capture bans stand. ADR-0043 §1's narrowing is unaffected. |
 | [#17](https://github.com/ludo-lang/ludo/issues/17) | Decide how a compiled language delivers state-preserving reload | **authoritative, respelled** | §4's `persist name: str = "boss"` is respelled `string` by ADR-0043 §3, and the type it names is narrowed by ADR-0043 §1. The reload semantics are unchanged. |
 | [#18](https://github.com/ludo-lang/ludo/issues/18) | Decide what error-as-pause means for a compiled program | authoritative | ADR-0018 is a *different* subject (the diagnostic stream, from #53). Do not conflate the numbers. |
 | [#19](https://github.com/ludo-lang/ludo/issues/19) | Specify the experience contract an implementation must meet | **authoritative, with corrections** | ADR-0041 corrects six sentences that #78/#79 got wrong about the runner half of this contract. The contract itself stands. |
@@ -97,6 +97,7 @@ ADR by name, and the ADR is authoritative from that point:
 | #79 | ADR-0041 |
 | #80 | ADR-0042 |
 | #81 | ADR-0043 |
+| #83 | ADR-0047 |
 | #84 | ADR-0045 |
 
 ADR-0002, 0006, 0007, 0008, 0010, 0011, 0012, 0013, 0014, 0020, 0031, 0032,
