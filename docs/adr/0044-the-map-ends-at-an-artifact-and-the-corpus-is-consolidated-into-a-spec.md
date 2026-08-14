@@ -2,6 +2,10 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0046](0046-the-repository-becomes-a-public-monorepo-in-the-ludo-lang-org.md):**
+> §5's topology is corrected — `ludo-lang/ludo` is the whole project as a public monorepo, not
+> the bootstrap's own repository beside a separate home for the spec; the schedule is unchanged.
+
 # The map ends at an artifact, and the corpus is consolidated into a spec
 
 Not a ticket. This ADR was written from a session that started as a complaint about
