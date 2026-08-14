@@ -8,9 +8,10 @@
 -- layout, the two aggregates and their literal, views and the rules that keep
 -- them from dangling, moves, and multiple returns.
 --
--- Nothing here names a `List`, a `Map` or a pool: the dynamic container set is
--- the one thing chapter 3 records as unspecified (#82), and the reference
--- program stays inside what the spec actually fixes.
+-- The dynamic container set is now fixed at `List` + `Map` (ch3 §11.3), so this
+-- program exercises it: a fallible `push`, a `reserve` before a batch, and a
+-- `persist` container. What it still does not name is a pool, and container
+-- *removal*, which ch3 §11.13 carries as the chapter's live gap (#105).
 --
 -- Until a frontend exists this file is checked by hand. It is written fresh:
 -- prototypes/07-syntax/b-lua-flavoured.ludo is not a starting point, and breaks
@@ -264,6 +265,15 @@ persist tick: u64 = 0
 -- is banned from (ch3 §6.3).
 persist field: !Field = {}
 
+-- A `persist` container is legal, and it is the one position where allocation
+-- failure is a fault rather than a value (ch3 §11.10): there is no `return` to
+-- `rescue` into, no signature to declare an error set on, and the fallback that
+-- would compile -- an empty list -- starts the program against an empty world.
+-- `heap` is legal here and nowhere else (ch3 §1.6, §9.12), and the `List`
+-- implementation is runner-owned, which is what keeps this declaration clear of
+-- #17 §3's function-pointer check (ch3 §11.12).
+persist trail: !List[Vec2] = List.from(heap, { { x = 0.0, y = 0.0 } })
+
 frame(screen: !Target, scratch: !Scratch)
   tick! += 1
 
@@ -273,9 +283,20 @@ frame(screen: !Target, scratch: !Scratch)
   return unless tick % 60 == 0       -- statement modifier over a bool condition
 
   n := spawn(field!, { x = 8.0, y = 8.0 })
+
+  -- `reserve` is additional and idempotent -- room for 2 *beyond* `len` -- and
+  -- exists for timing, not failure: a program that must not allocate mid-frame
+  -- pre-sizes (ch3 §11.7). It allocates, so it is fallible like every other
+  -- allocating call (ch3 §11.6). There is no `capacity()` to interrogate
+  -- afterwards; having reserved is the answer (ch3 §11.8).
+  trail!.reserve(2) rescue return
+
+  -- `push` is argument-free because the `List` captured its allocator, and
+  -- fallible because it may grow. The `rescue` is the ceremony ch3 §11.1 names,
+  -- and it declares nothing on `frame`: propagation is local (ch3 §11.11).
   lo, hi := extremes(field)          -- total destructuring of a multi-return
-  _ = lo
-  _ = hi
+  trail!.push(lo) rescue return
+  trail!.push(hi) rescue return
 
   -- `string` is the type of a literal and of nothing else; it widens one way
   -- to `[]u8` at parameter position (ch2 §17.1, §17.2).

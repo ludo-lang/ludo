@@ -405,7 +405,10 @@ because growth would otherwise be quadratic. (ADR-0042 §2.)
 and allocation failure is handled at the call site, never a chapter 5 fault.
 **There is one nominal `OutOfMemory` error.** The deciding case is the
 fixed-capacity pool: *the spawner hit the cap* is a design condition a game
-handles, and making a deliberate limit a crash is not available. (ADR-0042 §3.)
+handles, and making a deliberate limit a crash is not available. **Narrowed by
+§11.10**: in a `persist` initialiser, and only there, exhaustion is a fault —
+the position has no call site at which to handle it. (ADR-0042 §3;
+ADR-0048 §7.)
 
 **9.6.1** The mandated facade error sets absorb `OutOfMemory` — chapter 6's,
 recorded here because ADR-0042 §3 is the clause that adds the variant.
@@ -549,25 +552,101 @@ reverses a decision and ADR-0044 §6 reserves that for an ADR. Filed as
 **11.1** `List[T]` and `Map[K, V]` are library generics (§4.3), and **a `List`
 captures its allocator at construction** — not passed per call — which is what
 keeps `list!.push(e)` argument-free in a loop body and puts the allocator choice
-in the signature radius at exactly one point. (#15; ADR-0042 §5.)
+in the signature radius at exactly one point. **The call is argument-free, not
+ceremony-free**: it is fallible by §11.6. (#15; ADR-0042 §5; ADR-0048 §3.)
 
 **11.2** Containers move on assignment (§3.1), duplicate through
 `clone(allocator)` (§3.4), iterate by §12, and compare by §13.1.
 
-**11.3 The dynamic container set is unspecified, and this chapter says so rather
-than waiting for it.** (ADR-0044 §8;
-[#82](https://github.com/ludo-lang/ludo/issues/82).) Open:
+**11.3 The mandated dynamic container set is exactly `List[T]` and
+`Map[K, V]`.** A type is mandated **when it cannot be built in the safe layer
+out of what is already mandated**; ties break on **silence**, meaning a type
+ships when a hand-rolled version fails in a way no compile error catches. `List`
+and `Map` pass the test because each needs an allocator and each needs the
+single-buffer release that §11.12 confines to `unsafe`. (ADR-0048 §1, §2.)
 
-- **whether the set is exactly `List` + `Map`**, or whether a set and a ring
-  buffer ship, ship as blessed-unmandated, or not at all;
-- **the capacity surface** — whether `List` exposes `reserve` and `capacity`,
-  which a program that must not allocate mid-frame needs;
-- **how `OutOfMemory` reaches the caller of `push`** — whether `push` is
-  fallible, or whether there is a pre-reserved infallible path.
-
-**11.4** **The view/growth seam is *not* part of §11.3's gap.** *Is
+**11.4** **The view/growth seam is settled outside this section.** *Is
 `v := xs.items()` legal, and what happens across a `push`* is answered in full
-by §6.4 and §7.1. (ADR-0047 §9.)
+by §6.4 and §7.1. (ADR-0047 §9; ADR-0048 preamble.)
+
+**11.5** **A ring buffer is blessed but unmandated, and no `Set[K]` ships.** A
+ring buffer fails §11.3's test — it is `[N]T` plus a head index and a count —
+and is blessed on the tie-breaker, since wrap arithmetic and the
+full-versus-empty ambiguity produce silently wrong data rather than a
+diagnostic. A set is expressible over `Map[K, bool]` with no `unsafe`, so it
+fails the test and does not ship; a program needing set semantics distinguishes
+*present but `false`* from *absent* with a `distinct` wrapper (chapter 2 §11).
+(ADR-0048 §2.)
+
+**11.6** **Every allocating call is fallible.** `push`, `insert`,
+`clone(allocator)` and `List.from` each return a value that may be
+`OutOfMemory` (§9.6), handled or propagated at the call site by chapter 2
+§10.1's `rescue`:
+
+```ludo
+for e in spawns do
+  xs!.push(e) rescue return
+end
+```
+
+There is no infallible pre-reserved path and no per-call exception. The one
+carve-out is by **position**, not by call, and is §11.10. (ADR-0048 §3, §6.)
+
+**11.7** **`reserve(n)` reserves room for `n` elements *beyond* `len`**, is
+**idempotent**, and is a no-op when already satisfied. It exists for **timing**,
+not for failure: a program that must not allocate mid-frame pre-sizes at load.
+It is itself fallible by §11.6. (ADR-0048 §4.)
+
+**11.8** **There is no `capacity()`.** A container's growth policy is not
+observable, so no program can branch on it and thereby freeze it. A program
+asking *will this push allocate?* answers it by having reserved (§11.7); a
+program measuring allocation uses a **checker allocator** (ADR-0042 §9), which
+counts allocations across a frame rather than slots in one container. `len` is
+unaffected and remains the loop bound (§6.1). (ADR-0048 §4.)
+
+**11.9** **`Map` is symmetric with `List`** on every clause of this section,
+`reserve` included. `reserve(n)` on a `Map` promises room for `n` further
+entries without reallocating, which a hash map keeps by sizing for its load
+factor. (ADR-0048 §5.)
+
+**11.10** **Allocation failure in a `persist` initialiser is a fault, not a
+value.** A `persist` declaration is not inside a function (#17 §2, #26), so none
+of chapter 2 §10's three exits exists: there is no `return` to `rescue` into, no
+signature on which to declare an error set, and the remaining exit — a fallback
+value — is available and is a trap, because a zero-capacity container allocates
+nothing, so `rescue World.empty()` compiles, the program **starts**, and it runs
+against an empty world. The fault report names the declaration (chapter 5).
+This is the sole exception to §11.6, it is scoped by **position** exactly as
+ADR-0042 §8 scopes `heap`, and it does not reach a running program: exhaustion
+during a frame remains a value everywhere. (ADR-0048 §7; narrowing ADR-0042 §3.)
+
+**11.11** **`rescue` on a fallible container call is local, and `OutOfMemory` is
+not viral.** A function containing a `push` declares no error set; only a
+function that chooses to propagate writes `rescue OutOfMemory` in its signature.
+No error set implicitly absorbs the variant. (ADR-0048 §8; #10.)
+
+**11.12** **The mandated container implementations are runner-owned**, living
+outside the reloadable image alongside the allocator implementations, which is
+what keeps a `persist` declaration holding a container clear of #17 §3's
+transitive function-pointer check. Their single-buffer release on growth sits
+inside `unsafe`, which the safe layer has no spelling for; abandonment instead
+of release is free for an arena and a per-reload leak on the mandated `heap`.
+(ADR-0048 §9; ADR-0042 §2, §7.)
+
+**11.13 Removal is unspecified, and this chapter says so rather than waiting for
+it.** (ADR-0044 §8;
+[#105](https://github.com/ludo-lang/ludo/issues/105).) Open:
+
+- **whether `List` removal is swap-remove** (O(1), reorders) **or a shifting
+  `remove(i)`** (O(n), order-preserving), or both under distinct names;
+- **how `Map` removal survives insertion-order iteration** (§13.6) — tombstones
+  leak slots that §11.8 makes unobservable, and a swap into the hole breaks the
+  ordering guarantee outright;
+- **whether removal during iteration is a compile error** like §12.2's
+  structural mutation, and if so, what the sanctioned spelling of a
+  despawn loop is;
+- **whether swap-remove's relocation of a live element invalidates a held
+  index**, which §7.1 does not reach because an index is not a view.
 
 ---
 
@@ -581,7 +660,8 @@ with static dispatch and monomorphisation**. There is no iterator boxing and no
 **12.2** **`for x in xs` binds a copy; `for x in !xs` binds a writable view per
 element.** The loop's lend is **exclusive for its duration**, so **structural
 mutation of the aggregate during iteration is a compile error** — iterator
-invalidation is deleted rather than documented. (#15 Q19.)
+invalidation is deleted rather than documented. Whether **removal** during
+iteration falls under this clause is open (§11.13). (#15 Q19.)
 
 **12.3** **Index iteration is `for i in 0..<n`**, and there is no inclusive
 range operator: with 0-based indexing `0..<xs.len` is the always-correct shape
@@ -829,9 +909,9 @@ must permit once it exists.
 Recorded so the boundary is legible, and so a later chapter is not read as
 having inherited a silence.
 
-- **The dynamic container set.** §11.3, and it is stated in the chapter text
-  rather than blocking it (ADR-0044 §8).
-  [#82](https://github.com/ludo-lang/ludo/issues/82).
+- **Container removal.** §11.13, and it is stated in the chapter text rather
+  than blocking it (ADR-0044 §8). The container *set* is no longer open: §11.3
+  closes it. [#105](https://github.com/ludo-lang/ludo/issues/105).
 - **The raw-pointer type spelling.** §16.5, §19.3.
   [#104](https://github.com/ludo-lang/ludo/issues/104).
 - **Column disjointness.** §10.10 — #25 §9 and ADR-0047 §3 disagree, and

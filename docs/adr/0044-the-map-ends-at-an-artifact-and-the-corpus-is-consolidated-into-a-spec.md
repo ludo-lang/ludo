@@ -6,6 +6,11 @@ status: accepted
 > §5's topology is corrected — `ludo-lang/ludo` is the whole project as a public monorepo, not
 > the bootstrap's own repository beside a separate home for the spec; the schedule is unchanged.
 
+> **Amended by [ADR-0049](0049-a-marked-gap-and-its-repair-are-one-obligation.md):** §8's
+> marked-gap bullet is extended — a chapter may still write a gap down rather than block on it,
+> and the ticket that gap files now owns repairing the chapter text, coverage rows and gap list
+> in the same commit as its answer. §6 is unchanged and reaffirmed.
+
 # The map ends at an artifact, and the corpus is consolidated into a spec
 
 Not a ticket. This ADR was written from a session that started as a complaint about

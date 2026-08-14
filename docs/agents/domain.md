@@ -83,6 +83,24 @@ The corpus cites issues and ADRs interchangeably, and [ADR-0033](../adr/0033-a-s
 
 The two failures are siblings: a stamp tells you an ADR moved, and `SOURCES.md` tells you an issue did.
 
+## A marked gap may not outlive its answer
+
+There is a third sibling, and it points at the spec rather than at the corpus. A spec chapter may
+write down a **marked gap** rather than block on it (ADR-0044 §8) — but the ticket that gap files
+**owns the repair**. Per [ADR-0049](../adr/0049-a-marked-gap-and-its-repair-are-one-obligation.md),
+resolving such a ticket is not done when its ADR lands; it is done when **the chapter text, the
+chapter's `coverage/` file and the reference program no longer say the gap is open**, all in the
+**same commit** as the answer.
+
+This is the stamp rule applied to a second artifact, for the same reason: a stale normative clause
+is an unstamped ADR wearing different clothes — true when written, false now, with nothing in the
+text warning the reader. Agents read the spec, not the ADR graph.
+
+So a ticket filed by a marked gap says so **in its own body from the day it is filed**: *…and
+repair chapter N's clause, coverage rows and gap list.* The one thing that may split into separate
+work is a large **reference-program** extension, and only with the split recorded on the map; the
+clause repair never splits.
+
 ## Flag ADR conflicts
 
 If your output contradicts an existing ADR, surface it explicitly rather than silently overriding:

@@ -100,6 +100,33 @@ alongside, per #73's *same commit* rule:
 | **#25** | Now **authoritative, with two named changes**: §2's mandated padding diagnostic is withdrawn by ADR-0023 §1 (§3.1 below), and §9's column exclusivity is contradicted by ADR-0047 §3 ([#103](https://github.com/ludo-lang/ludo/issues/103)). Plus the §0.1 warning |
 | **#17**, **#26** | ADR-0042 §8 respells `$.mem.heap` as a bare `heap` and confines it to `persist` initialisers in the entry file. Neither row recorded it |
 
+### 0.5 ADR-0048's stamp list, checked in both directions
+
+ADR-0048 §11 claims three records. All three landed in the ADR's own commit
+(`e84d741`), which is the `docs/agents/domain.md` *same commit* rule holding
+rather than being repaired after the fact. Verified, not assumed:
+
+| Claimed | Verified |
+|---|---|
+| **ADR-0042 §3** narrowed — *never a #18 fault* is false in a `persist` initialiser | Stamp present on ADR-0042, under the existing ADR-0047 stamp, accumulated as a separate line in date order |
+| **ADR-0042 §9** extended — the blessed-but-unmandated list gains a ring buffer | Same stamp, second clause |
+| **#15** — the container set it left open is closed, and its container calls become fallible | `SOURCES.md` row amended; an issue cannot be stamped, which is what that file is for |
+
+**Stamps not owed, recorded so they are not re-derived:**
+
+- **ADR-0047.** ADR-0048's preamble *consumes* §3 rather than moving it — the
+  view/growth seam is cited as settled, and ADR-0047 §9's hand-off to #82 is
+  discharged by being answered, not amended. No stamp.
+- **ADR-0044 §8.** ADR-0048 closes a marked gap, which is the mechanism §8
+  provides working as designed. No stamp. (Whether the *repair* should have
+  been owed by #82 rather than a successor ticket is a process question, not a
+  clause change.)
+- **#10.** ADR-0048 §3 and §8 apply #10's must-use and locality rules to a new
+  call; §11.10 is a position with no call site rather than an exception to
+  `rescue`. Applying a rule is not narrowing it. No stamp.
+
+---
+
 ---
 
 ## 1. Sources this chapter covers
@@ -313,6 +340,39 @@ Per issue [#87](https://github.com/ludo-lang/ludo/issues/87): #8, #15, #25
 | §10 The stamp list | **Discharged in this commit** — §0.2 |
 | §11 Zero #24 delta; no new #19 property; the three lenses and the named conflict | Chapter 8 and rationale. **Explicitly dropped** — §3 |
 
+### ADR-0048 — Every allocating call is fallible, and a `persist` initialiser faults
+
+Resolves #82, the marked gap this chapter carried at §11.3. The gap closes and a
+narrower one opens at §11.13.
+
+| Clause | Where it landed |
+|---|---|
+| §1 The membership test: mandated when it cannot be built in the safe layer from what is mandated | §11.3 |
+| §1 Ties break on silence | §11.3 |
+| §1 Rejected: *the reference program needs it*; rejected: silence as the test itself | Rationale. **Explicitly dropped** — §3 |
+| §2 The mandated set is exactly `List[T]` and `Map[K,V]` | §11.3 |
+| §2 A ring buffer is blessed but unmandated | §11.5 |
+| §2 No `Set[K]`; `Map[K, bool]` is the spelling, with a `distinct` wrapper for set semantics | §11.5 |
+| §3 The trilemma, and the infallible `push` is the horn that breaks | Rationale. **Explicitly dropped** — §3 |
+| §3 `push` is fallible | §11.6, §11.1 |
+| §3 Rejected: over-push as a bug; rejected: fixing capacity at construction | Rationale. **Explicitly dropped** — §3 |
+| §4 `reserve(n)` is additional and idempotent | §11.7 |
+| §4 Rejected: the absolute reading of `reserve` | Rationale. **Explicitly dropped** — §3 |
+| §4 There is no `capacity()`; the checker allocator is the instrument | §11.8 |
+| §4 The eight-use enumeration | Rationale. **Explicitly dropped** — §3 |
+| §5 `Map` is symmetric with `List`, `reserve` included | §11.9 |
+| §6 `clone` and `from` are fallible; every allocating call is fallible | §11.6 |
+| §7 A `persist` initialiser faults; all three of #10's exits are unavailable | §11.10 |
+| §7 The fallback compiles and is a trap | §11.10 |
+| §7 This narrows ADR-0042 §3 | §9.6 (narrowing stated in place), §11.10 |
+| §8 `rescue` is local; `OutOfMemory` is not viral | §11.11 |
+| §8 Rejected: inferred error sets; rejected: an implicitly-absorbed variant | Rationale. **Explicitly dropped** — §3 |
+| §9 The containers are runner-owned; the release seam stays | §11.12 |
+| §10 Removal semantics are handed to #105 | §11.13, §12.2, §20 |
+| §10 This chapter transcribes §1–§9; the reference program gains container use | This chapter, and [`../reference/reference.ludo`](../reference/reference.ludo) |
+| §11 The stamp list | **Verified** — §0.5 |
+| §12 Zero #24 delta; no new #19 property; the three lenses and the named conflict | Chapter 8 and rationale. **Explicitly dropped** — §3 |
+
 ### #101 — Where the mutation mark sits on a sub-view
 
 | Source clause | Landed |
@@ -345,7 +405,7 @@ source already half-spent without a record.
 | #17 §3 | A `persist` declaration may not reach a pointer into the reloadable image | §9.10 (routed to chapter 5) |
 | #24 | The payment rule, which is why §19.3 declines to author the pointer type | §19.3 |
 | #26 | `persist` initialisers are cold-start-only and entry-file-only, which is what confines `heap` | §9.12 |
-| #82 | The dynamic container set is unspecified, and is carried as a marked gap | §11.3 |
+| #105 | Container removal is unspecified, and is carried as a marked gap | §11.13, §12.2 |
 | ADR-0008 §4, ADR-0029 §8 | The attribute mechanism is one production and names cost nothing | §8.3 |
 | ADR-0015 | `decode_image(allocator, bytes)` is the mandated signature the allocator type has to fit | §9.1, §9.6.1 |
 | ADR-0016 §1 | The blessed math set is aligned by declaration, which is why alignment is a call parameter | §9.3 |
@@ -354,9 +414,9 @@ source already half-spent without a record.
 | ADR-0023 §1, §2 | A spec-owned diagnostic is an error or it does not exist; accept/reject is flag-invariant | §1.4, §8.2.2 |
 | ADR-0024 §6, ADR-0029 §7 | Field-level `#align` is declined permanently | §8.3 |
 | ADR-0026 | The storage surface, which is where a *resource type* would come from | §15.5, §20 |
-| ADR-0032 | *Ours, own repo, blessed by reference, unmandated* — the treatment the pools take | §9.13 |
+| ADR-0032 | *Ours, own repo, blessed by reference, unmandated* — the treatment the pools and the ring buffer take | §9.13, §11.5 |
 | ADR-0043 §1, §2, §4 | The constant blob's lifetime; the one-way widening; *slicing is free*, which is #15's, inherited by `[]u8` | §6.7, §6.11 |
-| ADR-0044 §6, §8 | Repair in the spec text; a marked gap may be written down rather than answered | §11.3, §19 |
+| ADR-0044 §6, §8 | Repair in the spec text; a marked gap may be written down rather than answered | §11.13, §19 |
 | ADR-0045 | The array-length position and the `usize` length type | §6.10 (spelled at ch1 §9.5) |
 | Chapter 2 | §1.7, §3.1, §6.2, §6.3, §6.6, §8.3, §8.4, §9.1, §9.7, §10.2, §10.11, §10.15, §10.17, §12.1, §14.2, §15.2, §17.2, §17.10 | throughout |
 
@@ -425,7 +485,7 @@ the drop is recorded.
    today. **Not authored**: minting a resource-type concept is a design decision
    with a failure class of its own, not a transcription defect, so ADR-0044 §6's
    repair rule does not reach it. Left unfiled deliberately — nothing presses on
-   it, and #82 and chapter 5 are where a first resource type would arrive.
+   it, and chapter 5 is where a first resource type would arrive.
 
 6. **ADR-0042 §10 and ADR-0047 §11's #24 and #19 accounting.** Both report zero
    deltas against the grammar budget and mint no experience-contract property.
