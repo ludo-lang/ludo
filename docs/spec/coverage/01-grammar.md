@@ -169,8 +169,18 @@ the drop is recorded.
    **not yet transcribed**: they require counting two more languages'
    grammars to this file's rules, which is research this chapter did not do and
    would have had to invent numbers to fake. Left as a **stated gap** in the
-   table rather than filled with a guess. It does not block the target, which
-   is defined against Lua alone.
+   table rather than filled with a guess ([#93](https://github.com/adamico/ludo/issues/93)).
+
+2a. **#24 call 4's Lua version.** The call says "Lua (~50)" and names no
+   version, which is load-bearing rather than incidental: **LuaJIT 2.1 — the
+   host LÖVE2D embeds — counts 49, and Lua 5.4 counts 55.** The ticket's own
+   figure matches LuaJIT. §13.7 publishes all three Lua rows plus LÖVE2D's
+   zero-token row rather than picking one silently, and records that **which row
+   the target binds against decides whether ludo's core grammar is compliant**
+   (+29.1% against 5.4, +44.9% against LuaJIT). Not resolved by this chapter:
+   it changes what the spec reports about its own compliance and, if LuaJIT
+   wins, owes §13.9's recorded overrule. The first draft of this chapter picked
+   5.4 without recording the choice; that was the defect.
 
 3. **#24's "no reserve is pre-allocated for the four known spenders."**
    Explicitly dropped. It governs how the map spends its budget, and there is no

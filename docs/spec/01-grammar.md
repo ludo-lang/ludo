@@ -662,23 +662,51 @@ type position and are counted in the core section under rule 3.
 **13.7 The comparison table.** The target is **within ~30% of Lua's core
 grammar**, stated as a comparison and never as a cap. (#24 call 4.)
 
-| Language | Keywords | Other tokens | Total | vs. Lua |
+| Language | Keywords | Other tokens | Total | ludo core vs. |
 |---|---:|---:|---:|---:|
-| Lua 5.4 | 22 | 33 | **55** | — |
-| **ludo, core** | 32 | 39 | **71** | **+29.1%** |
+| Lua 5.1 | 21 | 26 | 47 | +51.1% |
+| **LuaJIT 2.1 — the LÖVE2D host** | 22 | 27 | **49** | **+44.9%** |
+| Lua 5.4 | 22 | 33 | 55 | +29.1% |
+| LÖVE2D | +0 | +0 | **49** | **+44.9%** |
+| **ludo, core** | 32 | 39 | **71** | — |
 | ludo, type sublanguage | 4 | 1 | 5 | — |
 | Odin | — | — | — | not yet counted |
 | Go | — | — | — | not yet counted |
 
-Lua's figures are its reference manual §3.1: 22 keywords and 33 other tokens.
-**ludo's core grammar is inside the ~30% target.** The type sublanguage is
-budgeted apart and has no Lua counterpart to compare against.
+Each Lua row is that version's reference manual §3.1. LuaJIT 2.1 is Lua 5.1 plus
+`goto` and `::`; it has **no bitwise operators and no `//`**, which is the whole
+of its 6-token distance from 5.4.
 
-**The Odin and Go rows are a stated gap.** #24 call 4 asks for all three in one
+**LÖVE2D contributes zero tokens, and that is the row's point.** It is a C++
+application embedding LuaJIT, exposing engine methods through a hand-written
+C-API wrapper layer ([research/06](../research/06-love-dragonruby-batteries-line.md)),
+so its grammar *is* LuaJIT's exactly. **It ships 21 stdlib roots for a token
+cost of zero** — #24 call 5's stdlib escape route, exhibited by the closest peer
+this language has, and the reason §13.11's companion count is not optional.
+
+**Which row the ~30% target binds against is open**, and it decides whether
+ludo's core grammar is compliant:
+
+- Against **Lua 5.4**, ludo is inside the target at +29.1%.
+- Against **LuaJIT**, the Lua a LÖVE2D user actually writes, ludo is **outside
+  it at +44.9%** — about 7 tokens over — and §13.9's recorded overrule is owed.
+
+#24 call 4 names "Lua (~50)" without a version. **49 is LuaJIT; 55 is 5.4.**
+The figure in the ticket matches the LÖVE2D host, not the current release.
+Recorded as a stated gap rather than resolved here, because the answer changes
+what this spec reports about its own compliance, and because §13.5's rules make
+either number reproducible.
+
+**One fairness note, in the other direction.** Measuring against LuaJIT charges
+ludo for **bitwise operators**, which ADR-0021 §1's const-eval floor requires and
+which the baseline does not have. That is 5 of the ~7 tokens over. A comparison
+against a baseline lacking a feature the spec mandates is not obviously the
+fairer one, which is why both rows are published rather than one.
+
+**The Odin and Go rows are a stated gap.** #24 call 4 asks for them in the same
 table; counting two more languages to §13.5's rules is work this chapter did not
 do, and the rows are left empty rather than filled with a number nobody could
-reproduce. The target is defined against Lua alone, so the gap does not block
-it. Filling them is a task, not a decision.
+reproduce ([#93](https://github.com/adamico/ludo/issues/93)).
 
 **13.8 The payment rule, tiered.** (#24 call 5.)
 
@@ -699,6 +727,20 @@ than as a second mechanism here. (#24 call 6; #19 P9.)
 because relocating a feature into the stdlib satisfies a grammar budget by pure
 relocation and must therefore show up. It is a stdlib figure, not a grammar
 figure, and **chapter 8 publishes it**. (#24 call 5's second consequence.)
+
+**13.11.1** **LÖVE2D is the comparator for that count, not for §13.7's.** It
+adds 21 stdlib roots to LuaJIT for zero grammar tokens (§13.7), which is the
+escape route in its purest observed form: `love.audio`, `love.data`,
+`love.event`, `love.filesystem`, `love.font`, `love.graphics`, `love.image`,
+`love.joystick`, `love.keyboard`, `love.math`, `love.mouse`, `love.physics`,
+`love.sensor`, `love.sound`, `love.system`, `love.thread`, `love.timer`,
+`love.touch`, `love.video`, `love.window`, plus the `love` core module.
+([research/06](../research/06-love-dragonruby-batteries-line.md), sourced to
+`love2d/love` `src/modules`.) Chapter 8 MUST publish ludo's `$.` root count
+beside it, because a grammar comparison against LÖVE2D is vacuous by §13.7 and
+this is the axis on which the two are actually comparable. (#24 call 5's second
+consequence; #4's finding that 45.47% of hallucinated crates are real stdlib
+module names.)
 
 **13.12 Production count**, the machine-checkable companion required by §13.2:
 
