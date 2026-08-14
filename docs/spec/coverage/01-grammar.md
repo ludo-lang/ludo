@@ -171,16 +171,23 @@ the drop is recorded.
    would have had to invent numbers to fake. Left as a **stated gap** in the
    table rather than filled with a guess ([#93](https://github.com/adamico/ludo/issues/93)).
 
-2a. **#24 call 4's Lua version.** The call says "Lua (~50)" and names no
-   version, which is load-bearing rather than incidental: **LuaJIT 2.1 — the
-   host LÖVE2D embeds — counts 49, and Lua 5.4 counts 55.** The ticket's own
-   figure matches LuaJIT. §13.7 publishes all three Lua rows plus LÖVE2D's
-   zero-token row rather than picking one silently, and records that **which row
-   the target binds against decides whether ludo's core grammar is compliant**
-   (+29.1% against 5.4, +44.9% against LuaJIT). Not resolved by this chapter:
-   it changes what the spec reports about its own compliance and, if LuaJIT
-   wins, owes §13.9's recorded overrule. The first draft of this chapter picked
-   5.4 without recording the choice; that was the defect.
+2a. **#24 call 4's Lua version — under-specified in the source, resolved here.**
+   The call says "Lua (~50)" and names no version, and the version is
+   load-bearing: **LuaJIT 2.1 — the host LÖVE2D embeds — counts 49, Lua 5.4
+   counts 55**, and the ticket's own figure matches LuaJIT rather than the
+   current release. §13.7 **fixes the target against Lua 5.4**, on the ground
+   that a comparator must have the capability being compared: LuaJIT lacks
+   bitwise operators, which ADR-0021 §1 mandates, and that single absence is 5
+   of the ~7 tokens by which ludo would exceed a LuaJIT baseline.
+
+   This is a **spec-text repair of an under-specified citation** (ADR-0044 §6),
+   not a reversal: #24's decision — a published count against a ~30% target
+   relative to Lua — is unchanged, and ludo is compliant, so no ADR is written
+   and §13.9's recorded overrule is not owed. The LuaJIT and LÖVE2D rows are
+   published beside 5.4 so the choice is auditable and so the **+44.9%
+   recognition distance a LÖVE2D user actually faces** is on the record next to
+   the +29.1% the spec claims. The first draft picked 5.4 silently; the defect
+   was the silence, not the number.
 
 3. **#24's "no reserve is pre-allocated for the four known spenders."**
    Explicitly dropped. It governs how the map spends its budget, and there is no

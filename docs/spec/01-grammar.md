@@ -684,24 +684,26 @@ so its grammar *is* LuaJIT's exactly. **It ships 21 stdlib roots for a token
 cost of zero** — #24 call 5's stdlib escape route, exhibited by the closest peer
 this language has, and the reason §13.11's companion count is not optional.
 
-**Which row the ~30% target binds against is open**, and it decides whether
-ludo's core grammar is compliant:
+**The ~30% target binds against Lua 5.4**, and **ludo's core grammar is inside
+it at +29.1%.** #24 call 4 names "Lua (~50)" without a version, and the version
+is load-bearing — 49 is LuaJIT, 55 is 5.4 — so this chapter fixes it rather
+than leaving a citation that two readers would resolve two ways.
 
-- Against **Lua 5.4**, ludo is inside the target at +29.1%.
-- Against **LuaJIT**, the Lua a LÖVE2D user actually writes, ludo is **outside
-  it at +44.9%** — about 7 tokens over — and §13.9's recorded overrule is owed.
+The ground is that **a comparator must have the capability being compared.**
+Measuring against LuaJIT charges ludo for **bitwise operators**, which ADR-0021
+§1's const-eval floor requires and which LuaJIT does not have; 5 of the ~7
+tokens by which ludo exceeds the LuaJIT baseline are that single absence. A
+budget that counts a mandated feature as overspend is measuring the baseline's
+gaps, not this language's appetite. 5.4 is also the current release, so the
+denominator does not drift as an embedder lags upstream.
 
-#24 call 4 names "Lua (~50)" without a version. **49 is LuaJIT; 55 is 5.4.**
-The figure in the ticket matches the LÖVE2D host, not the current release.
-Recorded as a stated gap rather than resolved here, because the answer changes
-what this spec reports about its own compliance, and because §13.5's rules make
-either number reproducible.
-
-**One fairness note, in the other direction.** Measuring against LuaJIT charges
-ludo for **bitwise operators**, which ADR-0021 §1's const-eval floor requires and
-which the baseline does not have. That is 5 of the ~7 tokens over. A comparison
-against a baseline lacking a feature the spec mandates is not obviously the
-fairer one, which is why both rows are published rather than one.
+**The cost, named rather than discovered:** the Lua a LÖVE2D user actually
+writes is LuaJIT, so the recognition distance that user *feels* is +44.9%, not
+the +29.1% this spec publishes. The published figure is the fair measure of
+what ludo spent; it is not a claim about what a LÖVE2D user will recognise. The
+LuaJIT and LÖVE2D rows stay in the table for exactly that reason, and §13.9's
+recorded-overrule rule is **not** triggered — ludo is compliant against the
+baseline the target binds to.
 
 **The Odin and Go rows are a stated gap.** #24 call 4 asks for them in the same
 table; counting two more languages to §13.5's rules is work this chapter did not
