@@ -64,6 +64,25 @@ status: accepted
 
 Rules for the stamp: it is a **forward pointer with a one-clause gist**, never a summary of the new decision; multiple amendments **accumulate as separate lines** in date order rather than being merged; and it goes in the **same commit as the amending ADR**, so the two never disagree in the tree. The amending ADR carries the full argument, including what the earlier one got wrong and why.
 
+### The convention has failed silently, so each spec chapter re-checks its own sources
+
+Two ADRs skipped their stamps without anything noticing ([#72](https://github.com/ludo-lang/ludo/issues/72)), which means the rule depends on the author remembering. Rather than one corpus-wide audit, **a spec chapter checks the stamps on the ADRs it covers before transcribing them**, and records the result in its `coverage/` file. Chapters 2–8 discharge the audit incrementally over the ADRs that matter, which are the ones a chapter is about to turn into normative text.
+
+The check is two-directional, and both directions have produced findings:
+
+- **Missing stamps** — an ADR that changes, narrows or corrects one of your sources without stamping it. Add the stamp retroactively; it is additive metadata, not prose, so the immutability rule is not in tension with it.
+- **Stamps not owed** — a later ADR that only *cites* your source as precedent, or that retracts its own misapplication of the source's rule. No stamp. Record the withdrawal so the next author doesn't re-derive it. (ADR-0026 *confirms* ADR-0025 §6; ADR-0043 §4's "that cut was wrong" retracts its own misreading of ADR-0017 §7, whose rule reaches only higher-order functions.)
+
+An amendment whose target is an **issue** cannot be stamped. That is what the next section is for.
+
+## An issue citation may not be the whole truth
+
+The corpus cites issues and ADRs interchangeably, and [ADR-0033](../adr/0033-a-stamp-can-go-stale-and-the-companion-count-is-reconciled.md) §1 found this to be the common cause of every Tier-1 finding in the corpus audit: *a claim is checked against the issue that produced it rather than against the ADR that superseded it.* The citations are true but not always complete.
+
+**[`docs/adr/SOURCES.md`](../adr/SOURCES.md) lists the issues that are still the sole authority for something, with no ADR** — the rows an author cannot derive without proving a negative across the whole corpus — and names, for each, what later ADRs moved. Check a source against it before transcribing the source into a spec chapter.
+
+The two failures are siblings: a stamp tells you an ADR moved, and `SOURCES.md` tells you an issue did.
+
 ## Flag ADR conflicts
 
 If your output contradicts an existing ADR, surface it explicitly rather than silently overriding:
