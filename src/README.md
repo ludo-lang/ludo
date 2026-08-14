@@ -68,9 +68,10 @@ Tracked as [#95](https://github.com/ludo-lang/ludo/issues/95), which carries the
 repair of `docs/project-structure.md` with it. This section goes when that
 closes.
 
-Two prior decisions put artifacts in repositories of their own, and ADR-0046 §3
-says `ludo-lang/ludo` *"holds everything"*. Neither has been reconciled, and
-this README does not reconcile them:
+Four prior decisions put artifacts in repositories of their own — ADR-0001,
+ADR-0004, ADR-0006 and #49 — and ADR-0046 §3 says `ludo-lang/ludo` *"holds
+everything"*. None has been reconciled, and this
+README does not reconcile them. The two that bear on this directory:
 
 - **ADR-0001**: *"The platform layer lives in its own repo… stops an
   eighteen-backend conformance matrix from dominating a tracker that is still
