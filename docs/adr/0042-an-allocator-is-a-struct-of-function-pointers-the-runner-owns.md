@@ -10,6 +10,11 @@ status: accepted
 > hazard for the single-function case. (Stamp added retroactively while transcribing spec
 > chapter 3, per #72.)
 
+> **Amended by [ADR-0048](0048-every-allocating-call-is-fallible-and-a-persist-initialiser-faults.md):**
+> §3's *"never a #18 fault"* is narrowed — allocation failure in a `persist` initialiser is a
+> fault, because none of #10's three exits exists in that position; every other position is
+> unchanged. §9's blessed-but-unmandated list gains a ring buffer.
+
 # An allocator is a struct of function pointers, and the runner owns the ones that ship
 
 Issue #80 was filed on the observation that the word `allocator` appears in a mandated
