@@ -199,7 +199,10 @@ function whose body ends in a `match` writes `return` in each arm (chapter 1
 §6.7). (#7, surface call 3.)
 
 **4.8** Sum-type **layout** — representation, tag placement, and the absence of
-niche optimisation — is chapter 3's, per ADR-0025.
+niche optimisation — is chapter 3's, per
+[#25](https://github.com/ludo-lang/ludo/issues/25) §10. (The citation read
+"ADR-0025" until chapter 3 found the conflation; ADR-0025 is *Fullscreen is a
+player preference*. See [`coverage/03-memory.md`](coverage/03-memory.md) §0.)
 
 ---
 
@@ -284,7 +287,7 @@ user-declared type satisfies anything implicitly. (ADR-0017 §3, which extends
 
 **6.6** §6.5 is the fifth use of the **privileged-compiler-knowledge shape**,
 alongside the blessed math operators (§16.1, ADR-0016 §3), the derived
-`Eq`/`Hash`/`Clone` (#15, chapter 3), the SoA transform (ADR-0025, chapter 3),
+`Eq`/`Hash`/`Clone` (#15, chapter 3), the SoA transform (#25 §1, chapter 3),
 and the shader's recognise-by-name (ADR-0008 §6, chapter 6). It is **not a
 mechanism a user can invoke**. (ADR-0017 §3.)
 
@@ -836,7 +839,8 @@ inherited a silence:
   chapter 3's, which carries [#82](https://github.com/ludo-lang/ludo/issues/82)
   as a marked gap.
 - **Layout.** Sum-type representation, `#align(n)` and the SoA transform are
-  chapter 3's (ADR-0025).
+  chapter 3's ([#25](https://github.com/ludo-lang/ludo/issues/25), **not**
+  ADR-0025).
 - **The general view-return rule.** §17.10; chapter 3's, and open in
   [#83](https://github.com/ludo-lang/ludo/issues/83).
 - **The allocator interface.** §10.17; chapter 3's (ADR-0042).

@@ -2,6 +2,14 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0047](0047-a-returned-view-is-derived-from-its-receiver-and-mutation-kills-it.md):**
+> §2's `alloc` and `grow` return a view, which #15 Q10 forbade; ADR-0047 §1 makes that
+> legal by deriving the view from the receiver. §4's `Scratch` rule cites Q10 verbatim and
+> inherits both of ADR-0047's changes to it — a local binding is a legal position (§2), and
+> the struct-field, `persist` and capture bans stand. ADR-0047 §4 closes §4's stated capture
+> hazard for the single-function case. (Stamp added retroactively while transcribing spec
+> chapter 3, per #72.)
+
 # An allocator is a struct of function pointers, and the runner owns the ones that ship
 
 Issue #80 was filed on the observation that the word `allocator` appears in a mandated

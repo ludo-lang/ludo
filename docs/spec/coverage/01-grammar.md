@@ -263,3 +263,14 @@ Three further findings that are **not** phantoms but recorded corrections:
   `w.rocks` a possible zero-arg call, so `w.rocks!` reads as a mutating call
   named `rocks`. Removed, not reversed — nothing depended on it. This is a
   chapter-authored defect rather than a phantom, since no source cited it.
+- **§12.2 — `#align(n)`'s owner column cited the wrong record.** Found while
+  transcribing chapter 3 ([#87](https://github.com/ludo-lang/ludo/issues/87)).
+  It read *"ADR-0025 as corrected by ADR-0029 §7"* on two counts of confusion:
+  the attribute is shipped by **issue [#25](https://github.com/ludo-lang/ludo/issues/25) §3**
+  (ADR-0025 is *Fullscreen is a player preference* and decides nothing about
+  layout), and the correction ADR-0029 §7 makes is to **ADR-0024 §6**, which
+  §12.3 already cites correctly for the field-level decline. Repaired to
+  `#25 §3`. The attribute set is unchanged. Recorded in
+  [`03-memory.md`](03-memory.md) §0 with the three other sites of the same
+  conflation, and in [`../../adr/SOURCES.md`](../../adr/SOURCES.md)'s #25 row so
+  the next author is warned before citing it.

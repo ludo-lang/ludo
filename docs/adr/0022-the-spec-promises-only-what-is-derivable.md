@@ -16,6 +16,12 @@ status: accepted
 > conforming implementation above core. The WebGPU and WebGL2 API names in the clause are
 > **evidence the floor is satisfiable, never a roster**, and "backend" there meant the
 > renderer component.
+>
+> **Amended by [ADR-0047](0047-a-returned-view-is-derived-from-its-receiver-and-mutation-kills-it.md):**
+> the `get_pixels(image: Image) -> []u32` this ADR cites is restamped
+> **`get_pixels(image: !Image) -> []u32`** (§5). *Taking the view is the mutation signal* is
+> **unaffected**, and is now spelled at the call site. (Stamp added retroactively while
+> transcribing spec chapter 3, per #72.)
 
 # The spec promises only what is derivable, and says so where it cannot
 

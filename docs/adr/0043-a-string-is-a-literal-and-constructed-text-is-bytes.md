@@ -6,6 +6,14 @@ status: accepted
 > §5's conditional is discharged — integer generic parameters are admitted, so `TextBuf` ships —
 > and the declaration is respelled `TextBuf[N: usize]`, the parameter's type being mandatory.
 
+> **Amended by [ADR-0047](0047-a-returned-view-is-derived-from-its-receiver-and-mutation-kills-it.md):**
+> §9's narrow view-return clause **collapses into the general rule** — a returned view is
+> derived from its receiver, and §9 is that rule with the receiver spelled `buf`. `format`'s
+> signature is unchanged. §10's open item on where the `!` marker sits is closed for a call
+> operand by ADR-0047 §5 and for a sub-view by
+> [#101](https://github.com/ludo-lang/ludo/issues/101) (`name![a..<b]`). (Stamp added
+> retroactively while transcribing spec chapter 3, per #72.)
+
 # A string is a literal, and constructed text is bytes
 
 Issue #81 was re-scoped after [#80](https://github.com/adamico/ludo/issues/80) / ADR-0042 on

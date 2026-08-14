@@ -232,7 +232,7 @@ coverage file does not find its source already half-spent without a record.
 | ADR-0016 §7 | Float evaluation exactly as written | §2.5 |
 | ADR-0018 | A compile error is reported under chapter 7's envelope | §0.2 |
 | ADR-0021 | The const-eval floor, routed here by ch1 §5.6 | §15 — **and see §3 below** |
-| ADR-0025 | Sum-type layout is chapter 3's | §4.8 |
+| #25 (**not** ADR-0025) | Sum-type layout is chapter 3's | §4.8 — the citation was repaired by chapter 3, [`03-memory.md`](03-memory.md) §0 |
 | ADR-0029 | The closed list of four, which does not contain `rescue` | §10.16 |
 | ADR-0044 §6 | A hole is repaired in the spec text; an ADR only for a reversal | §19 |
 | ADR-0045 | The value parameter's semantics, and the narrowing of #11 | §5.7 |

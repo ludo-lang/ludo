@@ -4,7 +4,13 @@
 -- lexical and grammatical surface and nothing else: every construct below is
 -- spelled by docs/spec/01-grammar.md and parses against docs/spec/grammar.ebnf.
 -- Chapter 2 adds the constructs whose *meaning* it fixes — absence, failure,
--- the bug line, generics, function types, and text.
+-- the bug line, generics, function types, and text. Chapter 3 adds memory —
+-- layout, the two aggregates and their literal, views and the rules that keep
+-- them from dangling, moves, and multiple returns.
+--
+-- Nothing here names a `List`, a `Map` or a pool: the dynamic container set is
+-- the one thing chapter 3 records as unspecified (#82), and the reference
+-- program stays inside what the spec actually fixes.
 --
 -- Until a frontend exists this file is checked by hand. It is written fresh:
 -- prototypes/07-syntax/b-lua-flavoured.ludo is not a starting point, and breaks
@@ -155,15 +161,121 @@ pub fn total(xs: []Rock) -> usize rescue
   n
 end
 
+-- ---------------------------------------------------------------------------
+-- Chapter 3 adds memory: layout, the two aggregates and their literal, views
+-- and the rules that keep them from dangling, moves, and multiple returns.
+-- ---------------------------------------------------------------------------
+
+-- `#align(n)` is the one layout attribute, and it is type-level (ch3 §8.3).
+-- Field order is guaranteed and padding is C-compatible, so this struct's bytes
+-- are exactly what is written here, with no reordering (ch3 §8.2).
+#align(16)
+type Bounds = struct
+  lo: Vec2
+  hi: Vec2
+end
+
+-- The two core aggregates are `struct` and `[N]T`; everything else is a library
+-- generic (ch3 §4.1). This is an SoA field by hand: two columns, one length.
+type Field = struct
+  pos:  [MAX_ROCKS]Vec2 = {}
+  vel:  [MAX_ROCKS]Vec2 = {}
+  live: usize = 0
+end
+
+-- `Handle[T]` is copyable plain data, so it lives in a struct field (ch3 §10.3),
+-- and a handle to a released object reads as absence, never as a bug (ch3
+-- §10.2). That is why the field is `?Handle[Rock]` and not a pointer.
+type Tracker = struct
+  quarry: ?Handle[Rock]
+end
+
+-- A `{...}` literal is a fixed-size value and allocates nothing, so this
+-- function names no allocator (ch3 §5.4). The target type decides what the
+-- literal means (ch3 §5.1), literals nest (ch3 §5.9), and struct literals are
+-- named-field only (ch3 §5.6).
+pub fn unit_bounds() -> Bounds
+  { lo = { x = 0.0, y = 0.0 }, hi = { x = 1.0, y = 1.0 } }
+end
+
+-- `[]T` is the universal boundary: this one function accepts a `[N]Vec2`, a
+-- `List[Vec2]` and an SoA pool's `pos` column alike, and mentions none of them
+-- (ch3 §6.1). The writable view is marked at the parameter, and the mutation
+-- mark rides the root binding at the use site (ch1 §7.10).
+pub fn integrate(pos: ![]Vec2, vel: []Vec2, dt: f32)
+  for i in 0..<pos.len do
+    pos![i] = pos[i].add(vel[i].scale(dt))
+  end
+end
+
+-- The columnar batch call, and the first line in this program to take a
+-- **writable sub-view** rather than a whole place (#101). The mark sits after
+-- the root binding and the slice suffix follows: `pos![0..<live]`, never
+-- `pos[0..<live]!`, which parses and is an error (ch3 §6.12).
+--
+-- `pos` and `vel` are two views live at once, which is legal: there is no
+-- exclusivity rule between views (ch3 §7.4).
+pub fn integrate_live(pos: ![]Vec2, vel: []Vec2, live: usize, dt: f32)
+  integrate(pos![0..<live], vel[0..<live], dt)
+end
+
+-- A function may return a view only where the view derives from its receiver
+-- (ch3 §6.5) — here, the receiver's own array. A function with no receiver to
+-- derive from could not write this signature at all.
+pub fn positions(f: Field) -> []Vec2
+  f.pos[0..<f.live]
+end
+
+-- Invalidation, written as the re-take the rule requires (ch3 §7.1). A view
+-- dies when the place it derives from is next used with `!`, and the kill is
+-- flow-insensitive, so it does not matter which branch the mark sits in.
+--
+--   v := positions(f)
+--   f!.live += 1                    -- the mark kills v
+--   $.print(v.len)                  -- error: v was invalidated by `f!` above
+--
+-- The fix needs no annotation: take the view again after the mutation.
+pub fn spawn(f: !Field, at: Vec2) -> usize
+  f!.pos[f.live] = at
+  f!.vel[f.live] = { x = 0.0, y = 0.0 }
+  f!.live += 1
+  v := positions(f)
+  v.len
+end
+
+-- Fixed-arity multiple returns, destructured at the call site. The returned
+-- group has no type, cannot be stored or passed on, and destructuring must be
+-- total (ch3 §14).
+pub fn extremes(f: Field) -> Vec2, Vec2
+  b := unit_bounds()
+  return b.lo, b.hi if f.live == 0
+  b.lo, b.hi
+end
+
 -- Top level runs once, in the entry file only (#26). This is that file.
 
 $.print("reference program")
 
 persist tick: u64 = 0
 
+-- A `persist` declaration holds a plain value with no pointer in it, so it
+-- survives a reload by the same rule a bare `[N]u8` does (ch3 §8.2, ADR-0042
+-- §7). A view could not appear here: `persist` is one of the positions a view
+-- is banned from (ch3 §6.3).
+persist field: !Field = {}
+
 frame(screen: !Target, scratch: !Scratch)
   tick! += 1
+
+  -- The batch op runs every frame, over exactly the live prefix.
+  integrate_live(field!.pos, field.vel, field.live, 1.0 / 60.0)
+
   return unless tick % 60 == 0       -- statement modifier over a bool condition
+
+  n := spawn(field!, { x = 8.0, y = 8.0 })
+  lo, hi := extremes(field)          -- total destructuring of a multi-return
+  _ = lo
+  _ = hi
 
   -- `string` is the type of a literal and of nothing else; it widens one way
   -- to `[]u8` at parameter position (ch2 §17.1, §17.2).
@@ -184,6 +296,6 @@ frame(screen: !Target, scratch: !Scratch)
   -- `format` writes into a buffer the caller owns and returns a view of what it
   -- wrote; the format string is a literal the compiler checks (ch2 §17.5).
   buf: [32]u8 = {}
-  line := format(buf!, "{}: {} ({} chars)", label, secs, glyphs)
+  line := format(buf!, "{}: {} ({} chars, {} live)", label, secs, glyphs, n)
   $.print(line)
 end

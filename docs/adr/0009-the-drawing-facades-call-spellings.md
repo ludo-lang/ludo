@@ -19,6 +19,13 @@ status: accepted
 > **Amended by [ADR-0033](0033-a-stamp-can-go-stale-and-the-companion-count-is-reconciled.md):**
 > `$.graphics.checkerboard` is **`$.graphics.debug_image`**; the `Target`-not-`Canvas`
 > rationale cites a field ADR-0032 removed, and survives on its `Screen` ground alone.
+>
+> **Amended by [ADR-0047](0047-a-returned-view-is-derived-from-its-receiver-and-mutation-kills-it.md):**
+> §111's `get_pixels(image: Image) -> []u32` is restamped
+> **`get_pixels(image: !Image) -> []u32`** — a returned view is writable if and only if the
+> operand it derives from was marked at the call site, so the corpus's designated mutation
+> signal now carries the mark it signals with. (Stamp added retroactively while transcribing
+> spec chapter 3, per #72.)
 
 # The drawing facade's call spellings: `$.graphics`, verb-first, a descriptor per call
 

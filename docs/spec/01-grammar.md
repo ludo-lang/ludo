@@ -601,7 +601,7 @@ is one production and the attribute names cost nothing against §13.
 | Attribute | Marks | Owner |
 |---|---|---|
 | `#explicit` | a module | §11, ADR-0029 |
-| `#align(n)` | a type | chapter 3, ADR-0025 as corrected by ADR-0029 §7 |
+| `#align(n)` | a type | chapter 3, [#25](https://github.com/ludo-lang/ludo/issues/25) §3 |
 | `#vertex` | a function | chapter 6, ADR-0008 §7 |
 | `#fragment` | a function | chapter 6, ADR-0008 §7 |
 
