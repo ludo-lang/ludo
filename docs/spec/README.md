@@ -26,7 +26,7 @@ clauses** — rules three ADRs depend on that nobody ever wrote.
 | 1 | [Lexical structure and grammar](01-grammar.md) | written |
 | 2 | [Types](02-types.md) | written |
 | 3 | [Memory and aggregates](03-memory.md) | written |
-| 4 | Modules and libraries | not started |
+| 4 | [Modules and libraries](04-modules.md) | written |
 | 5 | The program and the runner | not started |
 | 6 | The facades | not started |
 | 7 | Diagnostics | not started |

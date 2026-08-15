@@ -1,0 +1,33 @@
+-- A module of the reference program itself, reached from the entry file by
+-- relative path (spec ch4 §3.1, §3.4). This directory carries no `library`
+-- line, so it is a path in this program and not a library (ch4 §2.1).
+--
+-- It is marked `#explicit`, which is a property of this file and of nothing
+-- else: the entry file next to it is unmarked, and a mixed program is
+-- well-formed (ch1 §11.5, ch4 §11.4). Marking it says nothing to any consumer
+-- and nothing about the `vec_utils` library it uses (ch4 §11.3).
+
+#explicit
+
+use "vec-utils"
+
+-- Every binding carries its type: `x = ...` is rejected here and `x: T = ...`
+-- is the spelling (ch1 §11.3 entry 1). Nothing about the meaning changes --
+-- `#explicit` changes zero semantics (ch1 §11.7).
+--
+-- `use` is file-scoped and non-transitive, so this file's own `use` line is
+-- what makes `vec_utils` writable here; the entry file's line does not reach
+-- it, and this line does not reach the entry file (ch4 §4.1, §4.2).
+
+pub fn banner_radius(r: f32) -> f32
+  p: vec_utils.Polar = vec_utils.Polar{ r = r, theta = 0.0 }
+  small: vec_utils.Polar = vec_utils.shrink(p)
+  small.r
+end
+
+-- Entry 4 of the closed list: no UFCS in this file. The qualified call is
+-- written out, and the module declaring the receiver's type is the name the
+-- UFCS spelling would have omitted (ch1 §11.3 entry 4).
+pub fn squared(x: f32, y: f32) -> f32
+  vec_utils.length_sq(x, y)
+end

@@ -1,0 +1,45 @@
+-- The reference program's one library. Chapter 4 adds it.
+--
+-- This directory is a library because of the line below and for no other
+-- reason: same files, same layout, and without it this is a path in somebody's
+-- program (spec ch4 §2.1). The declaration carries a name and nothing else --
+-- no version, no hash, no origin (ch4 §2.2).
+--
+-- The folder is `vec-utils` and the claimed name is `vec_utils`; the two need
+-- not match, and the runner keys its mapping on the claim, never on the folder
+-- (ch4 §8.2, §8.3). Renaming this directory changes nothing.
+--
+-- It sits under `libs/` beside the entry file, which is what lets the runner
+-- build a mapping with no build tool involved (ch4 §8.1). No ludo source in
+-- this program contains the string `libs/` (ch4 §8.6).
+
+library vec_utils
+
+-- A module may declare constants. Folding is not execution, so this costs no
+-- load-time side effect and #26's guarantee is untouched (ch4 §13.3, §12.6).
+pub const EPSILON = 0.0001
+
+-- Private is the default; `pub` marks public, so a declaration becomes API by
+-- its author's act (ch4 §5.2). `Polar` and `length_sq` are API. `near_zero`
+-- below is not, and a consumer naming it is a compile error (ch4 §5.5).
+pub type Polar = struct
+  r:     f32 = 0.0
+  theta: f32 = 0.0
+end
+
+fn near_zero(x: f32) -> bool
+  x < EPSILON and x > 0.0 - EPSILON
+end
+
+pub fn length_sq(x: f32, y: f32) -> f32
+  x * x + y * y
+end
+
+-- A library reaches its own files by relative path, exactly as a program does,
+-- and the path may not leave this directory (ch4 §3.2, §3.4).
+use "./scale.ludo"
+
+pub fn shrink(p: Polar) -> Polar
+  return { r = 0.0, theta = p.theta } if near_zero(p.r)
+  { r = scale.halve(p.r), theta = p.theta }
+end

@@ -2,6 +2,11 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0050](0050-removal-names-its-cost-at-the-call-site-and-descending-iteration-earns-an-operator.md):**
+> the grammar-budget count §4 charges `const` against is **recounted** (ADR-0050 §13, §14): `>..`
+> takes the core total to +30.9% of Lua 5.4, the first recorded overrule. §4's charge and every
+> clause of §1–§5 are unaffected.
+
 # Const evaluation folds an expression and never runs a program
 
 Issue #55 asked whether the language ships compile-time execution at all, and

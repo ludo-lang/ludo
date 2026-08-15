@@ -2,6 +2,20 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0027](0027-the-compiler-is-handed-a-name-to-location-mapping-and-never-searches.md):**
+> §7's *the compiler is given a mapping* becomes a normative obligation — the mapping is a
+> required input, complete before compilation, and no search of any kind is permitted; §4 gains
+> the clarifying line that `$.` is always present, never a key in the mapping and not shadowable;
+> §6 is made checkable (a mapping with two entries for one root name is rejected where it is
+> supplied) and is what forces the mapping to be flat; and a runner given no mapping builds one
+> by scanning `libs/`. §12's obligations 2 and 3 stop being inherited hopes.
+
+> **Amended by [ADR-0019](0019-claimants-conform-alone-and-extern-is-the-only-door-below-the-facade.md):**
+> §9's *ADR-0006 R4 becomes a type error* is narrowed — the nominal interface is **necessary and
+> insufficient**, a claimant owes the spec's behaviour and not merely its signature, and a
+> conformance obligation is stated on one claimant rather than on a pair. The seam §9 describes
+> is unaffected.
+
 # A library is a directory that claims a name
 
 ADR-0012 §5 permitted third-party wrapper packages explicitly and declined to

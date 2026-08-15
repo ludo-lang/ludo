@@ -1,0 +1,18 @@
+-- A second file of the `vec_utils` library, reached from the library root by
+-- relative path (spec ch4 §3.4). It carries no `library` line: the claim is
+-- made once, at the root, and this file is an ordinary module inside the
+-- directory that made it.
+--
+-- Nothing outside this library may path into this file (ch4 §3.2), and the
+-- library exports nothing of it that the root does not itself declare `pub`:
+-- there is no re-export (ch4 §5.4).
+--
+-- `pub` here is written against the library boundary, which is the boundary
+-- ch4 §5.5 states the rule for. **Whether it also gates a sibling module
+-- inside one library, and how a multi-file library's names are reached, is
+-- undecided** -- ch4 §16 and the ticket it names. This file is written to be
+-- correct either way: `halve` is `pub`, and the root reaches it by path.
+
+pub fn halve(x: f32) -> f32
+  x * 0.5
+end

@@ -23,6 +23,22 @@
 -- prototypes/07-syntax/b-lua-flavoured.ludo is not a starting point, and breaks
 -- six ways against the current corpus (ADR-0044 §7).
 
+-- Chapter 4 makes this file the **entry file of a program with three modules**,
+-- which is the whole of what it adds. `libs/vec-utils/` is a library because it
+-- claims a name; `hud.ludo` is this program's own file and is reached by path;
+-- the boundary between the two forms is the chapter's subject (ch4 §3.1).
+--
+-- A library is named, never located: nothing below says where `vec-utils` is,
+-- and moving it -- to a cache, to a vendor directory -- changes no line here
+-- (ch4 §3.3). The runner finds it by scanning `libs/` because no build tool
+-- supplied a mapping (ch4 §8.1).
+use "vec-utils"
+
+-- A path reference names one file, extension written, relative to this file's
+-- directory, and binds the file's stem (ch4 §3.4). This spelling is authored by
+-- chapter 4 §15.1: ADR-0014 §7 fixed the rule and never wrote the form.
+use "./hud.ludo"
+
 const MAX_ROCKS = 64
 
 type Vec2 = struct
@@ -325,4 +341,20 @@ frame(screen: !Target, scratch: !Scratch)
   buf: [32]u8 = {}
   line := format(buf!, "{}: {} ({} chars, {} live)", label, secs, glyphs, n)
   $.print(line)
+
+  -- The two reference forms, one line apart. `vec_utils` is the name the
+  -- library claims for itself -- this file cannot rename or alias it (ch4
+  -- §2.3, §2.4) -- and `hud` is this file's own module, bound from the stem of
+  -- the path that named it (ch4 §3.4).
+  --
+  -- `vec_utils.EPSILON` is a library constant, and reaching it runs nothing:
+  -- an imported module's top level is declarations only (ch4 §13.1, §13.3).
+  --
+  -- What this file may *not* write is `scale.halve(...)`. `vec_utils` reaches
+  -- its own second file by path; that does not make the name visible here, and
+  -- there is no `use` that would help -- non-transitivity is not a resolution
+  -- question (ch4 §4.2, §4.3).
+  reach := hud.squared(lo.x, lo.y) + vec_utils.EPSILON
+  edge: [32]u8 = {}
+  $.print(format(edge!, "reach {} banner {}", reach, hud.banner_radius(reach)))
 end

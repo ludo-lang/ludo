@@ -609,11 +609,14 @@ loops, no recursion, no `if` or `match` selection, no allocation, no I/O.
 **compile error**. (ADR-0021 §5.)
 
 **15.4** This chapter records §15.1–§15.3 because chapter 1 §5.6 routed the floor
-here. **ADR-0021 is chapter 4's source** (per the chapter assignment in
-[#88](https://github.com/ludo-lang/ludo/issues/88)), and chapter 4 owns the rest
-of it — the ruling-out of the computed module constant and the non-termination
-argument. The routing conflict is recorded in
-[`coverage/02-types.md`](coverage/02-types.md) §3 rather than resolved silently.
+here. **ADR-0021 is [chapter 4](04-modules.md)'s source and chapter 4 §12 owns
+it in full** — the floor, the impossibility of non-termination, the non-goal
+list, the ruling-out of the computed module constant, and the failure rule.
+§15.2–§15.3 are a restatement of chapter 4 §12.2–§12.3 for the reader arriving
+from a constant-required position, not a second rule; §15.1's positions are this
+chapter's. The routing conflict recorded at
+[`coverage/02-types.md`](coverage/02-types.md) §3 item 6 is resolved this way,
+by ownership rather than deletion.
 
 ---
 

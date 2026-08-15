@@ -2,6 +2,12 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0029](0029-explicit-marks-a-module-and-forbids-a-spelling-that-omits-a-name.md):**
+> §6's *`#align(n)` remains the one shipped attribute* is corrected to the one shipped
+> **type-level** attribute — `#explicit` and the shader markers are also shipped. §6's decision,
+> that field-level `#align` is declined permanently, is untouched. (The correction is also
+> recorded inline in §6; this stamp is the header record ADR-0029 §7 owed and did not apply.)
+
 > **Amended by [ADR-0026](0026-a-program-writes-bytes-to-declared-storage-slots.md):** the
 > quiescence predicate's live state gains the declared storage slots, which resolve once per
 > process.
