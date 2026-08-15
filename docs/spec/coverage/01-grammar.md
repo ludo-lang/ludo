@@ -205,8 +205,9 @@ the drop is recorded.
    the +29.1% the spec claims. The first draft picked 5.4 silently; the defect
    was the silence, not the number.
 
-   **Both figures are as-of-closing and have since moved** — to +49.0% and
-   +32.7% by §13.9.1 crossings 1 (`>..`) and 2 (`interface` + `impl`). They are
+   **Both figures are as-of-closing and have since moved** — to +51.0% and
+   +34.5% by §13.9.1 crossings 1 (`>..`), 2 (`interface` + `impl`) and 3 (`^`,
+   the raw pointer). They are
    left as written because this file records *why the comparator is Lua 5.4*,
    and that argument is unaffected by the numerator; §13.7 and §13.9.1 are the
    live figures and this file never was one.
@@ -232,11 +233,18 @@ the drop is recorded.
 
 A **phantom clause** is a source clause cited by the corpus that was never
 authored anywhere. Under ADR-0044 §6 the repair goes in the spec text, and an
-ADR is written only for a reversal. None of the entries below is a reversal, so
-none takes an ADR.
+ADR is written only for a reversal. None of phantoms 1–7 is a reversal, so none
+of them takes an ADR. **Phantom 16 is the exception and is stated as one**: its
+repair moves a published budget, which chapter 2 §19.3 established is a decision
+rather than a transcription defect, so it carries
+[ADR-0053](../../adr/0053-the-raw-pointer-is-a-caret-type-with-no-arithmetic-and-no-null.md).
 
-Seven were found. Each is authored in `../01-grammar.md` §14 with its reasoning,
-and listed here so the count is legible:
+Seven were found by the consolidation of this chapter. An eighth entry sits in
+the table below with a far higher number — the phantom numbering is **corpus-wide
+and continues across chapters** (chapter 2 took 8–12, chapter 3 took 13–15), and
+16 was raised against chapter 3 and landed here, because its repair is grammar
+and the grammar is this chapter's. Each is authored in `../01-grammar.md` §14
+with its reasoning, and listed here so the count is legible:
 
 | # | Phantom | Cited by | Repair |
 |---|---|---|---|
@@ -247,6 +255,7 @@ and listed here so the count is legible:
 | 5 | The cast spelling | ADR-0021 §1 puts casts in the const-eval floor | `x as T`, §14.6 |
 | 6 | The `match` arm form | #11 Q10 fixes the pattern language, never spells an arm | `<pattern> then … end`, §14.7 |
 | 7 | The inequality operator | #7 keeps Lua's look; ADR-0021 needs `~` for bitwise | `!=`, §14.8 |
+| 16 | The raw pointer, its dereference and its address-of | #8 call 6 requires *"a distinct, greppable type"* and writes `&x`; ch3 §16.2 and §17's guarantee table depend on it; no source spells any of the three | `^T` §9.4a, `p^` §7.10b, `&x` §7.10c, §14.11 — **the one entry here that took an ADR** ([#104](https://github.com/ludo-lang/ludo/issues/104), ADR-0053), and charged as §13.9.1 crossing 3 |
 
 Three further findings that are **not** phantoms but recorded corrections:
 

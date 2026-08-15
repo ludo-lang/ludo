@@ -425,7 +425,8 @@ another route. Chapter 3 §12 owns iteration semantics. (ADR-0050 §8.)
 **7.8** Indexing is 0-based. (#15 Q4, the first deliberate break with Lua.)
 
 **7.9** The postfix suffixes are field access `.`, optional chain `?.`, call
-`(...)`, index `[...]` and the mutation mark `!` (`Suffix`).
+`(...)`, index `[...]`, the mutation mark `!` and the dereference `^`
+(`Suffix`).
 
 **7.10** **`!` marks mutation at the place, and it rides the root binding**:
 `pool!.add(e)`, `w!.frame += 1`, `format(buf!, ...)`. The mark sits immediately
@@ -445,6 +446,27 @@ spelling per meaning; a legal synonym would give agents two ways to write one
 thing, and a distinct meaning would mint a second sense for `!`.
 ([#101](https://github.com/ludo-lang/ludo/issues/101);
 [ADR-0047](../adr/0047-a-returned-view-is-derived-from-its-receiver-and-mutation-kills-it.md) §5.)
+
+**7.10b** **The dereference is postfix `p^`**, a `Suffix` like any other, so it
+chains left to right: `p^.field`, `p^[i]`, `p^.f(x)`. **`p^` is a place**, which
+is what makes §7.10's rule reach it without a new clause — the mark still rides
+the root binding, so **writing through a pointer is `p!^ = v`**, never `p^! = v`.
+§7.10a's negative applies unchanged: the mark on the result of the suffix chain
+is an error with the fix named. The raw pointer is `unsafe`-only surface and
+chapter 3 §16 owns what the operation means; this chapter fixes only the
+spelling. The spelling is authored by this chapter — see §14.11.
+([#104](https://github.com/ludo-lang/ludo/issues/104);
+[ADR-0053](../adr/0053-the-raw-pointer-is-a-caret-type-with-no-arithmetic-and-no-null.md) §2, §4.)
+
+**7.10c** **Address-of is prefix `&x`** (`UnaryExpr`), and **its operand MUST be
+a place**. `&f()`, `&(a + b)` and `&literal` are compile errors naming the
+expression, with the fix named: *bind it first*. The language does not
+materialise storage for a temporary, and §16.3's *no guarantees inside `unsafe`*
+is a statement about what an address lets you do, not a licence for the compiler
+to invent the thing addressed. Prefix `&` costs no operator: `&` is already
+counted as the bitwise conjunction (§13.6), and §13.5 rule 3 counts a spelling
+once. (#8 call 6, which writes `&x`;
+[#104](https://github.com/ludo-lang/ludo/issues/104); ADR-0053 §3.)
 
 **7.11** **`?.` short-circuits**, yielding `?C` for the whole chain, and it works
 for UFCS calls as well as field access (`a?.f(b)`). (#9.)
@@ -528,6 +550,18 @@ concept in the language. Chapter 2 owns its semantics, including the rule that
 **9.4** `[N]T` is the fixed array, with the length in the type; `[]T` is the
 view (`PrefixType`). Chapter 3 owns what each means and where a view may
 appear. (#15 Q1, Q10, Q23.)
+
+**9.4a** `^T` (`PrefixType`) is the **raw pointer**, and it is a distinct,
+greppable type in the sense #8 call 6 requires. It is **not** a type
+constructor family: there is one pointer type, it does no arithmetic and it does
+not index, and a many-pointer is deliberately absent because that is what a view
+already is (§9.4). Like every other type it is **non-nullable** — a maybe-absent
+pointer is `?^T` — and it carries no `!`, because §9.2 keeps `!` a property of
+the place. **The type name is legal anywhere a type is**, including a struct
+field and an `extern fn` signature; it is the **operations** that `unsafe`
+gates. Chapter 3 §16 owns what those operations mean and chapter 2 §2.9.8 owns
+its casts. The spelling is authored by this chapter — see §14.11.
+([#104](https://github.com/ludo-lang/ludo/issues/104); ADR-0053.)
 
 **9.5** The array length position holds a const expression. It MUST fold under
 ADR-0021's floor, and a generic value parameter MAY appear in it **only bare**
@@ -696,7 +730,7 @@ checkable property. (#24 call 3; ADR-0029 §8.)
 
 | Section | Keywords | Operators | Total |
 |---|---:|---:|---:|
-| Core grammar | 33 | 40 | **73** |
+| Core grammar | 33 | 41 | **74** |
 | Type sublanguage | 5 | 1 | **6** |
 
 Core keywords are §2.3's list. Core operators are:
@@ -706,26 +740,41 @@ Core keywords are §2.3's list. Core operators are:
 +=  -=  *=  /=  %=                   (5)
 ==  !=  <  <=  >  >=                 (6)
 &  |  ~  <<  >>                      (5)
-=  :=  !  ?.  ..<  >..               (6)
+=  :=  !  ?.  ..<  >..  ^            (7)
 .  ,  :  ->                          (4)
 (  )  {  }  [  ]                     (6)
 _  $  #                              (3)
 ```
 
 Type-sublanguage keywords are §2.4's list. Its one uncounted-elsewhere operator
-is `?`, the optional marker. `!`, `[`, `]`, `:`, `,`, `->` and `.` appear in
-type position and are counted in the core section under rule 3.
+is `?`, the optional marker. `!`, `^`, `[`, `]`, `:`, `,`, `->` and `.` appear
+in type position and are counted in the core section under rule 4.
+
+**13.6.1 `^` is charged to core, and the choice is deliberate.** The terminal
+appears in both sections — `^T` in the type sublanguage (§9.4a) and the
+dereference suffix `p^` in the core grammar (§7.10b) — so rule 4 counts it once
+and this clause records which section is charged. Core is, on §13.9.1 crossing
+2's stated ground: putting a both-sections terminal in the cheaper bucket to
+protect the percentage is the silent increment §13.9 forbids. Every other
+both-sections terminal is already charged to core, and `!` is the exact
+analogue. **The type-sublanguage figure is therefore unchanged at 6**, and the
+absence of movement there is a consequence of rule 4, not an oversight.
+([#104](https://github.com/ludo-lang/ludo/issues/104); ADR-0053 §6.)
+
+**13.6.2 Prefix `&` (§7.10c) costs nothing.** Rule 3 counts a distinct spelling
+once, and `&` is already in the bitwise row. The address-of form is a new
+alternative in `UnaryExpr` over a terminal the budget has already paid for.
 
 **13.7 The comparison table.** The target is **within ~30% of Lua's core
 grammar**, stated as a comparison and never as a cap. (#24 call 4.)
 
 | Language | Keywords | Other tokens | Total | ludo core vs. |
 |---|---:|---:|---:|---:|
-| Lua 5.1 | 21 | 26 | 47 | +55.3% |
-| **LuaJIT 2.1 — the LÖVE2D host** | 22 | 27 | **49** | **+49.0%** |
-| Lua 5.4 | 22 | 33 | 55 | **+32.7%** |
-| LÖVE2D | +0 | +0 | **49** | **+49.0%** |
-| **ludo, core** | 33 | 40 | **73** | — |
+| Lua 5.1 | 21 | 26 | 47 | +57.4% |
+| **LuaJIT 2.1 — the LÖVE2D host** | 22 | 27 | **49** | **+51.0%** |
+| Lua 5.4 | 22 | 33 | 55 | **+34.5%** |
+| LÖVE2D | +0 | +0 | **49** | **+51.0%** |
+| **ludo, core** | 33 | 41 | **74** | — |
 | ludo, type sublanguage | 5 | 1 | 6 | — |
 | Odin | — | — | — | not yet counted |
 | Go | — | — | — | not yet counted |
@@ -742,12 +791,13 @@ cost of zero** — #24 call 5's stdlib escape route, exhibited by the closest pe
 this language has, and the reason §13.11's companion count is not optional.
 
 **The ~30% target binds against Lua 5.4**, and **ludo's core grammar is outside
-it at +32.7%**, under the recorded overrules at §13.9.1. It was inside at +29.1%
-until `>..` (§7.7.1) took it to +30.9%, and `impl` (§13.9.1 crossing 2) widened
-that overrun to its present figure. There are **two** crossings, and the second
-is a widening rather than a fresh one — which is what §13.9.1 exists to make
-visible, since a reader who saw only the table could not tell an overrun that
-grew from one that was always this size.
+it at +34.5%**, under the recorded overrules at §13.9.1. It was inside at +29.1%
+until `>..` (§7.7.1) took it to +30.9%; `impl` (§13.9.1 crossing 2) widened that
+overrun to +32.7%, and `^` (crossing 3) widened it again to its present figure.
+There are **three** crossings, and the second and third are widenings rather
+than fresh ones — which is what §13.9.1 exists to make visible, since a reader
+who saw only the table could not tell an overrun that grew from one that was
+always this size.
 #24 call 4 names "Lua (~50)" without a version, and the version
 is load-bearing — 49 is LuaJIT, 55 is 5.4 — so this chapter fixes it rather
 than leaving a citation that two readers would resolve two ways.
@@ -761,8 +811,8 @@ gaps, not this language's appetite. 5.4 is also the current release, so the
 denominator does not drift as an embedder lags upstream.
 
 **The cost, named rather than discovered:** the Lua a LÖVE2D user actually
-writes is LuaJIT, so the recognition distance that user *feels* is +49.0%, not
-the +32.7% this spec publishes. The published figure is the fair measure of
+writes is LuaJIT, so the recognition distance that user *feels* is +51.0%, not
+the +34.5% this spec publishes. The published figure is the fair measure of
 what ludo spent; it is not a claim about what a LÖVE2D user will recognise. The
 LuaJIT and LÖVE2D rows stay in the table for exactly that reason.
 
@@ -790,6 +840,7 @@ with the failure class §13.8 tier 2 charged for it. The list is the audit trail
 |---|---|---:|---:|---:|---|
 | 1 | `>..`, §7.7.1 | +1 operator | 71 → **72** | 29.1% → **30.9%** | the ascending swap-remove skip |
 | 2 | `interface` + `impl`, ch2 §6.7 | +1 core keyword (+1 type-sublanguage keyword, off this row) | 72 → **73** | 30.9% → **32.7%** | accidental satisfaction |
+| 3 | `^`, §7.10b and §9.4a | +1 core operator | 73 → **74** | 32.7% → **34.5%** | the address laundered as an integer |
 
 **Crossing 1, stated in full.** `>..` is **semantics-bearing, not sugar**, by
 §13.8's machine-checkable test: `#explicit` does not reject it, so it owes a
@@ -822,6 +873,31 @@ rename changes the shape back. #11 Q2 ruled structural satisfaction out for
 exactly this reason, and chapter 2 §6.2 states the rule; until this crossing the
 corpus mandated the rule while providing no syntax to express it, so the class
 was named but not actually deleted. (#100; chapter 2 §6.7.)
+
+**Crossing 3, stated in full.** `^` is **one terminal and one register row**,
+carrying both the pointer type `^T` (§9.4a) and the dereference `p^` (§7.10b).
+They are one mechanism by the same test crossing 2 applied: a pointer type with
+no dereference is inert, and a dereference with no pointer type has no operand.
+The address-of form `&x` (§7.10c) rides along at **zero cost**, being a new
+alternative over an already-counted terminal (§13.6.2), and the pointer casts
+(chapter 2 §2.9.8) ride on the existing `as`. `^` is **semantics-bearing, not
+sugar**, by §13.8's machine-checkable test: `#explicit` does not reject it.
+
+The class deleted is **the address laundered as an integer**. #8 call 6 requires
+raw pointers to be *"a distinct, greppable type"*, and until this crossing the
+corpus mandated that while providing no type to be distinct — so a container
+writing `unsafe` internals had exactly one place to keep an address, a `usize`
+field. `usize` is the width of an address (chapter 2 §2.4) and it is also the
+type of every length, index, capacity and offset in the language, so an address
+stored in one is indistinguishable **by type, by grep and by eye** from
+arithmetic that must never be dereferenced. Neither the compiler nor a reader
+can tell the two apart, and there is no diagnostic. The bug is the **default
+outcome** in crossing 1's sense: the author is not choosing a lax spelling over
+a strict one, because the strict one does not exist. Charging an operator buys
+back the distinctness the guarantee table (chapter 3 §17) is already stated
+against. ([#104](https://github.com/ludo-lang/ludo/issues/104);
+[ADR-0053](../adr/0053-the-raw-pointer-is-a-caret-type-with-no-arithmetic-and-no-null.md);
+chapter 3 §16.2.)
 
 **13.10** On an implementation the budget is not a budget at all but **no vendor
 syntax extensions**, which chapter 8 carries as a conformance property rather
@@ -864,6 +940,12 @@ case: core gains `ImplDecl` (71 → 72) and the type sublanguage gains
 alternative inside the existing `TypeBody` and costs no production of its own,
 exactly as `>..` did not; the two productions charged are the body and the
 member signature it repeats.
+
+**They are unchanged by §13.9.1 crossing 3** (#104), which is `>..`'s case
+rather than crossing 2's: all three of the raw pointer's forms are alternatives
+inside productions that already exist — `^T` inside `PrefixType`, the
+dereference inside `Suffix`, and `&x` inside `UnaryExpr`. The crossing costs one
+operator (§13.6) and no production.
 
 **This number is sensitive to how the grammar is factored** and is published
 with that note so that nobody games it by inlining rules. The binding unit
@@ -933,6 +1015,25 @@ That is an informal one-line rendering, not a second declaration form: the
 normative spelling is §5.2's, with the `type` header and the `end` termination
 every other type declaration carries. The decision ADR-0045 makes — the
 parameter, its annotation, and the three restrictions — is unaffected.
+
+**14.11 `^T`, `p^` and `&x` — authored, and the one entry here that took an
+ADR.** #8 call 6 requires raw pointers to be a distinct greppable type and
+writes `&x`; chapter 3 §16.2 states what `unsafe` permits over them; no source
+in the corpus spelled the type, the dereference or the address-of. Unlike
+§14.1–§14.10 this entry **moves a published budget** — one core operator, and
+the §13.7 comparison with it — which chapter 2 §19.3 established is a decision
+rather than a transcription defect, so ADR-0044 §6's repair-in-the-spec-text
+rule does not reach it. It is authored here under
+[ADR-0053](../adr/0053-the-raw-pointer-is-a-caret-type-with-no-arithmetic-and-no-null.md)
+and recorded as §13.9.1 crossing 3.
+
+`^` is the sigil because it is the one glyph the language had not spent: `*` is
+multiplication (§13.6), `~` carries xor and complement (§7.4), and `!` is the
+mutation mark, so each of them would have made one glyph denote two entities —
+the ground §9.7 and §14.8 already rejected spellings on. Its postfix form was
+chosen with it, because a suffix chains with the suffixes the language has
+rather than needing parentheses in front of them.
+([#104](https://github.com/ludo-lang/ludo/issues/104).)
 
 ---
 

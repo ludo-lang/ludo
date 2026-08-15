@@ -352,6 +352,16 @@ repair that moves the published budget is a decision, and it is filed as one.
 This is the first time the consolidation has hit that line, and the line is
 stated here so the next chapter reads it the same way.
 
+**Chapter 3 read it the same way twice**, declining phantoms 15 and 17 on this
+test, and both have since been decided by ADR rather than repaired in place —
+#12 by [#100](https://github.com/ludo-lang/ludo/issues/100), phantom 15 by
+[#104](https://github.com/ludo-lang/ludo/issues/104) / ADR-0053. This chapter
+took clauses from the second: **§2.9.7a** admits the three raw-pointer casts and
+**§9.1.1** states that the pointer is not an exception to §9.1's no-null rule,
+both recorded at §19.6. Neither is transcribed from a source — the corpus has no
+clause about pointer casts or pointer nullability — so both are authored, and
+the ADR is what authorises them.
+
 **One further finding that is not a phantom:** §9.6 reconciles #9's *every
 struct literal names every field* with #15 Q21's *field defaults are permitted*
 (ch1 §5.3). They do not conflict — #9 prohibits an **implicit zero**, not an

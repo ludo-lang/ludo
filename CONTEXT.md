@@ -450,6 +450,25 @@ type, differently accessed (#11). The mark rides the **root** of a suffix chain,
 so the place is always the binding the expression starts from and never a part
 selected out of it (ADR-0052).
 
+## Raw pointer
+
+An address, spelled `^T`, and the escape hatch's own type. It is **one type, not
+a family**: it does no arithmetic and does not index, because walking an address
+with a length beside it is what a [view](#view) already is. It is non-nullable
+like every other type in the language — a maybe-absent pointer is `?^T` and
+there is no null of any spelling — and it carries no `!`, because mutability
+stays a property of the [place](#place) and a dereference yields one. Taking an
+address is `&x` over a place, reading through is `p^`, and writing through is
+`p!^`. The **type name** is legal anywhere a type is, including a struct field
+and a C signature; it is the **operations** that require `unsafe`. Offsetting
+goes through `usize` and back, so the element size is visible code rather than a
+hidden scale factor (ADR-0053).
+
+Three unrelated things in this project are called pointers, and only this one is
+the type: the **function pointer** is the non-capturing `fn(...) -> R` the
+backend seam is a struct of (ADR-0006), and the **pointer** of the input facade
+is the player's cursor (ADR-0011).
+
 ## View
 
 A window into memory something else owns, spelled `[]T`. It is not a value that

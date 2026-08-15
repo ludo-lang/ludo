@@ -286,6 +286,9 @@ MulExpr         ::= CastExpr ( ( "*" | "/" | "%" ) CastExpr )*
 CastExpr        ::= UnaryExpr ( "as" TypeExpr )*
 
 UnaryExpr       ::= ( "not" | "-" | "~" ) UnaryExpr
+                  | "&" UnaryExpr            (* address-of; unsafe-only, and
+                                                the operand MUST be a place
+                                                (01-grammar.md §7.12) *)
                   | PostfixExpr
 
 PostfixExpr     ::= PrimaryExpr Suffix*
@@ -295,6 +298,7 @@ Suffix          ::= "." Identifier
                   | "(" ArgList? ")"
                   | "[" Expr "]"
                   | "!"
+                  | "^"                      (* dereference; unsafe-only *)
 
 ArgList         ::= Expr ( "," Expr )*
 
@@ -380,6 +384,10 @@ TypeCore        ::= FallibleType
 FallibleType    ::= PrefixType ( "rescue" NamedType? )?
 
 PrefixType      ::= "?" PrefixType
+                  | "^" PrefixType           (* the raw pointer; the "^"
+                                                terminal is introduced in
+                                                section 1 and counted there
+                                                (01-grammar.md §13.5 rule 4) *)
                   | "[" "]" PrefixType
                   | "[" Expr "]" PrefixType
                   | FnType

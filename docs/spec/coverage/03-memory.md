@@ -199,8 +199,8 @@ Per issue [#87](https://github.com/ludo-lang/ludo/issues/87): #8, #15, #25
 | §5 Resource types that must be closed are must-use; a forgotten `defer` is a named compile error | §15.5 — **and see §3.5**, the set is unfixed |
 | §5 must-use is a shallow *was this consumed?* check, not lifetime tracking | §15.3 |
 | §6 Loud, greppable, per-site `unsafe`; an escape hatch restated at each use site | §16.1 |
-| §6 Raw pointers are a distinct, greppable type | §16.2 — **Phantom, declined**, §16.5 / §19.3 → [#104](https://github.com/ludo-lang/ludo/issues/104) |
-| §6 `&x`, deref and manual alloc/free are legal only inside `unsafe` | §16.2 |
+| §6 Raw pointers are a distinct, greppable type | §16.2 — phantom, declined at §16.5 / §19.3, **since spelled `^T`** by [#104](https://github.com/ludo-lang/ludo/issues/104) / [ADR-0053](../../adr/0053-the-raw-pointer-is-a-caret-type-with-no-arithmetic-and-no-null.md) at ch1 §9.4a |
+| §6 `&x`, deref and manual alloc/free are legal only inside `unsafe` | §16.2, §16.2.1 — `&x` at ch1 §7.10c and `p^` at ch1 §7.10b, both since spelled by ADR-0053 |
 | §6 Encapsulatable: a veteran wraps unsafe internals behind a safe function | §16.4, §9.4 |
 | §7 An allocator is a library interface you pass; the core knows nothing special about it | §9.1 |
 | §7 AoS struct pool: fixed capacity, acquire/release, `active` flag, handle = slot | §10.4 |
@@ -627,9 +627,12 @@ declined.
 |---|---|---|---|
 | 13 | `Handle[T]` — the type of a generational handle | #8 §1/§3 make it the language's one lasting link; #9 and #25 §6 fix `pool.get(h) -> ?Entity`; spec ch2 §14.2 writes `[]Handle[Node]` from #11 Q13 | Authored, §10.3 / §19.1 |
 | 14 | What `n` may be in `#align(n)` | #25 §3 ships the attribute; ch1 §12.2 lists it; ADR-0016 §1 depends on it; no source constrains the argument | Authored, §8.3.1 / §19.2 |
-| 15 | The raw-pointer type | #8 §6 requires *"a distinct, greppable type"*; §8's guarantee table and ch3 §16.2 both depend on it existing; no source spells it, and neither `grammar.ebnf` nor ch1 §9 has a pointer production | **Declined**, §16.5 / §19.3 → [#104](https://github.com/ludo-lang/ludo/issues/104) |
+| 15 | The raw-pointer type | #8 §6 requires *"a distinct, greppable type"*; §8's guarantee table and ch3 §16.2 both depend on it existing; no source spells it, and neither `grammar.ebnf` nor ch1 §9 has a pointer production | Declined at §16.5 / §19.3; **[#104](https://github.com/ludo-lang/ludo/issues/104) since decided** — `^T` at ch1 §9.4a, `p^` at §7.10b, `&x` at §7.10c, under [ADR-0053](../../adr/0053-the-raw-pointer-is-a-caret-type-with-no-arithmetic-and-no-null.md) and charged as ch1 §13.9.1 crossing 3 |
+| 17 | Uninitialised memory | #8 §3/§6 and #9's *uninitialised memory in `unsafe` only* clause both require it; ch3 §16.2 lists it as a permission; no source spells how a program writes it | **Declined**, §16.6 → [#118](https://github.com/ludo-lang/ludo/issues/118) — split out of #104's grilling because it is an initialisation-obligation question reaching §5.7, §5.9 and ch5 §4.3.1 |
 
-The numbering continues chapter 2's twelve.
+The numbering continues chapter 2's twelve. **16 is not missing**: #104's repair
+is grammar, so it is tabled in [chapter 1's coverage](01-grammar.md) §4 where the
+clauses landed, even though the phantom was raised here.
 
 **Why #15 is declined rather than repaired.** Chapter 2 §19.3 drew the line and
 this chapter reads it the same way: a repair that costs a name or a checker rule
@@ -639,6 +642,14 @@ which ch1 §13.8's payment rule charges, and a decision with a budget consequenc
 is not a transcription defect. A pointer type needs both a type-sublanguage
 production and an expression production for `&x` and the dereference, so it is
 the most expensive repair the consolidation has met, and it is filed as one.
+
+**And the filing was vindicated by what the decision cost.** #104 settled as
+ADR-0053 and the bill was one core operator, a widened overrun in the §13.7
+comparison table, a permanently named failure class, and clauses in three
+chapters — none of which a transcription pass could have written on its own
+authority. The decline stands as the record of the boundary, not as a deferral
+that turned out to be unnecessary. **#17 is declined on the same test** and is
+the last of §16.2's permissions still unspelled.
 
 Phantoms 13 and 14 pass the same test in the other direction. `Handle[T]` is a
 prelude identifier applied to an existing `GenericArgs` (ch1 §9.8) — **zero**

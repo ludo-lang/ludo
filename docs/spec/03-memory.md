@@ -896,8 +896,13 @@ one that infects a dataflow. (#8 §6.)
 
 **16.2 What `unsafe` permits**, and nothing else changes meaning inside it:
 
-- **raw pointers**, which are a distinct, greppable type;
-- **`&x`**, and dereference;
+- **raw pointers**, which are a distinct, greppable type — spelled `^T`
+  (chapter 1 §9.4a), non-nullable like every other type (chapter 2 §9.1.1), with
+  no arithmetic and no indexing;
+- **`&x`** (chapter 1 §7.10c), and **dereference `p^`** (chapter 1 §7.10b);
+- **the raw-pointer casts** `^T as usize`, `usize as ^T` and `^T as ^U`
+  (chapter 2 §2.9.7a), which is where offsetting lives now that the pointer
+  itself does no arithmetic;
 - **manual allocation and free**, including the single-buffer release §9.4
   denies the safe layer;
 - **skipping a bounds check** (§1.4);
@@ -906,6 +911,31 @@ one that infects a dataflow. (#8 §6.)
 (#8 §3, §6, §8; #9, whose *uninitialised memory in `unsafe` only* clause lands
 here.)
 
+**16.2.1** **`unsafe` gates the operations, not the spelling.** The raw pointer
+type is **nameable wherever a type is nameable** — a struct field, a parameter,
+a return, an `extern fn` signature — and only §16.2's operations require the
+block. A type name that cannot be dereferenced outside `unsafe` is inert, and
+the distinctness #8 §6 asks for is carried by the sigil, which greps whether or
+not a block encloses it. The rule is forced besides: a C struct with a pointer
+field must be declarable at #29's boundary, and that declaration is not inside
+an `unsafe do ... end`. §16.4's encapsulated container is the same shape — the
+field holds `^T`, the block is around the code that dereferences it.
+
+**16.2.2** **Writing through a pointer is `p!^ = v`.** The dereference is a
+suffix (chapter 1 §7.10b) and chapter 1 §7.10 puts the mutation mark on the root
+binding with the suffix chain following it, so the pointer needs no rule of its
+own and gains no `!` in its type. `p^! = v` is an error by chapter 1 §7.10a,
+with the same fix named: the mark belongs on the root. This keeps #11 Q3 true
+without an exception — `!` is a property of the place in `unsafe` exactly as it
+is everywhere else. ([#104](https://github.com/ludo-lang/ludo/issues/104);
+[ADR-0053](../adr/0053-the-raw-pointer-is-a-caret-type-with-no-arithmetic-and-no-null.md) §4.)
+
+**16.2.3** **A view's runtime representation is still not stated here**, and the
+raw pointer does not change that. §8.6 hands view marshalling to #29 by name,
+and §8.5.1's argument applies with full force: a representation that C depends
+on cannot be un-fixed later, so this chapter does not fix one it has no call to.
+`[]T` is not defined as a pointer and a length by this specification.
+
 **16.3** **Inside `unsafe` there are no guarantees.** A use-after-free inside
 `unsafe` is a bug (chapter 2 §8.3), not a checked failure.
 
@@ -913,12 +943,23 @@ here.)
 a safe function whose callers never see the word. This is the shape §9.4's
 container release relies on. (#8 §6.)
 
-**16.5** **The raw-pointer type has no spelling.** #8 §6 requires it to be a
-distinct greppable type and no source in the corpus spells it. **Recorded, not
-authored** — a type-sublanguage production moves chapter 1 §13.6's published
-counts, which chapter 2 §19.3 established is a decision rather than a
-transcription defect. Filed as
-[#104](https://github.com/ludo-lang/ludo/issues/104); see §19.3.
+**16.5** ~~**The raw-pointer type has no spelling.**~~ **Closed.**
+[#104](https://github.com/ludo-lang/ludo/issues/104) resolved and the type is
+`^T`, authored at chapter 1 §9.4a with its two expression forms at §7.10b and
+§7.10c; chapter 1 §13.6, §13.7, §13.9.1 and §13.12 moved with it, and
+[ADR-0053](../adr/0053-the-raw-pointer-is-a-caret-type-with-no-arithmetic-and-no-null.md)
+records the decision. Kept in place, struck rather than deleted, because a
+reader arriving from §19.3 or §20 must be able to see that the boundary moved
+rather than wonder whether they are reading a stale copy.
+
+**16.6** **Uninitialised memory still has no spelling**, and it is the last of
+§16.2's five permissions with none. It is **recorded, not authored**, for the
+reason §16.5 used to give: #9 makes every binding initialise at its declaration,
+so a spelling for the exception is a decision against a published rule rather
+than a transcription defect, and it reaches §5.7, §5.9 and chapter 5 §4.3.1
+rather than staying inside this section. Filed as
+[#118](https://github.com/ludo-lang/ludo/issues/118), alongside
+[#116](https://github.com/ludo-lang/ludo/issues/116). See §20.
 
 ---
 
@@ -1016,15 +1057,25 @@ outright. Each is derived from a decision already taken rather than chosen here,
 which is why the repair is a sentence. **Zero cost against #24**: the attribute
 and its argument production already exist (chapter 1 §12.1).
 
-**19.3 The raw-pointer type — recorded, not authored.** #8 §6 requires raw
-pointers to be *"a distinct, greppable type"* and §8's guarantee table and §16.2
-both depend on them existing, while **no source spells the type**. This is the
-second phantom the consolidation has declined, and for chapter 2 §19.3's reason
-exactly: a pointer type is a type-sublanguage production, which chapter 1 §13.8
-charges and §13.6, §13.7 and §13.12 publish, so the repair moves a published
-budget and is therefore a decision rather than a transcription defect. Filed as
-[#104](https://github.com/ludo-lang/ludo/issues/104). §16.2 states what the type
-must permit once it exists.
+**19.3 The raw-pointer type — declined here, and since decided.** #8 §6 requires
+raw pointers to be *"a distinct, greppable type"* and §8's guarantee table and
+§16.2 both depend on them existing, while **no source spelled the type**. This
+was the second phantom the consolidation declined, and for chapter 2 §19.3's
+reason exactly: a pointer type is a type-sublanguage production, which chapter 1
+§13.8 charges and §13.6, §13.7 and §13.12 publish, so the repair moves a
+published budget and is therefore a decision rather than a transcription defect.
+
+**[#104](https://github.com/ludo-lang/ludo/issues/104) is now decided** and
+[ADR-0053](../adr/0053-the-raw-pointer-is-a-caret-type-with-no-arithmetic-and-no-null.md)
+carries it. The type is `^T`, non-nullable, with no arithmetic and no
+many-pointer; the dereference is the suffix `p^` and address-of is prefix `&x`;
+the grammar cost is one core operator, recorded as chapter 1 §13.9.1 crossing 3
+against the failure class *the address laundered as an integer*. This chapter's
+part of it is §16.2 and §16.2.1–§16.2.3 — what `unsafe` permits, that the
+permission is over operations rather than over the spelling, and that a view's
+representation is still #29's. **The decline recorded here stands as the record
+of why the consolidation did not repair it in place**, which is the same reason
+§16.6 now declines uninitialised memory.
 
 ---
 
@@ -1033,8 +1084,15 @@ must permit once it exists.
 Recorded so the boundary is legible, and so a later chapter is not read as
 having inherited a silence.
 
-- **The raw-pointer type spelling.** §16.5, §19.3.
-  [#104](https://github.com/ludo-lang/ludo/issues/104).
+- ~~**The raw-pointer type spelling.**~~ **Closed.** §16.5, §19.3.
+  [#104](https://github.com/ludo-lang/ludo/issues/104) resolved; the type is
+  `^T`, authored at chapter 1 §9.4a under
+  [ADR-0053](../adr/0053-the-raw-pointer-is-a-caret-type-with-no-arithmetic-and-no-null.md).
+  Struck rather than deleted, per §16.5.
+- **The spelling of uninitialised memory.** §16.2, §16.6. #9's
+  every-binding-initialises rule makes the exception a decision, and it reaches
+  §5.7, §5.9 and chapter 5 §4.3.1.
+  [#118](https://github.com/ludo-lang/ludo/issues/118).
 - **Whether `for x in !rocks` is legal on a columnar pool.** §12.2 gives a
   writable view per element; §10.8 rejects the synthesised in-place `!Entity`
   lend and confines in-place mutation to columns. Nothing states which wins.

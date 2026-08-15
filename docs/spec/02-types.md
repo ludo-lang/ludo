@@ -174,6 +174,28 @@ is the bind (#9). `u32 as char` MUST be a compile error. (#98.)
 compile error. `bool` is not an integer (§2.2), and a numeric spelling for it
 would be #24 sugar buying what `if` already expresses. (#98.)
 
+**2.9.7a Raw-pointer casts, and they are `unsafe`-only.** Three pairs exist and
+no others: **`^T as usize`**, **`usize as ^T`** and **`^T as ^U`**. Each is
+total in §2.9's sense — reinterpreting an address never faults — and each MUST
+appear inside an `unsafe` block (chapter 3 §16), which is where the consequence
+of producing an address that must not be dereferenced already lives. `usize` is
+the landing type because chapter 1 §2.4 defines it as the width of an address
+and nothing else in the language is.
+
+**The integer route is what pays for the absence of pointer arithmetic.**
+Chapter 1 §9.4a gives the raw pointer no arithmetic and no indexing; offsetting
+is therefore written as a cast, integer arithmetic and a cast back, where the
+scale factor is visible code. This is §8.4's argument for declining bit fields,
+applied to addresses: a program writes the shifts. **Named cost: an offset
+computation is three lines rather than one, and the author supplies the element
+size.**
+
+No other pointer cast exists. `^T as bool`, `^T` to any sized integer other than
+`usize`, and a cast from a float are compile errors, on §2.9.7's ground —
+declining a spelling is cheaper than defining a total mapping nobody should
+write. ([#104](https://github.com/ludo-lang/ludo/issues/104);
+[ADR-0053](../adr/0053-the-raw-pointer-is-a-caret-type-with-no-arithmetic-and-no-null.md) §5.)
+
 **2.9.8 The const-eval asymmetry, and what "lossy" means.** Chapter 4 §12.9
 makes a **lossy cast fail the build** in a constant-required position, while the
 identical expression at runtime is silent under §2.9. This is one meaning of
@@ -465,7 +487,9 @@ disclaims it. Zero grammar delta.
 charged as **one** crossing, chapter 1 §13.9.1 row 2, against the failure class
 **accidental satisfaction** — §6.2's rule, which the corpus mandated while
 providing no syntax to express it. Chapter 1 §13.6, §13.7 and §13.12 publish the
-resulting figures; the core row moves to **+32.7%** against Lua 5.4.
+resulting figures; the core row moved to **+32.7%** against Lua 5.4 with this
+crossing, and stands at **+34.5%** since crossing 3 (`^`, §2.9.7a and chapter 1
+§9.4a) widened it further.
 
 ---
 
@@ -539,6 +563,17 @@ safe layer, because that is what determines what the type system must express.
 **9.1** **`?T` is the only absence concept in the language.** Every type other
 than `?T` is **non-nullable**: no value of type `T` is ever absent, and **there
 is no null of any spelling** (chapter 1 §3.7). (#9.)
+
+**9.1.1** **The raw pointer is not an exception, and this is stated because it
+is the one type a reader will expect to be one.** `^T` (chapter 1 §9.4a) is
+non-nullable like every other type; a maybe-absent pointer is `?^T` and pays
+chapter 3 §8.5.1's always-present tag, inside `unsafe` as everywhere else.
+There is no null pointer of any spelling. A carve-out would put a value into the
+language that §9.1 says does not exist, and it would reach further than the
+escape hatch: chapter 3 §8.6 hands view and struct marshalling to #29, and a
+second absence concept would be #29's to explain to C alongside the first.
+([#104](https://github.com/ludo-lang/ludo/issues/104);
+[ADR-0053](../adr/0053-the-raw-pointer-is-a-caret-type-with-no-arithmetic-and-no-null.md) §4.)
 
 **9.2** **`?T` is sugar over a user-expressible sum type**, not a compiler
 built-in with no user-level equivalent. Its constructors are the prelude
@@ -1001,6 +1036,18 @@ an entity the type already names (#5 criterion 3), and would make `rescue return
 propagates. Zero grammar delta: `return` and its expression list already exist
 (chapter 1 §6.6). The failure direction stays visible at the call site regardless,
 because §10.11's must-use and §10.12's explicit propagation are unaffected.
+
+**19.6 The raw pointer's type-system half — authored here, decided by
+ADR-0053.** The type and its spellings belong to chapter 1 (§9.4a, §7.10b,
+§7.10c) and its `unsafe` semantics to chapter 3 §16; what falls to this chapter
+is what the *type system* says about it, and the corpus said nothing because it
+never had the type. Two clauses author it. §9.1.1 states that the pointer is
+**not** an exception to §9.1 — written as an explicit negative, because a reader
+who knows C arrives expecting a null and a silence here would read as an
+oversight rather than a decision. §2.9.7a admits three cast pairs and declines
+the rest, on §2.9.7's ground. Both follow from ADR-0053 rather than from a
+source in the corpus, and this entry records that.
+([#104](https://github.com/ludo-lang/ludo/issues/104).)
 
 ## 20. What this chapter does not decide
 
