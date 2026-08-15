@@ -297,30 +297,41 @@ facades it carries are chapter 6's.
 
 ## 10. Backends are libraries
 
-**10.1** A **backend is a library claiming a root name**, and target selection
+**10.1 What "backend" means here.** A **backend** is **one platform's
+implementation of the platform layer** — the Win32/D3D12/WASAPI set, or the
+Cocoa/Metal/CoreAudio set — and it is a **triple**: window and input, renderer,
+audio device. This section uses that sense throughout. Where a source says
+**renderer component**, it means the graphics third alone (D3D12, Metal,
+Vulkan, WebGPU, a WebGL2 context, a CPU rasteriser), which is a different
+quantity and is not what claims a root name. (`CONTEXT.md` §Backend, which
+holds; ADR-0037's stamp on ADR-0002, which records that ADR-0002 and ADR-0022
+§1 use "backend" for the component alone and that #74 found this collision to
+be half the term's ambiguity.)
+
+**10.2** A **backend is a library claiming a root name**, and target selection
 is **which of the mutually exclusive libraries claiming that name is in the
 build**. (ADR-0014 §9; ADR-0006 R3.)
 
-**10.2** A desktop and a web backend both claim the name and are **never in one
+**10.3** A desktop and a web backend both claim the name and are **never in one
 program**, by §6.1. (ADR-0014 §9.)
 
-**10.3** A backend **satisfies a declared nominal interface**, so a divergent
+**10.4** A backend **satisfies a declared nominal interface**, so a divergent
 signature is a **type error** rather than reviewer discipline. (ADR-0014 §9,
 amending ADR-0006 R4; #11's explicit nominal satisfaction.)
 
-**10.4** **The nominal interface is necessary and insufficient.** A claimant of
+**10.5** **The nominal interface is necessary and insufficient.** A claimant of
 a spec-defined root owes the spec's *behaviour*, not merely its signature; the
-type error of §10.3 is not the end of the obligation. (ADR-0019 §1.)
+type error of §10.4 is not the end of the obligation. (ADR-0019 §1.)
 
-**10.5** A conformance obligation is stated **on one claimant, never on a
+**10.6** A conformance obligation is stated **on one claimant, never on a
 pair**. Agreement between two claimants is a consequence of both conforming and
 is never a thing anyone checks. (ADR-0019 §1.)
 
-**10.6** Mutually exclusive claimants stay **legal and unblessed** for third
+**10.7** Mutually exclusive claimants stay **legal and unblessed** for third
 parties. Nothing in this spec implies the language supports interchangeable
 implementations. (ADR-0019 §4.)
 
-**10.7** §10.3's compile-time seam does **not** replace the runtime seam — the
+**10.8** §10.4's compile-time seam does **not** replace the runtime seam — the
 struct of non-capturing function pointers the runner re-points at a quiescent
 frame boundary. Both stand; a backend module is a module that satisfies the
 interface and produces the struct. (ADR-0014 §9; ADR-0006 R2; ADR-0024 §5, which
@@ -496,6 +507,15 @@ properties decided the shape:
 
 ## 16. What this chapter does not decide
 
+- **Which root name a backend claims, and whether it is reserved.** ADR-0014
+  §9 makes a backend a library claiming a root name and never says which;
+  ADR-0019 §1 speaks of a claimant of a *spec-defined root* without any
+  artifact defining one. On the rules as written the name is ordinary, so a
+  third-party library may claim it and §6.2's hard error is how that surfaces.
+  Filed as [#112](https://github.com/ludo-lang/ludo/issues/112), which must
+  report a #24 delta because a second reserved root would be an exception to
+  ADR-0014's Consequences claim that the companion count is otherwise
+  unaffected. §10 is unaffected by the answer except for the name itself.
 - **What a consumer reaches when it writes `<library>.<name>`, and which
   boundary `pub` gates.** ADR-0014 §1 makes a directory a namespace node and §3
   puts the `library` line "at the library root", without saying whether a

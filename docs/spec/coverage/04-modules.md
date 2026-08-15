@@ -53,7 +53,7 @@ not prose.
   two-place diagnostic. Precedent; transcribed at ch4 §6.5.
 - **ADR-0024 §5** consolidates the quiescence predicate that ADR-0014 §9's
   backend re-point relies on. It defines a term ADR-0014 used and never defined;
-  no clause of ADR-0014 moves. Transcribed at ch4 §10.7.
+  no clause of ADR-0014 moves. Transcribed at ch4 §10.8.
 - **ADR-0025 §2**, **ADR-0026 §4** and **ADR-0032** cite ADR-0014 for *there is
   no manifest*, *serialization is a library's job*, and *a library cannot learn
   the canvas size*. Precedent in all three.
@@ -124,10 +124,10 @@ and §13.3 (declaration is not execution) together.
 | §8 `use` is file-scoped; every file that uses a library says so | §4.1 |
 | §8 Non-transitive: a program cannot name a dependency's dependencies | §4.2 |
 | §8 The named cost: every file repeats its `use` lines | Consequence of §4.1, no separate rule. **Explicitly dropped**, see §7 |
-| §9 A backend is a library claiming a root name; target selection is the module set | §10.1 |
-| §9 Two backends claiming one name are never in one program | §10.2 |
-| §9 A backend satisfies a declared nominal interface; ADR-0006 R4 becomes a type error | §10.3, narrowed by §10.4 |
-| §9 The compile-time seam does not replace ADR-0006 R2's runtime struct | §10.7 |
+| §9 A backend is a library claiming a root name; target selection is the module set | §10.2 |
+| §9 Two backends claiming one name are never in one program | §10.3 |
+| §9 A backend satisfies a declared nominal interface; ADR-0006 R4 becomes a type error | §10.4, narrowed by §10.5 |
+| §9 The compile-time seam does not replace ADR-0006 R2's runtime struct | §10.8 |
 | §10 A library has no identity beyond its name: no version, no hash, no origin | §2.2 |
 | §10 A fork *is* the library and the compiler cannot tell | §2.6 |
 | §10 Rejected: carrying version or origin in the declaration | Rationale. **Explicitly dropped**, see §7 |
@@ -138,7 +138,7 @@ and §13.3 (declaration is not execution) together.
 | §12 The four obligations handed to the build system | §14.2, items 1–4 |
 | Consequence: three keywords lodged against #24 | Chapter 1 §13; ch4 cites no delta of its own |
 | Consequence: the companion count is unaffected | Chapter 8's, per ch1 §13.11 |
-| Consequence: ADR-0006 R4 becomes a compiler-checked obligation | §10.3 |
+| Consequence: ADR-0006 R4 becomes a compiler-checked obligation | §10.4 |
 | Consequence: the bootstrap must implement resolution first | **Explicitly dropped**, see §7 |
 | Consequence: one root name, one library, one nominal identity | §6.1, §6.4 |
 | Consequence: acquisition is future work under §12 | §14.1, §14.2 |
@@ -263,7 +263,7 @@ that rejection does not transfer: the argument there is that whoever checks a
 library out can rename its directory, which makes the binding a third party's to
 control. A program's own filename is the program author's.
 
-### 6.1 A second gap, filed rather than authored
+### 6.1 Two further gaps, filed rather than authored
 
 Transcription also found that **a multi-file library has no namespace rule** —
 ADR-0014 §1 makes a directory a namespace node and §3 puts the `library` line
@@ -271,6 +271,15 @@ ADR-0014 §1 makes a directory a namespace node and §3 puts the `library` line
 **`pub` has no stated boundary** below the library edge, because ADR-0014 §5
 argues the marker entirely across that edge. Both are **filed as
 [#111](https://github.com/ludo-lang/ludo/issues/111)**, not authored.
+
+**A third, found after the chapter shipped, is filed as
+[#112](https://github.com/ludo-lang/ludo/issues/112)**: ADR-0014 §9 makes a
+backend a library claiming a root name and **never says which name**, nor
+whether it is reserved the way `$` is (ADR-0027 §2). ADR-0019 §1's phrase *a
+claimant of a spec-defined root* presupposes a definition no artifact supplies.
+Not authored, for the #24 reason above: reserving a second root name would be an
+exception to ADR-0014's own Consequences claim that the companion count is
+otherwise unaffected, and that is a budget decision rather than a spelling.
 
 This is the opposite call from §6's, and the difference is the test the chapter
 applies: §6's path form was a **spelling for a rule the corpus already fixed**,
@@ -315,6 +324,17 @@ inherits them explicitly.
   owns ADR-0021, chapter 2 keeps the type-facing floor as a restatement.
 - **`docs/spec/README.md`** — chapter 4 marked written.
 
+**Made after the chapter shipped**, on a reader's question:
+
+- **Ch4 §10.1 pins the sense of "backend"** to `CONTEXT.md` §Backend — one
+  platform's implementation of the platform layer, a **triple** of window and
+  input, renderer and audio device — and names the collision ADR-0037's stamp on
+  ADR-0002 records, where ADR-0002 and ADR-0022 §1 use the word for the
+  **renderer component** alone. #74 found that collision was half the term's
+  ambiguity; §10 was transcribed without saying which sense it used, which is
+  the same defect one level down. §10.2–§10.8 are the former §10.1–§10.7,
+  renumbered.
+
 ## 9. What chapter 4 hands forward
 
 - **Chapter 5** inherits #26 calls 1, 3 and 4, the entry file, `persist`
@@ -328,5 +348,5 @@ inherits them explicitly.
 - **[#111](https://github.com/ludo-lang/ludo/issues/111)** inherits the
   multi-file library namespace and `pub`'s boundary (§6.1). Its resolution
   repairs ch4 §2, §3 and §5 in place.
-- **Chapter 8** inherits ADR-0019's claimant obligations (ch4 §10.4–§10.6) and
+- **Chapter 8** inherits ADR-0019's claimant obligations (ch4 §10.5–§10.7) and
   the runner obligations at ch4 §8.
