@@ -14,6 +14,10 @@ status: accepted
 > **Amended by [ADR-0033](0033-a-stamp-can-go-stale-and-the-companion-count-is-reconciled.md):**
 > "drawing needs eight verbs" is a wrong count — nine at the time of writing, ten after
 > ADR-0010 — and the argument it decorates is untouched.
+>
+> **Amended by [ADR-0034](0034-the-byte-exact-blit-is-withdrawn-and-the-texel-rule-replaces-it.md):**
+> the Specifiability parenthetical citing a rotated sprite's texel-centre tie-break rule is
+> corrected — no such rule was ever written, and the boundary case is implementation-defined.
 
 # The forbidden and required shapes of the platform-layer API
 

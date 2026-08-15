@@ -149,8 +149,16 @@ it depended on the author remembering. Per ADR-0051 §6: **a convention added to
 ships with a mechanical checker, or with an explicit note saying why it cannot have one.** A rule
 an agent can forget and nothing can detect is not a rule.
 
-[#97](https://github.com/ludo-lang/ludo/issues/97) — mechanically check that declared amendments
-carry a stamp — is the template.
+The first one exists: **`python3 tools/check-stamps.py`** (#97). Run it before committing an ADR.
+It checks that every amendment an ADR *declares* is stamped on its target, that stamps resolve to
+files that exist, that a stamp's label and link agree, and that an amendment always points
+backwards.
+
+It is a **floor**. An ADR that amends something without declaring it is invisible to it — that
+case is the one that actually bit us (#72) and stays human, assigned to the spec chapter covering
+the ADR. Its first run over the corpus produced nine findings of which one was real; the eight
+false positives came from reading every reference under an amendments heading rather than the
+bullet's target, which is now the rule the script applies.
 
 This replaces, rather than adds to, the standing-audit instinct. There are **no recurring corpus
 sweeps**: re-reading fifty ADRs on a cadence to usually find nothing is the re-derivation cost paid

@@ -99,8 +99,13 @@ tree already carries, so it cannot become a third source that goes stale on its 
 lands the file says only that the spec is normative, at which point it is deleted. An index built
 to survive would compete with the spec, which is the outcome §3 exists to prevent.
 
-This subsumes [#73](https://github.com/ludo-lang/ludo/issues/73), whose issue-to-ADR supersession
-index is the same artifact scoped to one edge type.
+It does **not** subsume [#73](https://github.com/ludo-lang/ludo/issues/73), and an earlier draft of
+this section wrongly said it did. #73's remaining half is **issue-keyed** — which ADR now carries a
+decision an issue is still cited for — and it is a byproduct of chapter work, assembled into
+[`SOURCES.md`](SOURCES.md) §2 from the `coverage/` files. `STATUS.md` is **ADR-keyed** and cannot
+answer it: an author holding `#42` gets nothing from a table indexed by ADR number. The two are
+siblings, like the stamp and `SOURCES.md` before them, and #73 closes with chapter 8 as it always
+did.
 
 ## 6. Consequence: a rule an agent can forget is not a rule
 
