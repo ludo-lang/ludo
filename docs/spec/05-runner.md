@@ -409,6 +409,12 @@ infinity**, which are ordinary values. (#18 §1.)
 **6.1.5** **Allocation failure in a `persist` initialiser is a fault** (§4.6.1).
 (ADR-0048 §7.)
 
+**6.1.6** §6.1.4 and §6.1.5 each add a kind to a list #18 §8 published as
+**closed**, and only the first says so. **This is a marked gap** — §13.1 — and
+until it closes, an implementation MUST report both, and MUST NOT report either
+under one of #18 §8's five original kinds. (#18 §8; ADR-0015 §4; ADR-0048 §7;
+[#113](https://github.com/ludo-lang/ludo/issues/113).)
+
 ### 6.2 What a fault does
 
 **6.2.1** **A fault ends the simulation.** The faulting frame is abandoned —
@@ -487,7 +493,10 @@ harness may assert about the presentation of a dump. (#18 §7, which routes it.)
 
 **6.5.1** A fault report MUST carry:
 
-- the **fault kind**, drawn from a **closed enum fixed by the spec**;
+- the **fault kind**, drawn from a **closed enum fixed by the spec** — closed so
+  that an agent can handle it exhaustively and a new kind is a spec change
+  rather than a surprise. **Its membership is §13.1's gap**: #18 §8's five, plus
+  §6.1.4's and §6.1.5's two;
 - the **source location** of the faulting operation;
 - **the concrete values that made it a fault** — index *and* length; both
   operands *and* the operation, for overflow; the asserted expression's source
@@ -816,11 +825,24 @@ having inherited a silence.
 
 ## 13. Marked gaps
 
-Per ADR-0044 §8, a gap this chapter writes down rather than blocks on. Each is
+Per ADR-0044 §8, two gaps this chapter writes down rather than blocks on. Each is
 filed as a ticket that owns the repair of this chapter's text, its `coverage/`
 rows and the reference program in one commit (ADR-0049).
 
-**13.1 There is no spelling for a zero-filled fixed array.** §4.3.3's `= {}`
+**13.1 The fault-kind enum is published as closed and has been extended twice.**
+#18 §8 fixes five kinds — out-of-bounds, assert, overflow, divide-by-zero,
+explicit panic — and closes the list on the ground that an agent can then handle
+it exhaustively. ADR-0015 §4 adds asset resolution failure **explicitly**;
+ADR-0048 §7 mandates a fault for allocation failure in a `persist` initialiser
+that maps onto **none of the six** and does not say it is adding one. So either
+a seventh variant exists or the closed-enum claim is false, and no ADR says
+which — an amendment whose target is an issue cannot be stamped, which is why
+nothing in the corpus recorded the second extension. §6.1.6 states the interim
+obligation. Filed as
+[#113](https://github.com/ludo-lang/ludo/issues/113), which owns the repair of
+§6.1.6, §6.5.1, this entry and the coverage rows in one commit.
+
+**13.2 There is no spelling for a zero-filled fixed array.** §4.3.3's `= {}`
 works for `TextBuf[N]` because the mandated type declares defaults for both of
 its fields. A **user-declared** type with a fixed-array field has no way to
 write that default itself: chapter 3 §5.7 permits omitting a defaulted field,

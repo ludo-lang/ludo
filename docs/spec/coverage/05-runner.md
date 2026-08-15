@@ -182,6 +182,7 @@ here because the target is a *sentence about the corpus* rather than a rule.
 | §7 the three exclusions (`unsafe`, pool slots, depth/size limits) | §6.4.5 |
 | §7 what is given up versus DragonRuby | **Dropped** — a consequence of §6.4.1, stated as a cost. §16 |
 | §8 the six report contents, including *always concrete values* | §6.5.1 |
+| §8 the fault-kind enum is **closed** | §6.5.1 — and **contradicted twice**, by ADR-0015 §4 and ADR-0048 §7. Marked gap ch5 §13.1, [#113](https://github.com/ludo-lang/ludo/issues/113) |
 | §8 the seam: contents here, format and static half elsewhere | §6.5.3 |
 | §9 the call chain is guaranteed in both modes; rejected dev-only chains | §6.5.2 |
 | §9's cost sentence | **Amended by ADR-0041 §4** and transcribed with both target classes at §6.5.2 |
@@ -219,7 +220,7 @@ here because the target is a *sentence about the corpus* rather than a rule.
 | §3 no program-visible loading state at all | §8.3 |
 | §3 the stated cost: no progress bar for the declared set | **Dropped** — a consequence of §8.3, stated in the ADR as a cost. §16 |
 | §4 a missing or undecodable declared file is a fault at top level | §8.4 |
-| §4 asset resolution failure is a spec-named fault kind carrying location and path | §8.4, §6.1.4 |
+| §4 asset resolution failure is a spec-named fault kind carrying location and path | §8.4, §6.1.4 — the first of the two extensions ch5 §13.1 records |
 | §4 rejected: substitute the debug pattern and carry on | §8.4's MUST NOT |
 | §4 no new diagnostic machinery; no logging concept enters the language | Chapter 7's. **Routed**, §15 |
 | §5 the decode-from-bytes calls; an allocator is a parameter; there is no decode-from-path | Chapter 6 §4.9.2. **Routed** with the *no path* half stated at §8.9 |
@@ -362,7 +363,7 @@ runner, the entry or `persist` are transcribed here; the rest is that chapter's.
 | ADR-0042 §8 the prelude/facade categorisation and the `$.mem` respelling | Chapter 3's. **Routed**, §15 |
 | ADR-0045 §1 the `persist name: TextBuf[32]` rendering | §4.3.2 — the contradiction's other side |
 | ADR-0045 §8 the reference-program line | §4.3.3 — **amended to carry `= {}`**, and the ADR is stamped |
-| ADR-0048 §7 allocation failure in a `persist` initialiser is a fault; the report names the declaration; the carve-out is by position | §4.6.1, §4.6.2, §4.6.3 |
+| ADR-0048 §7 allocation failure in a `persist` initialiser is a fault; the report names the declaration; the carve-out is by position | §4.6.1, §4.6.2, §4.6.3, §6.1.5 — the **implicit** second extension of #18 §8's closed enum, ch5 §13.1 |
 | ADR-0048 §6 every allocating call is fallible | Chapter 3's. **Routed**, §15 |
 
 ## 13. #9 and the contradiction chapter 1 deferred
@@ -477,6 +478,10 @@ can write that demonstrates them, which is itself the point of §11.1.
 Per `docs/agents/domain.md`, one line per hole opened by **writing a repair**
 rather than by reading.
 
+- **The fault-kind enum's membership** is not an induced hole — it was opened by
+  **reading** ADR-0015 §4 against ADR-0048 §7 against #18 §8, which is the
+  scanner working. Recorded as ch5 §13.1 and [#113](https://github.com/ludo-lang/ludo/issues/113),
+  and named here only so it is not miscounted as one.
 - **No spelling for a zero-filled fixed array** — opened by §4.3.1's requirement
   that every `persist` declaration carry an initialiser, which is the repair
   chapter 1 §14.5 asked for. It lands in **chapter 3** (the literal's arity

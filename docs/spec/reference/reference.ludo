@@ -389,6 +389,9 @@ persist field: !Field = {}
 -- failure is a fault rather than a value (ch3 §11.10): there is no `return` to
 -- `rescue` into, no signature to declare an error set on, and the fallback that
 -- would compile -- an empty list -- starts the program against an empty world.
+-- What a conforming report *calls* that fault is the open question at ch5 §13.1
+-- (issue #113): #18 §8 published the kind enum as closed, and this declaration's
+-- failure maps onto none of its five.
 -- `heap` is legal here and nowhere else (ch3 §1.6, §9.12), and the `List`
 -- implementation is runner-owned, which is what keeps this declaration clear of
 -- #17 §3's function-pointer check (ch3 §11.12).
