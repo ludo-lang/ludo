@@ -300,11 +300,19 @@ covers. This holds in both dimensions a view narrows along:
 
 **7.7** Consequently **two disjoint writable windows into one origin cannot be
 bound simultaneously** — two ranges of one buffer, or two columns of one pool.
-This is a stated cost, not an oversight; the capability is filed as
-[#102](https://github.com/ludo-lang/ludo/issues/102). The unbound form is
+This is a stated cost, not an oversight. The unbound form is
 unaffected: `integrate_live(field!.pos, field.vel, field.live, dt)` binds
 nothing, so §7.4 governs and nothing dies.
 ([#101](https://github.com/ludo-lang/ludo/issues/101); ADR-0052 §5.)
+
+**7.7.1 The capability is deliberately not specified, and §7.6 is not the way
+it would arrive.** No range or column reasoning will be added to §7.6 to buy it;
+that is the analysis §7.8 exists to refuse. Should a later effort buy it, the
+admissible shape is a **split call that derives both views from one use of the
+origin** — `head, tail := xs!.split_at(k)`, and the column analogue — which fits
+§7.1 unamended and keeps the kill visible in the caller's own text. The
+capability is parked at [#102](https://github.com/ludo-lang/ludo/issues/102)
+with no mechanism chosen; nothing in this specification presses on it.
 
 **7.8 What §7 is not.** It tracks a *derived-from* edge between two locals in
 one body. Recorded as a closed list so it is not read as a borrow checker
@@ -1040,7 +1048,9 @@ having inherited a silence.
   declaration carry an initialiser, and recorded at chapter 5 §13.1.
   [#116](https://github.com/ludo-lang/ludo/issues/116).
 - **Binding two disjoint parts of one origin** — two ranges of a buffer, or two
-  columns of a pool. §7.7.
+  columns of a pool. §7.7, and **not decided rather than not yet decided**:
+  §7.7.1 records that the capability is parked with no mechanism chosen and that
+  §7.6 will not be softened to reach it.
   [#102](https://github.com/ludo-lang/ludo/issues/102).
 - **The interface declaration form** that `Iter[T]` and `Key` need. §12.5;
   inherited from chapter 2 §6.2.1.
