@@ -10,8 +10,14 @@
 --
 -- The dynamic container set is now fixed at `List` + `Map` (ch3 §11.3), so this
 -- program exercises it: a fallible `push`, a `reserve` before a batch, and a
--- `persist` container. What it still does not name is a pool, and container
--- *removal*, which ch3 §11.13 carries as the chapter's live gap (#105).
+-- `persist` container. What it still does not name is a pool.
+--
+-- Container *removal* is no longer a gap: ch3 §11.13-§11.13.9 specify it, and
+-- ADR-0050 adds the descending range operator `>..` that its cull needs. This
+-- program does not exercise any of it yet -- the extension is split out to
+-- #109 under ADR-0049 §4, which lets a large reference-program extension
+-- become its own work while the clause repair never splits. Until #109 lands,
+-- `trail` below grows unbounded and is the leak that ticket also fixes.
 --
 -- Until a frontend exists this file is checked by hand. It is written fresh:
 -- prototypes/07-syntax/b-lua-flavoured.ludo is not a starting point, and breaks
