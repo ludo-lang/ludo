@@ -507,3 +507,16 @@ transcription defects rather than undecided design — three clauses cited by
 multiple ADRs and never authored (ADR-0044 §3). A hole is therefore repaired in
 the spec text directly, and earns an ADR only where it reverses a decision
 (ADR-0044 §6).
+
+## Induced hole
+
+A [hole](#hole) whose cause is the *repair* of an earlier one rather than the
+corpus — opened by writing a fix, not by reading. The plain hole is discovered
+by transcription and is a finite pass over a fixed corpus; an induced hole is
+feedback, and is the only class that can diverge.
+
+Recorded because the two have opposite prognoses and nothing else distinguishes
+them: a chapter's `coverage/` file carries one line per induced hole, naming the
+ticket whose repair opened it. A short list across chapters means hole arrival
+is a throughput problem; a list that grows chapter over chapter means a loop,
+and names the repairs that drive it.

@@ -11,6 +11,10 @@ status: accepted
 > and the ticket that gap files now owns repairing the chapter text, coverage rows and gap list
 > in the same commit as its answer. §6 is unchanged and reaffirmed.
 
+> **Amended by [ADR-0051](0051-the-spec-is-the-only-normative-surface-and-an-absorbed-adr-is-stamped.md):**
+> consolidation is carried to its conclusion — a landed chapter is the only normative surface, and
+> the ADR it absorbs is stamped as history in the chapter's commit.
+
 # The map ends at an artifact, and the corpus is consolidated into a spec
 
 Not a ticket. This ADR was written from a session that started as a complaint about

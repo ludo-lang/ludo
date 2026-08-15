@@ -7,6 +7,10 @@ status: accepted
 > array's analogue and the procedural path. ADR-0007 also records that the `O(1)`
 > voice clause bounds each voice, not how many exist: there is no voice cap.
 >
+> **Amended by [ADR-0014](0014-a-library-is-a-directory-that-claims-a-name.md):** R4's
+> identical-signature rule is no longer reviewer discipline — a backend satisfies a declared
+> nominal interface, so a divergent signature is a type error.
+>
 > **Amended by [ADR-0033](0033-a-stamp-can-go-stale-and-the-companion-count-is-reconciled.md):**
 > "drawing needs eight verbs" is a wrong count — nine at the time of writing, ten after
 > ADR-0010 — and the argument it decorates is untouched.

@@ -101,6 +101,61 @@ repair chapter N's clause, coverage rows and gap list.* The one thing that may s
 work is a large **reference-program** extension, and only with the split recorded on the map; the
 clause repair never splits.
 
+## The spec is where you read the rule; `STATUS.md` says whether an ADR still is
+
+[ADR-0051](../adr/0051-the-spec-is-the-only-normative-surface-and-an-absorbed-adr-is-stamped.md)
+makes a landed spec chapter the **only normative surface**. An ADR a chapter has absorbed keeps
+the argument and loses the authority, and says so in a stamp of its own — same one-line mechanism
+as amendment, in the chapter's commit, owed **whether or not the chapter changed the rule**:
+
+```markdown
+> **Absorbed by [spec §6.2](../spec/06-the-facades.md):** the chapter is normative; this ADR
+> keeps the argument.
+```
+
+Until chapters 4–8 land, **[`docs/adr/STATUS.md`](../adr/STATUS.md)** is the bridge: one row per
+ADR, `ADR-NNNN | status | one-clause gist | declared edges | suspected unstamped targets`. Check a
+source against it before citing the source, the way you already check
+[`SOURCES.md`](../adr/SOURCES.md) before transcribing an issue.
+
+Two properties are load-bearing and easy to erode:
+
+- It is **derived**. Every row restates an edge the tree already carries — a stamp, a supersession
+  line, a `coverage/` entry. Never write a row that is true only in `STATUS.md`; fix the tree and
+  let the row follow.
+- It is **temporary**. Each landing chapter converts rows to `absorbed-by-ch-N`. When the last
+  chapter lands the file is deleted. Do not grow it into a reference; that is the spec's job.
+
+## Record an induced hole in the chapter that opened it
+
+A [hole](../../CONTEXT.md#hole) found by transcription is the scanner working and needs no
+bookkeeping — it is a finite pass over a fixed corpus. An
+**[induced hole](../../CONTEXT.md#induced-hole)** — one opened by *writing a repair* rather than by
+reading — is feedback, and is the only class that can diverge.
+
+So when resolving a ticket opens a new hole, add one line to the `coverage/` file of the chapter it
+lands in, naming the ticket whose repair opened it. Nothing else: the ledger answers a **trend**
+question, not a per-item one. A short list across chapters means hole arrival is a throughput
+problem and the answer is to keep going. A list that grows chapter over chapter means a loop — and
+names the repairs driving it, which no amount of auditing would tell you.
+
+The ledger starts with chapter 4. Chapters 1–3 are not backfilled: reconstructing cause for closed
+tickets is archaeology, and a trend needs the chapters still to come.
+
+## A convention here ships with a checker
+
+The stamp rule failed silently twice ([#72](https://github.com/ludo-lang/ludo/issues/72)) because
+it depended on the author remembering. Per ADR-0051 §6: **a convention added to this directory
+ships with a mechanical checker, or with an explicit note saying why it cannot have one.** A rule
+an agent can forget and nothing can detect is not a rule.
+
+[#97](https://github.com/ludo-lang/ludo/issues/97) — mechanically check that declared amendments
+carry a stamp — is the template.
+
+This replaces, rather than adds to, the standing-audit instinct. There are **no recurring corpus
+sweeps**: re-reading fifty ADRs on a cadence to usually find nothing is the re-derivation cost paid
+on a timer. The corpus gets one bootstrap sweep for `STATUS.md` and no more.
+
 ## Flag ADR conflicts
 
 If your output contradicts an existing ADR, surface it explicitly rather than silently overriding:
