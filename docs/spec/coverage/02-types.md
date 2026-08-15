@@ -290,13 +290,22 @@ the drop is recorded.
    is a **gap in the consolidation itself**, and it is recorded here because
    chapter 2 is where it was found.
 
-8. **Cast conversion rules — located as a silence, not authored.** ch1 §7.13
+8. **Cast conversion rules — located as a silence, now closed.** ch1 §7.13
    spells `x as T` and ADR-0021 §1 puts casts in the const-eval floor, so the
-   form exists and is const-evaluable; **no source says which conversions are
-   legal or what a lossy one does** (§2.9, §20). Not repaired under ADR-0044 §6:
-   a conversion rule carries a failure class of its own, so it is a design
-   decision rather than a transcription defect. Filed as
-   [#98](https://github.com/ludo-lang/ludo/issues/98).
+   form existed and was const-evaluable; **no source said which conversions are
+   legal or what a lossy one does.** It was a design decision rather than a
+   transcription defect, so ADR-0044 §6's repair rule did not reach it and it
+   was filed as [#98](https://github.com/ludo-lang/ludo/issues/98). **Resolved
+   and authored into this chapter as §2.9–§2.9.9**, no ADR: the decision
+   reverses nothing, and §2.9 is its only normative home. `as` is **total and
+   never faults**; one bit-width rule covers every integer↔integer row; float→int
+   truncates toward zero, saturates out of range and maps NaN to `0`; int→float
+   and `f64 as f32` round to nearest, ties to even; `distinct` crosses in both
+   directions; `char as u32` is legal and `u32 as char` is not, replaced by
+   `char.from_u32(x) -> ?char`; `bool` casts do not exist. §2.9.8 defines
+   **lossy** as non-injective at the given width, which is what ch4 §12.9's
+   build failure quantifies over. #24 delta: **zero** — no keyword, no operator,
+   no new stdlib root name.
 
 ---
 

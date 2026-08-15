@@ -454,7 +454,8 @@ the receiver's type, and nowhere else. (#16; #11 Q8.)
 
 **7.13** `x as T` (`CastExpr`) is the cast form. (ADR-0021 §1 lists casts in
 the const-eval floor, which requires a spelling.) The spelling is authored by
-this chapter — see §14.6.
+this chapter — see §14.6. **Chapter 2 §2.9 owns the conversion rules** — which
+casts are legal, and what each yields. (#98.)
 
 **7.14** `<expr> rescue <tail>` (`RescueExpr`) is the failure-handling form,
 with three tails (`RescueTail`): a diverging statement (`rescue return`), a

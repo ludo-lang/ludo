@@ -121,8 +121,78 @@ is used as another only through an explicit cast, `x as T` (chapter 1 §7.13).
 (#11, no implicit-conversion-driven dispatch.) **The one implicit widening in the
 language is `string` to `[]u8` at parameter position** (§17.2, ADR-0043 §2).
 
-**2.9** **Which casts are legal, and what a lossy or out-of-range cast does, is
-not decided by this chapter's sources** and is not authored here. See §20.
+**2.9** **A cast is total. `x as T` never faults.** Every legal cast yields a
+value for every input, so no cast is a fault site and no cast kind appears in
+chapter 5's fault enumeration. This is the deliberate counterpart to §8.3's
+always-checked integer overflow: arithmetic that loses a value the programmer
+did not ask to lose stops the program, and `as` **is** the syntax for asking.
+The lens cost is named rather than resolved — a silently narrowing cast survives
+to runtime where `+` would have faulted (**robustness**), bought with one total
+rule and no second concept (**simplicity**) and with a cast an agent can
+evaluate locally against no context beyond the two types (**agent-friendliness**,
+#5's locality R1). (#98.)
+
+**2.9.1 Integer to integer, one rule.** The source value is taken as its
+two's-complement bit pattern and **truncated or extended to the target's width —
+sign-extending if and only if the source type is signed — then interpreted under
+the target's signedness.** Narrowing, widening and same-width reinterpretation
+are the same operation at three widths; there is no separate reinterpret form.
+Consequences: `300 as u8` is `44`, `-1 as u8` is `255`, `200 as i8` is `-56`,
+`0xFFFFFFFF as i32` is `-1`, and widening from a signed type preserves the value.
+**ADR-0007's mandated noise generator depends on this row**: its `(x as i32)` over
+`u32` state is a same-width reinterpretation, and any other reading would make
+the spec's own bit-exact formula produce a different sequence on a conforming
+implementation. (#98.)
+
+**2.9.2 Float to integer.** The value is **truncated toward zero**. Out of the
+target's range it **saturates** to the target's minimum or maximum, and **NaN
+converts to `0`**. All three are normative: a rule that says only "truncates"
+leaves a backend free to emit whatever the hardware does, which is the freedom
+§2.9's totality exists to remove. (#98.)
+
+**2.9.3 Integer to float.** The value is rounded to the nearest representable
+value, **ties to even** — IEEE-754's default rounding, consistent with §2.5.
+The conversion is silent at runtime even where it does not round-trip. (#98.)
+
+**2.9.4 Float to float.** `f32 as f64` is exact. `f64 as f32` rounds to nearest,
+ties to even; a magnitude too large for binary32 yields the corresponding
+infinity, and NaN stays NaN. (§2.5, §8.3: infinities and NaN are values.) (#98.)
+
+**2.9.5 `distinct` types.** `as` crosses a `distinct` type in **both**
+directions, to and from its base type, which is the "explicit cast" §3.3 already
+requires. A `distinct` cast is a change of type only: the representation is the
+base type's (§3.1) and no bits move. (#98.)
+
+**2.9.6 `char`.** `c as u32` is legal and total — a Unicode scalar value is
+always a `u32` (§2.6). **The reverse is not a cast.** Not every `u32` is a
+scalar value, so a total `u32 as char` would have to substitute a replacement
+character, which is a silent lie about the input. The conversion is
+**`char.from_u32(x) -> ?char`**, an associated function on `char`, and the check
+is the bind (#9). `u32 as char` MUST be a compile error. (#98.)
+
+**2.9.7 `bool` casts do not exist**, in either direction. `true as i32` is a
+compile error. `bool` is not an integer (§2.2), and a numeric spelling for it
+would be #24 sugar buying what `if` already expresses. (#98.)
+
+**2.9.8 The const-eval asymmetry, and what "lossy" means.** Chapter 4 §12.9
+makes a **lossy cast fail the build** in a constant-required position, while the
+identical expression at runtime is silent under §2.9. This is one meaning of
+`as` in two settings, not two meanings: a constant is fully known, so a loss the
+compiler can prove is unconditionally a typo, and there is no running program to
+carry the value onward. **Lossy means the mapping is not injective at the given
+width** — information destroyed, not merely a changed value. Same-width
+reinterpretation (§2.9.1) and value-preserving widening are bijective and
+const-fold freely, so ADR-0007's formula is const-evaluable; a narrowing that
+discards a set bit, a float→integer that truncates a fraction or saturates, and
+an integer→float that does not round-trip each fail the build. (#98; chapter 4
+§12.9.)
+
+**2.9.9 `#explicit` says nothing about casts.** No lint fires on a cast, in
+either layer. A cast is already the most explicit construct in the language —
+the operator exists solely to make the conversion visible — so a lint would fire
+on every correct use and teach nothing, which is §10.16's shape: `#explicit`
+accepts a form whose protected property is already satisfied. This is a
+decision, not an omission. (#98; #6.)
 
 ---
 
@@ -828,12 +898,6 @@ inherited a silence:
   fixed here, the forms are not. Filed as
   [#100](https://github.com/ludo-lang/ludo/issues/100), and it moves chapter 1
   §13.6's published counts when it lands.
-- **Cast conversion rules.** §2.8 fixes that a cast is the only numeric
-  conversion and chapter 1 §7.13 spells it, but **which casts are legal and what
-  a lossy or out-of-range cast does is unspecified by every source this chapter
-  covers.** Not authored here: it is a design decision with a failure class of
-  its own, not a transcription defect, so ADR-0044 §6's repair rule does not
-  reach it. Filed as [#98](https://github.com/ludo-lang/ludo/issues/98).
 - **The blessed math type set.** §16.1 transcribes ADR-0016 §3's operator rule
   because the typing of `+` cannot be stated without it, but **ADR-0016 is
   assigned to no chapter** in ADR-0044 §5's eight. Filed as
