@@ -14,4 +14,9 @@ The five canonical triage roles, each label string equal to its role name. See `
 
 ### Domain docs
 
-Single-context: `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+Single-context: `CONTEXT.md` and `docs/adr/` at your worktree's root. See `docs/agents/domain.md`.
+
+### Worktrees
+
+This clone is a bare repo with sibling worktrees — one directory per branch. Read your own
+worktree, never a sibling. See `docs/agents/worktrees.md`.
