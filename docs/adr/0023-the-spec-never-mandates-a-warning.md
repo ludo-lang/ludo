@@ -2,6 +2,9 @@
 status: accepted
 ---
 
+> **Absorbed by [spec ch7 §12](../spec/07-diagnostics.md):** the chapter is
+> normative; this ADR keeps the argument.
+
 # The spec never mandates a warning, and no flag changes what compiles
 
 Issue #59 asked whether warning configurability — promotion to errors, per-site

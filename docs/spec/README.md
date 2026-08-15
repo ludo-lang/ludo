@@ -29,7 +29,7 @@ clauses** — rules three ADRs depend on that nobody ever wrote.
 | 4 | [Modules and libraries](04-modules.md) | written |
 | 5 | [The program and the runner](05-runner.md) | written |
 | 6 | [The standard library](06-stdlib.md) | written |
-| 7 | Diagnostics | not started |
+| 7 | [Diagnostics](07-diagnostics.md) | written |
 | 8 | Conformance | not started |
 
 ## Closing test

@@ -2,9 +2,18 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0023](0023-the-spec-never-mandates-a-warning.md):** §4's parked
+> fog — *whether warnings are configurable* — is settled; the spec mandates no
+> warning at all, so every warning is vendor-space under §5. Stamp added
+> retroactively by spec ch7; see [`coverage/07-diagnostics.md`](../spec/coverage/07-diagnostics.md) §0.1.
+
 > **Amended by [ADR-0041](0041-the-record-stops-assuming-a-process-and-re-entrancy-is-by-task.md):**
 > §11's *Release still exits non-zero* is restated as abnormal termination by the
 > host's convention — the third site of a claim a tab cannot satisfy literally.
+
+> **Absorbed by [spec ch7](../spec/07-diagnostics.md):** the chapter is normative;
+> this ADR keeps the argument — the envelope, the fields, the codes, the
+> encoding and stream discipline are transcribed there.
 
 # One diagnostic stream for the compiler and the faulted program
 

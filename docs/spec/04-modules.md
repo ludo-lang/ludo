@@ -532,8 +532,12 @@ properties decided the shape:
   loading are chapter 5's. §3.6 records only the boundary rule.
 - **The facade surfaces under `$.`** — chapter 6. §9 fixes the root's status and
   nothing about its contents.
-- **The diagnostic envelope and the four `#explicit` codes' text.** ADR-0018;
-  chapter 7.
+- **The diagnostic envelope and the rules the four `#explicit` codes obey.**
+  ADR-0018; chapter 7 §5. Their **strings** are neither chapter's: chapter 7
+  §5.7 records that assigning codes is the follow-on toolchain effort's
+  (ADR-0018 §14), and the shape that separates a spec code from a vendor one is
+  chapter 7 §13.1's marked gap
+  ([#117](https://github.com/ludo-lang/ludo/issues/117)).
 - **What a claimant must do to conform**, including the reviewer-facing order.
   ADR-0019; chapter 8.
 - **Acquisition, registries, versioning and lockfiles.** §14.1; permanently out
