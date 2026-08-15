@@ -256,7 +256,7 @@ BitAndExpr      ::= ShiftExpr ( "&" ShiftExpr )*
 
 ShiftExpr       ::= RangeExpr ( ( "<<" | ">>" ) RangeExpr )*
 
-RangeExpr       ::= AddExpr ( "..<" AddExpr )?
+RangeExpr       ::= AddExpr ( ( "..<" | ">.." ) AddExpr )?
 
 AddExpr         ::= MulExpr ( ( "+" | "-" ) MulExpr )*
 

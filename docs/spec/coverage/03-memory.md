@@ -125,6 +125,47 @@ rather than being repaired after the fact. Verified, not assumed:
   call; §11.10 is a position with no call site rather than an exception to
   `rescue`. Applying a rule is not narrowing it. No stamp.
 
+### 0.6 ADR-0050's stamp list, checked in both directions
+
+ADR-0050 §14 claims eight records. Two are **stamps owed** and both landed in
+the ADR's own commit; the rest are explicit no-stamp findings, recorded here so
+they are not re-derived. Verified, not assumed:
+
+| Claimed | Verified |
+|---|---|
+| **ADR-0048** extended — §10's hand-off to #105 is discharged, and §4's withheld `capacity()` turns out to license §2's tombstones | Stamp present on ADR-0048, above its title, in the `docs/agents/domain.md` form |
+| **#15 Q24** reversed twice — a descending operator ships, and *not grammar* is corrected | `SOURCES.md` #15 row amended; an issue cannot be stamped, which is what that file is for. The row's existing ADR-0048 sentence is left intact and the reversal accumulates after it |
+
+**Stamps not owed:**
+
+- **ADR-0047 §3.** ADR-0050 §5 *applies* the mark-kills-views rule to removal
+  and states where it stops — an index is not a view. Applying a rule and
+  naming its boundary is not narrowing it. No stamp.
+- **#15 Q12, Q19.** Unchanged, and both are *paid for* rather than moved: Q12's
+  insertion order survives via tombstones, Q19's iteration ban survives with no
+  carve-out. Recorded in the `SOURCES.md` row for the reader who expects a
+  removal ADR to have disturbed them. No stamp beyond that.
+- **ADR-0017 / chapter 2 §7.2, §7.4.** ADR-0050 §12 cites them as the reason
+  `retain` is deferred. Being a constraint on someone else's decision is not a
+  change. No stamp.
+- **ADR-0021 §1.** Its const-eval floor is untouched; only chapter 1's *count*
+  moves (§13.6, §13.7, §13.12), and a count is not a clause. No stamp.
+- **ADR-0044 §6.** ADR-0050 exists **because** of §6 — a reversal takes an ADR
+  — so §6 is working as designed. No stamp.
+- **ADR-0049.** Its whole content is the obligation this commit discharges: the
+  clause repair, the coverage rows and the ADR land together. §4's carve-out is
+  exercised for the reference program, and the split is recorded on the map as
+  §4 requires. No stamp.
+
+**One record is filed rather than stamped.**
+[#107](https://github.com/ludo-lang/ludo/issues/107) — chapter 3 §12.2's
+`for x in !xs` contradicts chapter 1 §7.10's postfix mark. Found while resolving
+#105 and **not fixed here**: it is independent of removal, it touches a clause
+this commit already edits for another reason, and folding it in would put an
+unrelated reversal inside a resolution commit. §12.2's prefix spelling therefore
+**survives this commit unrepaired**, which is a known defect with a ticket and
+not an oversight.
+
 ---
 
 ---
@@ -368,10 +409,59 @@ narrower one opens at §11.13.
 | §8 `rescue` is local; `OutOfMemory` is not viral | §11.11 |
 | §8 Rejected: inferred error sets; rejected: an implicitly-absorbed variant | Rationale. **Explicitly dropped** — §3 |
 | §9 The containers are runner-owned; the release seam stays | §11.12 |
-| §10 Removal semantics are handed to #105 | §11.13, §12.2, §20 |
+| §10 Removal semantics are handed to #105 | **Discharged.** #105 is resolved by ADR-0050; the gap at §11.13 is now normative clauses §11.13–§11.13.9 and left §20 |
 | §10 This chapter transcribes §1–§9; the reference program gains container use | This chapter, and [`../reference/reference.ludo`](../reference/reference.ludo) |
 | §11 The stamp list | **Verified** — §0.5 |
 | §12 Zero #24 delta; no new #19 property; the three lenses and the named conflict | Chapter 8 and rationale. **Explicitly dropped** — §3 |
+
+### ADR-0050 — Removal names its cost at the call site, and descending iteration earns an operator
+
+Resolves #105, the marked gap this chapter carried at §11.13. **The gap closes
+and no successor opens in this chapter.** Two of its clauses land in chapter 1
+rather than here, which is the routing §0.3 requires: the operator and the
+prelude types are *syntax and spelling*, and this chapter owns only what they
+mean for containers.
+
+| Clause | Where it landed |
+|---|---|
+| §1 `remove(i) -> T` shifts, O(n); `swap_remove(i) -> T` reorders, O(1); both ship | §11.13 |
+| §1 The reordering is named at the call site — the agent-friendliness argument | §11.13 |
+| §1 `pop() -> ?T` | §11.13.1 |
+| §2 `Map.remove(k) -> ?V` tombstones; compaction on growth or `reserve` | §11.13.4 |
+| §2 §13.6's insertion order does not move; `len` counts live entries | §11.13.4 |
+| §2 The tombstone cost is unobservable because §11.8 withholds `capacity()` | §11.13.4 |
+| §2 Named cost: a delete-heavy `Map` that never grows holds its slots | §11.13.4 |
+| §2 Rejected: swap-into-the-hole | Rationale. **Explicitly dropped** — §3 |
+| §3 Removal returns the element; the move-on-assignment argument | §11.13.2 |
+| §4 Out-of-range removal faults; empty `pop` is `none` | §11.13.3, §11.13.1 |
+| §5 Removal kills views by §7.1 and creates no new rule | §11.13.6 |
+| §5 A held index is not protected — a documented consequence | §11.13.7 |
+| §5 Rejected: linear indices; generational handles are blessed-unmandated | §11.13.7, and rationale. **Partly dropped** — §3 |
+| §6 Removal is structural mutation; §12.2 takes no carve-out | §12.2 |
+| §6 The sanctioned cull iterates a range, so no lend exists | §12.2.1 |
+| §6 Descending is the correctness condition, not a style | §12.2.1 |
+| §7 The stable cull needs no `swap(i, j)` | §11.13.8, §12.2.1 |
+| §8 `>..` is the descending range operator | **Chapter 1 §7.7.1** |
+| §8 The angle points at the bound it excludes; the length is always excluded | **Chapter 1 §7.7.1** |
+| §8 An empty or inverted range iterates zero times | **Chapter 1 §7.7.4** |
+| §8 `>..` is a single token and does not collide | **Chapter 1 §7.7.1** |
+| §8 #15 Q24 ruled out `..=`, not a descending operator | **Chapter 1 §7.7.1**, and rationale. **Partly dropped** — §3 |
+| §9 The operator is grammar; the range is an ordinary value | **Chapter 1 §7.7.2** |
+| §9 `Range` and `RevRange` are prelude identifiers | **Chapter 1 §2.9, §7.7.2** |
+| §9 Blessed conformance to `Iter[int]`; independent of #100 | §12.5.1, **chapter 1 §7.7.2** |
+| §9 Reification collapses the slice special case | **Chapter 1 §7.7.2** |
+| §10 `RevRange` does not slice | **Chapter 1 §7.7.3** |
+| §11 `truncate(n)` cuts to the first `n` and returns `()` | §11.13.5 |
+| §11 `n > len` is a no-op — a bound, not an index | §11.13.5 |
+| §11 The buffer survives; `truncate(0)` is the per-frame reuse call | §11.13.5 |
+| §11 No `clear()` — one spelling per meaning | §11.13.5 |
+| §11 The name is contested and ships on corpus grounds | Rationale. **Explicitly dropped** — §3 |
+| §12 `retain` is deferred pending #100, not rejected | §11.13.8 |
+| §12 No `swap`, no `List.with_capacity` | §11.13.8 |
+| §12 No front-drop or FIFO; ruled out of scope to #108 | §11.13.9 |
+| §13 The budget overrule and its tier-2 payment | **Chapter 1 §13.9.1**, and §13.6, §13.7, §13.12 |
+| §14 The stamp list | **Verified** — §0.6 |
+| §15 Costs and the three lenses | Rationale. **Explicitly dropped** — §3 |
 
 ### #101 — Where the mutation mark sits on a sub-view
 
@@ -405,7 +495,7 @@ source already half-spent without a record.
 | #17 §3 | A `persist` declaration may not reach a pointer into the reloadable image | §9.10 (routed to chapter 5) |
 | #24 | The payment rule, which is why §19.3 declines to author the pointer type | §19.3 |
 | #26 | `persist` initialisers are cold-start-only and entry-file-only, which is what confines `heap` | §9.12 |
-| #105 | Container removal is unspecified, and is carried as a marked gap | §11.13, §12.2 |
+| #108 | The mandated set has no front-drop or FIFO — a stated absence, backlogged under ADR-0044 §7 rather than fogged | §11.13.9 |
 | ADR-0008 §4, ADR-0029 §8 | The attribute mechanism is one production and names cost nothing | §8.3 |
 | ADR-0015 | `decode_image(allocator, bytes)` is the mandated signature the allocator type has to fit | §9.1, §9.6.1 |
 | ADR-0016 §1 | The blessed math set is aligned by declaration, which is why alignment is a call parameter | §9.3 |

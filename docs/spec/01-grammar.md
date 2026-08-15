@@ -97,6 +97,11 @@ equivalent".)
 **2.8** `heap` is a **prelude identifier**. (ADR-0042 §8, which respells
 `$.mem.heap` as a bare `heap`.)
 
+**2.9** `Range` and `RevRange` are **prelude identifiers**, being the types
+§7.7's and §7.7.1's operators yield. A core operator's result type MUST be
+nameable without a `use`, and by §2.6's rule they cost nothing against §13.
+(ADR-0050 §9.)
+
 ---
 
 ## 3. Literals
@@ -374,11 +379,47 @@ yields the contained value or `b`. The word is `or` and not `??`: it is already
 Lua's spelling and, with truthiness dead, the left operand's static type selects
 one meaning with no ambiguity. (#9, handling forms.)
 
-**7.7** `..<` is the half-open range operator and doubles as the slicing
-operator (`RangeExpr`, and `xs[2..<5]` through `Suffix`). **There is no
+**7.7** `..<` is the ascending half-open range operator and doubles as the
+slicing operator (`RangeExpr`, and `xs[2..<5]` through `Suffix`). **There is no
 inclusive range operator**: with 0-based indexing `0..<xs.len` is the
-always-correct shape. Ranges are ordinary `Iter[int]` values, not grammar.
-(#15 Q24.)
+always-correct shape. (#15 Q24.)
+
+**7.7.1** **`>..` is the descending half-open range operator**: `n>..0` yields
+`n-1` down to `0` (`RangeExpr`). The two operators share one rule — **the angle
+sits beside the bound it excludes and points at it** — so the invariant §7.7
+rests on holds in both directions: **the bound written as the length is always
+the excluded one**, making `xs.len>..0` the always-correct descending shape as
+`0..<xs.len` is the ascending one. `>..` is a single token by maximal munch and
+does not collide: `>>` is a distinct munch and there is no prefix `..`. **`>..`
+does not slice** — `xs[n>..0]` is an error (§7.7.3). This operator is the first
+**recorded overrule** of §13.7's target; see §13.9.1.
+([ADR-0050](../adr/0050-removal-names-its-cost-at-the-call-site-and-descending-iteration-earns-an-operator.md)
+§8, §13.)
+
+**7.7.2** **The operator is grammar; the range it produces is an ordinary
+value.** `..<` and `>..` are `RangeExpr` productions and are counted in §13.6.
+What they yield is a value of type `Range` or `RevRange` — **prelude
+identifiers** by §2.6's rule, not keywords, costing nothing against §13. Both
+satisfy `Iter[int]` by **blessed conformance**, the move §9.6 already makes for
+a `fn` pointer satisfying a single-function interface: the spec states the
+conformance and no user-writable declaration is involved, so neither operator
+depends on the interface declaration form
+([#100](https://github.com/ludo-lang/ludo/issues/100)). This clause **corrects**
+#15 Q24's *ranges are ordinary `Iter[int]` values, not grammar*, which was false
+in both halves: the operator is grammar, and `Iter[int]` is a constraint rather
+than the value's type. (ADR-0050 §9.)
+
+**7.7.3** **`Range` is admitted in the index suffix and `RevRange` is not**, so
+`xs[2..<5]` is ordinary indexing by a value and `xs[n>..0]` is an error. A
+reversed view would need a direction or a stride in the view representation,
+which chapter 3 §7's views do not carry. Stated rather than left silent because
+§7.7.1's symmetry invites the attempt. (ADR-0050 §10.)
+
+**7.7.4** **An empty or inverted range iterates zero times** and is neither a
+fault nor a compile error: `5..<3` and `3>..5` both yield nothing. `0..<xs.len`
+on an empty aggregate is `0..<0`, which MUST yield zero iterations for §7.7's
+always-correct shape to hold at all; an inverted range is that case reached by
+another route. Chapter 3 §12 owns iteration semantics. (ADR-0050 §8.)
 
 **7.8** Indexing is 0-based. (#15 Q4, the first deliberate break with Lua.)
 
@@ -653,7 +694,7 @@ checkable property. (#24 call 3; ADR-0029 §8.)
 
 | Section | Keywords | Operators | Total |
 |---|---:|---:|---:|
-| Core grammar | 32 | 39 | **71** |
+| Core grammar | 32 | 40 | **72** |
 | Type sublanguage | 4 | 1 | **5** |
 
 Core keywords are §2.3's list. Core operators are:
@@ -663,7 +704,7 @@ Core keywords are §2.3's list. Core operators are:
 +=  -=  *=  /=  %=                   (5)
 ==  !=  <  <=  >  >=                 (6)
 &  |  ~  <<  >>                      (5)
-=  :=  !  ?.  ..<                    (5)
+=  :=  !  ?.  ..<  >..               (6)
 .  ,  :  ->                          (4)
 (  )  {  }  [  ]                     (6)
 _  $  #                              (3)
@@ -678,11 +719,11 @@ grammar**, stated as a comparison and never as a cap. (#24 call 4.)
 
 | Language | Keywords | Other tokens | Total | ludo core vs. |
 |---|---:|---:|---:|---:|
-| Lua 5.1 | 21 | 26 | 47 | +51.1% |
-| **LuaJIT 2.1 — the LÖVE2D host** | 22 | 27 | **49** | **+44.9%** |
-| Lua 5.4 | 22 | 33 | 55 | +29.1% |
-| LÖVE2D | +0 | +0 | **49** | **+44.9%** |
-| **ludo, core** | 32 | 39 | **71** | — |
+| Lua 5.1 | 21 | 26 | 47 | +53.2% |
+| **LuaJIT 2.1 — the LÖVE2D host** | 22 | 27 | **49** | **+46.9%** |
+| Lua 5.4 | 22 | 33 | 55 | **+30.9%** |
+| LÖVE2D | +0 | +0 | **49** | **+46.9%** |
+| **ludo, core** | 32 | 40 | **72** | — |
 | ludo, type sublanguage | 4 | 1 | 5 | — |
 | Odin | — | — | — | not yet counted |
 | Go | — | — | — | not yet counted |
@@ -698,8 +739,10 @@ so its grammar *is* LuaJIT's exactly. **It ships 21 stdlib roots for a token
 cost of zero** — #24 call 5's stdlib escape route, exhibited by the closest peer
 this language has, and the reason §13.11's companion count is not optional.
 
-**The ~30% target binds against Lua 5.4**, and **ludo's core grammar is inside
-it at +29.1%.** #24 call 4 names "Lua (~50)" without a version, and the version
+**The ~30% target binds against Lua 5.4**, and **ludo's core grammar is outside
+it at +30.9%**, under the recorded overrule at §13.9.1. It was inside at +29.1%
+until `>..` (§7.7.1); that clause is the first and so far only crossing.
+#24 call 4 names "Lua (~50)" without a version, and the version
 is load-bearing — 49 is LuaJIT, 55 is 5.4 — so this chapter fixes it rather
 than leaving a citation that two readers would resolve two ways.
 
@@ -712,12 +755,10 @@ gaps, not this language's appetite. 5.4 is also the current release, so the
 denominator does not drift as an embedder lags upstream.
 
 **The cost, named rather than discovered:** the Lua a LÖVE2D user actually
-writes is LuaJIT, so the recognition distance that user *feels* is +44.9%, not
-the +29.1% this spec publishes. The published figure is the fair measure of
+writes is LuaJIT, so the recognition distance that user *feels* is +46.9%, not
+the +30.9% this spec publishes. The published figure is the fair measure of
 what ludo spent; it is not a claim about what a LÖVE2D user will recognise. The
-LuaJIT and LÖVE2D rows stay in the table for exactly that reason, and §13.9's
-recorded-overrule rule is **not** triggered — ludo is compliant against the
-baseline the target binds to.
+LuaJIT and LÖVE2D rows stay in the table for exactly that reason.
 
 **The Odin and Go rows are a stated gap.** #24 call 4 asks for them in the same
 table; counting two more languages to §13.5's rules is work this chapter did not
@@ -734,6 +775,24 @@ reproduce ([#93](https://github.com/adamico/ludo/issues/93)).
 
 **13.9** Exceeding the target requires a **recorded overrule on the map**, not a
 silent increment. (#24 call 5's third consequence.)
+
+**13.9.1 The overrule register.** Every crossing is listed here, permanently,
+with the failure class §13.8 tier 2 charged for it. The list is the audit trail
+§13.9 requires; a crossing absent from it is a defect.
+
+| # | Clause | Cost | Total | vs. Lua 5.4 | Failure class deleted |
+|---|---|---:|---:|---:|---|
+| 1 | `>..`, §7.7.1 | +1 operator | 71 → **72** | 29.1% → **30.9%** | the ascending swap-remove skip |
+
+**Crossing 1, stated in full.** `>..` is **semantics-bearing, not sugar**, by
+§13.8's machine-checkable test: `#explicit` does not reject it, so it owes a
+permanently named deleted failure class rather than a one-in-one-out deletion.
+The class is the **ascending swap-remove skip** — culling a `List` upward while
+`swap_remove`-ing silently skips elements, because `swap_remove(i)` moves the
+last element into slot `i`, ahead of an ascending cursor and behind a descending
+one. There is no crash and no diagnostic. Without a descending range the correct
+loop has no spelling, so an author reaches for the ascending one and the bug is
+the **default outcome**. (ADR-0050 §13; chapter 3 §11.13, §12.2.)
 
 **13.10** On an implementation the budget is not a budget at all but **no vendor
 syntax extensions**, which chapter 8 carries as a conformance property rather
@@ -765,6 +824,10 @@ module names.)
 | `grammar.ebnf` §1, core grammar | 71 |
 | `grammar.ebnf` §2, type sublanguage | 21 |
 | `grammar.ebnf` §3, lexical structure | 20 |
+
+**These counts are unchanged by §7.7.1.** `>..` is a second alternative inside
+the existing `RangeExpr` production, so it costs an operator (§13.6) and no
+production — recorded so the flat number is not read as an oversight.
 
 **This number is sensitive to how the grammar is factored** and is published
 with that note so that nobody games it by inlining rules. The binding unit

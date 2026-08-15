@@ -2,6 +2,14 @@
 status: accepted
 ---
 
+> **Extended by [ADR-0050](0050-removal-names-its-cost-at-the-call-site-and-descending-iteration-earns-an-operator.md):**
+> §10 handed removal to #105, and #105 is now resolved. Nothing here is reversed — §2's set,
+> §3–§6's fallibility, §5's symmetry and §9's runner ownership all stand — and the departure
+> surface §10 left open is added: `remove`, `swap_remove`, `pop` and `truncate` on `List`,
+> `remove(k) -> ?V` on `Map`. **§4 turns out to be load-bearing beyond what it was written
+> for**: the withheld `capacity()` is what makes `Map` tombstones unobservable, and so is what
+> licenses removal keeping #15 Q12's insertion order.
+
 # Every allocating call is fallible, and a `persist` initialiser faults instead
 
 [#82](https://github.com/ludo-lang/ludo/issues/82), the container-set gap that spec chapter 3

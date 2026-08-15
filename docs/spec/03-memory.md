@@ -633,20 +633,83 @@ inside `unsafe`, which the safe layer has no spelling for; abandonment instead
 of release is free for an arena and a per-reload leak on the mandated `heap`.
 (ADR-0048 §9; ADR-0042 §2, §7.)
 
-**11.13 Removal is unspecified, and this chapter says so rather than waiting for
-it.** (ADR-0044 §8;
-[#105](https://github.com/ludo-lang/ludo/issues/105).) Open:
+**11.13** **`List` removal is two operations under two names.** `remove(i) -> T`
+**shifts and preserves order**, O(n); `swap_remove(i) -> T` **moves the last
+element into the hole**, O(1), and **reorders**. Both ship, and the reordering
+is named at the call site rather than left to a reader of the callee: a single
+`remove` that reorders is invisible exactly where it matters, in a list another
+index points into. (ADR-0050 §1.)
 
-- **whether `List` removal is swap-remove** (O(1), reorders) **or a shifting
-  `remove(i)`** (O(n), order-preserving), or both under distinct names;
-- **how `Map` removal survives insertion-order iteration** (§13.6) — tombstones
-  leak slots that §11.8 makes unobservable, and a swap into the hole breaks the
-  ordering guarantee outright;
-- **whether removal during iteration is a compile error** like §12.2's
-  structural mutation, and if so, what the sanctioned spelling of a
-  despawn loop is;
-- **whether swap-remove's relocation of a live element invalidates a held
-  index**, which §7.1 does not reach because an index is not a view.
+**11.13.1** **`pop() -> ?T`** removes the last element. It yields `?T` and not
+`T` because an empty list is an ordinary state, not a program error (§11.13.3).
+(ADR-0050 §1.)
+
+**11.13.2** **Removal returns the removed element**, and `Map` removal is
+`remove(k) -> ?V`. Containers move on assignment (#15), so a removal returning
+nothing would destroy a value the caller may have wanted, and the workaround —
+read, then remove — copies where the removal could have moved. The `?` on the
+`Map` form is §13.7's legitimate absence, a missing key, and not §11.13.3's
+program error. (ADR-0050 §3.)
+
+**11.13.3** **Removal at an out-of-range index is a fault**, matching indexing.
+An index at or past `len` names a slot that does not exist and admits no
+sensible reading; returning `?T` there invites a caller to swallow a bug.
+(ADR-0050 §4.)
+
+**11.13.4** **`Map` removal tombstones the entry, and tombstones are compacted
+on the next growth or `reserve`.** §13.6's insertion order is unaffected and
+does not move. The cost is unobservable by construction: §11.8 withholds
+`capacity()`, so no program can distinguish a live slot from a dead one, branch
+on it, or come to depend on a compaction schedule. **`len` counts live entries
+only.** **Named cost: a delete-heavy `Map` that never grows holds its slots for
+the life of the map.** (ADR-0050 §2.)
+
+**11.13.5** **`truncate(n)` cuts a `List` to its first `n` elements and returns
+`()`.** `n > len` is a **no-op**: `truncate` is a bound — *make `len` at most
+`n`* — not an index, so §11.13.3 does not carry, and `n == len` MUST be legal
+because it is where §11.13.7's compaction loop lands when nothing was culled.
+**The buffer survives**, which is the clause's purpose: §11.8 withholds
+`capacity()`, so this is the only mandated call that drops elements while
+keeping the allocation, and `truncate(0)` at the top of a frame is what lets a
+`persist` draw list allocate once at cold start and never again. It returns `()`
+rather than the dropped tail — which would need a second `List` and make a
+bookkeeping call fallible under §11.6 — and rather than a count, which is `len`
+before minus `n` (§11.8's reasoning: no second way to learn one fact).
+**There is no `clear()`**; `truncate(0)` is the same meaning and chapter 1
+§7.10a admits one spelling per meaning. (ADR-0050 §11, §12.)
+
+**11.13.6** **Removal kills outstanding views by §7.1 and creates no new rule.**
+Every removal takes its receiver with `!`, so the existing mark-kills-views
+clause already fires. This is stated rather than left implicit because
+§11.13.7's index boundary is different and a reader needs the line drawn.
+(ADR-0050 §5.)
+
+**11.13.7** **A held index is not protected, and this is a documented
+consequence rather than a hazard the language addresses.** `swap_remove`
+relocates a live element to a new index, invalidating an index a program holds —
+and an index is not a view, derives from nothing, and has nothing to kill it.
+Making indices trackable means making them linear, a type discipline imported
+for one method; a generational-handle container is blessed-unmandated (§11.5),
+not mandated. The mitigation that ships is §11.13's naming. (ADR-0050 §5.)
+
+**11.13.8** **There is no `retain`, no `swap(i, j)` and no capacity
+constructor.** `retain(pred)` is **deferred, not rejected**: chapter 2 §7.2
+makes closures a stated non-goal, so a predicate needing frame state must take
+§7.4's interface-bounded form, and §12.5's interface declaration form does not
+exist ([#100](https://github.com/ludo-lang/ludo/issues/100)). Nothing is blocked
+meanwhile — §12.2.1's range loop is the sanctioned cull. `swap(i, j)` is
+unnecessary: plain-struct elements copy on assignment, so a stable cull packs
+survivors forward with an ordinary assignment and cuts the tail with
+`truncate`. `List.with_capacity` would be a second sizing spelling against
+§11.7's `reserve`. (ADR-0050 §7, §12.)
+
+**11.13.9** **The mandated set has no front-drop and no FIFO.** A
+length-capped buffer keeps its **oldest** entries, which is the wrong end for a
+trail; the ring buffer that answers it is blessed-unmandated (§11.5) and so
+cannot be relied on by a portable program. Recorded as a stated absence rather
+than a gap: set membership was closed deliberately by ADR-0048 §2 and is not
+re-opened here. ([#108](https://github.com/ludo-lang/ludo/issues/108);
+ADR-0050 §12.)
 
 ---
 
@@ -660,8 +723,26 @@ with static dispatch and monomorphisation**. There is no iterator boxing and no
 **12.2** **`for x in xs` binds a copy; `for x in !xs` binds a writable view per
 element.** The loop's lend is **exclusive for its duration**, so **structural
 mutation of the aggregate during iteration is a compile error** — iterator
-invalidation is deleted rather than documented. Whether **removal** during
-iteration falls under this clause is open (§11.13). (#15 Q19.)
+invalidation is deleted rather than documented. **Removal falls under this
+clause**: it is structural mutation, and the clause takes no carve-out for it.
+(#15 Q19; ADR-0050 §6.)
+
+**12.2.1** **The sanctioned cull iterates a range, not the container**, so
+§12.2 costs nothing:
+
+```ludo
+for i in rocks.len>..0 do
+  rocks!.swap_remove(i) if rocks[i].hp <= 0
+end
+```
+
+The loop's subject is a `RevRange` (chapter 1 §7.7.1), so **no lend on `rocks`
+exists** and §12.2 has nothing to fire on. **Descending is the correctness
+condition, not a style**: `swap_remove(i)` moves the last element into slot `i`,
+which an ascending cursor has not yet reached and therefore silently skips —
+the failure class chapter 1 §13.9.1 charges `>..` against. The
+order-preserving form packs survivors forward and cuts the tail with
+§11.13.5's `truncate`. (ADR-0050 §6, §7.)
 
 **12.3** **Index iteration is `for i in 0..<n`**, and there is no inclusive
 range operator: with 0-based indexing `0..<xs.len` is the always-correct shape
@@ -677,6 +758,12 @@ declaration form does not yet exist** (chapter 2 §6.2.1,
 [#100](https://github.com/ludo-lang/ludo/issues/100)). The constraint's
 *meaning* is fixed here; its *spelling* is inherited from that gap, not created
 by it.
+
+**12.5.1** **`Range` and `RevRange` satisfy `Iter[int]` by blessed
+conformance** — the spec states it and no user-writable declaration is involved,
+the move chapter 1 §9.6 already makes for a `fn` pointer satisfying a
+single-function interface. Consequently §12.2.1's cull does **not** wait on
+#100. (Chapter 1 §7.7.2; ADR-0050 §9.)
 
 ---
 
@@ -909,9 +996,6 @@ must permit once it exists.
 Recorded so the boundary is legible, and so a later chapter is not read as
 having inherited a silence.
 
-- **Container removal.** §11.13, and it is stated in the chapter text rather
-  than blocking it (ADR-0044 §8). The container *set* is no longer open: §11.3
-  closes it. [#105](https://github.com/ludo-lang/ludo/issues/105).
 - **The raw-pointer type spelling.** §16.5, §19.3.
   [#104](https://github.com/ludo-lang/ludo/issues/104).
 - **Column disjointness.** §10.10 — #25 §9 and ADR-0047 §3 disagree, and
