@@ -106,7 +106,7 @@ pointer-width type, and adding one is additive later. (Authored — §19.1.)
 
 **2.5** `f32` and `f64` are IEEE-754 binary32 and binary64. **Float arithmetic
 is evaluated exactly as written**; an implementation MUST NOT reassociate or
-otherwise re-evaluate a float expression (ADR-0016 §7, and chapter 1 §3.3).
+otherwise re-evaluate a float expression (ADR-0016 §6, and chapter 1 §3.3).
 **Infinity and NaN are values, not bugs** (§8.3).
 
 **2.6** `char` is a **Unicode scalar value**. It is what `chars()` yields
@@ -220,7 +220,8 @@ language**. Conversions between quantities are ordinary named functions. (#11
 Q5–Q7, the unit-system finding.)
 
 **3.5** Which quantity types the standard library blesses is **not this
-chapter's call**: it is a stdlib-surface question (ADR-0016 §4). This chapter
+chapter's call**: it is a stdlib-surface question, and **chapter 6 owns it**
+(ADR-0016 §4; [#99](https://github.com/ludo-lang/ludo/issues/99)). This chapter
 owns only the `distinct numeric` machinery that makes them expressible.
 
 ---
@@ -712,8 +713,10 @@ permits. Comparison yields `bool`. (#11 Q5–Q7; chapter 1 §7.2–§7.5.)
 chapter 1 §6.12.)
 
 **16.5** The blessed math type set itself — which vectors, which matrices, which
-quantities — is **not fixed by this chapter's sources**. ADR-0016 is unassigned
-in the chapter map; see §20 and the coverage file.
+quantities — is **not fixed by this chapter's sources**. It is a stdlib surface
+and **chapter 6 owns it**, along with the rest of ADR-0016
+([#99](https://github.com/ludo-lang/ludo/issues/99)); §16.1 states the typing
+rule and chapter 6 cites it rather than restating it.
 
 ---
 
@@ -899,9 +902,12 @@ inherited a silence:
   [#100](https://github.com/ludo-lang/ludo/issues/100), and it moves chapter 1
   §13.6's published counts when it lands.
 - **The blessed math type set.** §16.1 transcribes ADR-0016 §3's operator rule
-  because the typing of `+` cannot be stated without it, but **ADR-0016 is
-  assigned to no chapter** in ADR-0044 §5's eight. Filed as
-  [#99](https://github.com/ludo-lang/ludo/issues/99).
+  because the typing of `+` cannot be stated without it, and §2.5 takes §6's
+  float-evaluation rule; **the rest of ADR-0016 is chapter 6's**, which is
+  rescoped from *the facades* to *the standard library* to hold it
+  ([#99](https://github.com/ludo-lang/ludo/issues/99)). ADR-0016 §6's
+  conformance halves — SIMD lowering is not required, float evaluation binds
+  every implementation — are chapter 8's.
 - **The container set.** §9.7's `?V` reads, `has`, `List` and `Pool` are
   chapter 3's, which carries [#82](https://github.com/ludo-lang/ludo/issues/82)
   as a marked gap.
@@ -915,4 +921,4 @@ inherited a silence:
 - **What a bug does at run time.** §8.6; chapter 5's (#18).
 - **`persist` without an initialiser.** §9.6; chapter 5's (chapter 1 §14.5).
 - **The blessed `distinct numeric` quantity types.** §3.5; a stdlib-surface call
-  (ADR-0016 §4).
+  (ADR-0016 §4), and chapter 6's with the rest of the blessed set.

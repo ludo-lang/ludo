@@ -229,7 +229,7 @@ coverage file does not find its source already half-spent without a record.
 | ADR-0011 §294 | `$.input.text() -> string`, corrected by ADR-0043 §6 | §17.11 |
 | ADR-0013, ADR-0042 | The allocator interface owns the OOM policy | §10.17 |
 | ADR-0016 §3 | Arithmetic operators on the blessed math types and nowhere else | §16.1 — **and see §3 below** |
-| ADR-0016 §7 | Float evaluation exactly as written | §2.5 |
+| ADR-0016 §6 | Float evaluation exactly as written | §2.5 — the citation read **§7** (*no blessed batch functions*) and was repaired here; the rule is §6's third mandate |
 | ADR-0018 | A compile error is reported under chapter 7's envelope | §0.2 |
 | ADR-0021 | The const-eval floor, routed here by ch1 §5.6 | §15 — **and see §3 below** |
 | #25 (**not** ADR-0025) | Sum-type layout is chapter 3's | §4.8 — the citation was repaired by chapter 3, [`03-memory.md`](03-memory.md) §0 |
@@ -281,14 +281,26 @@ the drop is recorded.
    Chapter 4 should transcribe the remainder and may delete §15 if it prefers to
    carry the floor itself, in which case ch1 §5.6's routing is the defect.
 
-7. **ADR-0016 — a source assigned to no chapter.** §16.1 transcribes ADR-0016
-   §3's operator rule, because the typing of `+` cannot be stated without saying
-   which types have it, and §2.5 takes §7's float-evaluation rule. **The rest of
-   ADR-0016 is transcribed nowhere and closes no chapter**: the eight chapter
-   tickets (#85–#92) name every ADR in the corpus except this one. Filed as
-   [#99](https://github.com/ludo-lang/ludo/issues/99). This is not a drop — it
-   is a **gap in the consolidation itself**, and it is recorded here because
-   chapter 2 is where it was found.
+7. **ADR-0016 — a source that was assigned to no chapter, now chapter 6's.**
+   §16.1 transcribes ADR-0016 §3's operator rule, because the typing of `+`
+   cannot be stated without saying which types have it, and §2.5 takes §6's
+   float-evaluation rule (miscited as §7 until
+   [#99](https://github.com/ludo-lang/ludo/issues/99)). The rest was transcribed
+   nowhere and closed no chapter: the eight chapter tickets (#85–#92) named
+   every ADR in the corpus except this one. That was never a drop — it was a
+   **gap in the consolidation itself**, recorded here because chapter 2 is where
+   it was found.
+
+   **#99 closed it.** The cause was that `$.vec2` is a `$.`-rooted stdlib type
+   and *not* a facade, so ADR-0044 §5's eight chapters had no shelf for it.
+   **Chapter 6 is rescoped from *the facades* to *the standard library*** — its
+   boundary is now *every name under `$.`* rather than an enumeration of five
+   facades — and takes ADR-0016 §1, §2, §4, §5 and §7, plus §6's alignment
+   mandate. **Chapter 8 takes §6's two conformance halves** (SIMD lowering is
+   not required; float evaluation binds every implementation, which §2.5 states
+   for the language and chapter 8 states as the obligation). Eight chapters
+   still, so ADR-0044 §5 is narrowed in place and not reversed — no ADR
+   (ADR-0044 §6).
 
 8. **Cast conversion rules — located as a silence, now closed.** ch1 §7.13
    spells `x as T` and ADR-0021 §1 puts casts in the const-eval floor, so the
