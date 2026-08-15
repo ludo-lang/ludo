@@ -268,7 +268,14 @@ function as a `!` operand: `helper(xs!, v)` invalidates `v` at that call.
 one place MAY co-exist, readable or writable; only `!` or a move on the
 **origin** kills them. Many-readers-or-one-writer is the borrow checker's rule
 and is not this language's. #8 deleted aliasing at the **container** level, not
-the view level. (ADR-0047 §3.)
+the view level. The words *exclusive* and *lend* name no rule about views;
+§12.2's loop lend is a statement about a `for` loop's subject, not about views
+of a place. (ADR-0047 §3; ADR-0052 §3.)
+
+**7.4.1 The origin of a view is the container its expression names.** `xs[a..<b]`
+and `rocks.pos` both derive from the binding at the root of the suffix chain —
+`xs` and `rocks` — because §6.12 and chapter 1 §7.10 put the mutation mark there
+and nowhere else. (ADR-0052 §1, §2.)
 
 **7.5 The edge chains through a container.** **A container constructed from a
 place derives from it, and the same mark kills it.** (ADR-0047 §4.)
@@ -279,23 +286,33 @@ scratch!.reset()
 l!.push(e)                  -- error: l derives from scratch, killed above
 ```
 
-**7.6** **A writable sub-view kills views of disjoint ranges of the same
-origin.** `xs![0..<k]` kills a bound view of `xs[k..<n]`, overlapping or not:
-the origin is `xs`, and §7.1 is unchanged and unextended. **No range reasoning
-is required or permitted.**
-([#101](https://github.com/ludo-lang/ludo/issues/101).)
+**7.6** **A writable view kills views of disjoint parts of the same origin, and
+no disjointness of any kind is reasoned about.** §7.1 is unchanged and
+unextended; the part a view covers is never compared with the part another view
+covers. This holds in both dimensions a view narrows along:
 
-**7.7** Consequently **two disjoint writable windows into one buffer cannot be
-bound simultaneously**. This is a stated cost, not an oversight; the capability
-is filed as [#102](https://github.com/ludo-lang/ludo/issues/102).
-([#101](https://github.com/ludo-lang/ludo/issues/101).)
+- **Ranges.** `xs![0..<k]` kills a bound view of `xs[k..<n]`, overlapping or
+  not. **No range reasoning is required or permitted.**
+- **Columns.** `rocks!.vel` kills a bound view of `rocks.pos`. **Distinct
+  columns are not distinct places**, and column identifiers are never compared.
+
+([#101](https://github.com/ludo-lang/ludo/issues/101); ADR-0052 §2.)
+
+**7.7** Consequently **two disjoint writable windows into one origin cannot be
+bound simultaneously** — two ranges of one buffer, or two columns of one pool.
+This is a stated cost, not an oversight; the capability is filed as
+[#102](https://github.com/ludo-lang/ludo/issues/102). The unbound form is
+unaffected: `integrate_live(field!.pos, field.vel, field.live, dt)` binds
+nothing, so §7.4 governs and nothing dies.
+([#101](https://github.com/ludo-lang/ludo/issues/101); ADR-0052 §5.)
 
 **7.8 What §7 is not.** It tracks a *derived-from* edge between two locals in
 one body. Recorded as a closed list so it is not read as a borrow checker
 arriving by instalments: **no lifetimes** (nothing annotated, named, quantified
-or inferred), **no regions**, **no shared/exclusive distinction** (§7.4), and
-**the check never crosses a function boundary** — every kill is a mark in the
-body being compiled. It is the move check's shape (§3.2). (ADR-0047 §6.)
+or inferred), **no regions**, **no shared/exclusive distinction** (§7.4),
+**no disjointness analysis** in any dimension (§7.6), and **the check never
+crosses a function boundary** — every kill is a mark in the body being compiled.
+It is the move check's shape (§3.2). (ADR-0047 §6; ADR-0052 §7.)
 
 ---
 
@@ -504,7 +521,9 @@ with `pos: Vec2` on `Entity`, **`rocks.pos` is the `[]Vec2` column**. The
 derivation is **total and mechanical** — every field of `T`, no exceptions, no
 opt-out. **Named cost: `rocks.pos` is a `[]Vec2` while `e.pos` is a `Vec2`** —
 one spelling at two types, disambiguated by whether the receiver is a pool.
-(#25 §7.)
+**A writable column is `rocks!.pos`**: the field is a suffix like any other, so
+chapter 1 §7.10's rule fixes the spelling without a new clause, and `rocks.pos!`
+is the error §6.12 already names. (#25 §7; ADR-0052 §1.)
 
 **10.7 The SoA split is exactly one level deep — one column per top-level
 field.** `pos.x` alone is not a column. This is what makes every column a
@@ -530,20 +549,25 @@ of containers would make §10.8's materialising `get` either a deep clone or a
 **move out of the pool** — a destructive read. **Named cost: an entity owning a
 `List` cannot go in a columnar pool.** (#25 §8; #15 Q14 for move-on-assignment.)
 
-**10.10 Column disjointness is unresolved and is not stated as a rule here.**
-#25 §9 makes the canonical batch op `integrate(rocks.pos!, rocks.vel)` legal by
-declaring that **exclusivity is per place and distinct columns are distinct
-places**, with `rocks.pos!` beside `rocks.pos` a compile error naming the
-column. ADR-0047 §3 is later and general, and it **removes exclusivity between
-views entirely** (§7.4), which grants the batch op more broadly and leaves #25
-§9's compile error following from no rule this specification states. **What both
-agree on is transcribed: the canonical batch op is legal** (§7.4, §10.6). The
-disagreement is recorded rather than resolved, because resolving it either way
-reverses a decision and ADR-0044 §6 reserves that for an ADR. Filed as
-[#103](https://github.com/ludo-lang/ludo/issues/103); see
-[`coverage/03-memory.md`](coverage/03-memory.md) §3.
+**10.10 Distinct columns are not distinct places.** The origin of a column is
+the **pool**, so `rocks!.vel` kills a bound view of `rocks.pos` — §7.6, in the
+field dimension, with no clause of its own. **The canonical batch op stays
+legal** because it binds nothing:
 
-**10.11** `pool.each()` lends the whole pool. (#25 §9.)
+```ludo
+integrate_live(field!.pos, field.vel, field.live, dt)   -- legal, §7.4
+p := rocks.pos
+integrate(rocks!.vel, dt)                               -- kills p, §7.6
+```
+
+**Named cost: a column cannot be bound across a write to another column of the
+same pool** (§7.7, filed as
+[#102](https://github.com/ludo-lang/ludo/issues/102)). This reverses #25 §9,
+which made columns distinct places; that rule was stated over `rocks.pos!`,
+which §6.12 and chapter 1 §7.10a make a compile error, and its
+*borrow-checker-result-without-a-borrow-checker* claim is withdrawn with it
+(§7.8). ([#103](https://github.com/ludo-lang/ludo/issues/103); ADR-0052 §1, §2,
+§3.)
 
 ---
 
@@ -944,7 +968,10 @@ one of them by silence.
 | a returned view with no receiver to derive from | ADR-0047 §1 |
 | a `-> ![]T` return-type marker | ADR-0047 §5 |
 | `name[a..<b]!` | [#101](https://github.com/ludo-lang/ludo/issues/101) |
+| `rocks.pos!` — a mark on a column rather than on the pool | ch1 §7.10a; ADR-0052 §1 |
 | an exclusivity rule between views | ADR-0047 §3 |
+| disjointness reasoning, over ranges or over columns | ADR-0052 §2 |
+| `pool.each()`, or any second iteration construct | §12.1; ADR-0052 §4 |
 | field reordering, `#repr`, `#packed`, field-level `#align` | #25 §2, §3 |
 | bit fields | #25 §4 |
 | niche optimisation of a sum type | #25 §10 |
@@ -1000,12 +1027,15 @@ having inherited a silence.
 
 - **The raw-pointer type spelling.** §16.5, §19.3.
   [#104](https://github.com/ludo-lang/ludo/issues/104).
-- **Column disjointness.** §10.10 — #25 §9 and ADR-0047 §3 disagree, and
-  resolving it reverses one of them. [#103](https://github.com/ludo-lang/ludo/issues/103).
+- **Whether `for x in !rocks` is legal on a columnar pool.** §12.2 gives a
+  writable view per element; §10.8 rejects the synthesised in-place `!Entity`
+  lend and confines in-place mutation to columns. Nothing states which wins.
+  [#114](https://github.com/ludo-lang/ludo/issues/114).
 - **Which types are must-use resource types.** §15.5. #8 §5 names files, sockets
   and GPU handles as examples; the language declares none of them, and the
   storage surface (ADR-0026) is chapter 5's. No source fixes the set.
-- **Two disjoint writable windows into one buffer.** §7.7.
+- **Binding two disjoint parts of one origin** — two ranges of a buffer, or two
+  columns of a pool. §7.7.
   [#102](https://github.com/ludo-lang/ludo/issues/102).
 - **The interface declaration form** that `Iter[T]` and `Key` need. §12.5;
   inherited from chapter 2 §6.2.1.

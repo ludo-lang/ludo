@@ -97,7 +97,7 @@ alongside, per #73's *same commit* rule:
 | Issue | Amendment |
 |---|---|
 | **#8** | Now **authoritative, narrowed**: ADR-0047 §3 narrows *aliasing is deleted* to the **container** level, not the view level, and §8's guarantee table gains four compile-error rows it does not itself list |
-| **#25** | Now **authoritative, with two named changes**: §2's mandated padding diagnostic is withdrawn by ADR-0023 §1 (§3.1 below), and §9's column exclusivity is contradicted by ADR-0047 §3 ([#103](https://github.com/ludo-lang/ludo/issues/103)). Plus the §0.1 warning |
+| **#25** | Now **authoritative, with two named changes**: §2's mandated padding diagnostic is withdrawn by ADR-0023 §1 (§3.1 below), and **§9 is reversed in full by ADR-0052** — the origin of a column is the pool, and `pool.each()` is deleted ([#103](https://github.com/ludo-lang/ludo/issues/103)). Plus the §0.1 warning |
 | **#17**, **#26** | ADR-0042 §8 respells `$.mem.heap` as a bare `heap` and confines it to `persist` initialisers in the entry file. Neither row recorded it |
 
 ### 0.5 ADR-0048's stamp list, checked in both directions
@@ -300,10 +300,11 @@ Per issue [#87](https://github.com/ludo-lang/ludo/issues/87): #8, #15, #25
 | §7 Named cost: `rocks.pos` is `[]Vec2` while `e.pos` is `Vec2` | §10.6 |
 | §8 Columnar pools require all fields to be copyable plain data | §10.9 |
 | §8 The error names the offending field and points at the AoS pool | §10.9 |
-| §9 Exclusivity is per place and distinct columns are distinct places | **Contradicted by ADR-0047 §3** — §10.10, recorded not resolved → [#103](https://github.com/ludo-lang/ludo/issues/103) |
-| §9 `rocks.pos!` beside `rocks.vel` accepted | §7.4, §10.6 — granted more broadly by ADR-0047 §3 |
-| §9 `rocks.pos!` beside `rocks.pos` is a compile error naming the column | **Not transcribed** — §10.10, §3.2 |
-| §9 `pool.each()` lends the whole pool | §10.11 |
+| §9 Exclusivity is per place and distinct columns are distinct places | **Reversed by ADR-0052 §2** — the origin of a column is the pool; §7.6, §10.10 |
+| §9 `rocks.pos!` beside `rocks.vel` accepted | §7.4, §10.6 — survives as an instance of §7.4 (nothing bound), not as a disjointness grant; and respelled `rocks!.pos` by ADR-0052 §1 |
+| §9 `rocks.pos!` beside `rocks.pos` is a compile error naming the column | **Withdrawn by ADR-0052 §1** — stated over a spelling ch1 §7.10a rejects |
+| §9 The claim to be "a borrow-checker result without a borrow checker" | **Withdrawn by ADR-0052 §3** — §7.8 |
+| §9 `pool.each()` lends the whole pool | **Deleted by ADR-0052 §4** — no such call; §12.1 admits one iteration construct |
 | §10 Sum-type layout: tag then payload, smallest tag that fits, alignment the max of the variants | §8.5 |
 | §10 There is no niche optimisation | §8.5, §18 |
 | §10 `?T` costs a tag, always; any type's size is computable from its declaration alone | §8.5.1 — **and see §3.3** on *tag word* |
@@ -469,7 +470,7 @@ mean for containers.
 |---|---|
 | `name![a..<b]` — the mark rides the root binding | §6.12 (spelled at ch1 §7.10a) |
 | `name[a..<b]!` is a hard error with the fix named | §6.12, §18 |
-| `xs![0..<k]` kills a view of `xs[k..<n]`, non-overlapping or not; no range reasoning | §7.6 |
+| `xs![0..<k]` kills a view of `xs[k..<n]`, non-overlapping or not; no range reasoning | §7.6 — generalised to both dimensions by ADR-0052 §2 |
 | Two disjoint writable windows bound simultaneously are foreclosed | §7.7 → [#102](https://github.com/ludo-lang/ludo/issues/102) |
 | `grammar.ebnf` is untouched; both chains already parse | Ch1 §7.10a; nothing for this chapter to add |
 | The `w.rocks!` defect | Landed in chapter 1 §7.10 and [`01-grammar.md`](01-grammar.md) §4 |
@@ -527,7 +528,8 @@ the drop is recorded.
    `#packed`, no bit fields, no niche optimisation, no `-> ![]T`, no
    per-allocation `free`), the prohibition is transcribed and §18 collects them.
 
-2. **#25 §9's compile error — located, contradicted, and not transcribed.**
+2. **#25 §9's compile error — located, contradicted, filed, and since reversed
+   by [ADR-0052](../../adr/0052-the-origin-of-a-view-is-the-named-container-and-disjointness-is-never-reasoned-about.md).**
    #25 §9 rules that *exclusivity is per place and distinct columns are distinct
    places*, and states the negative: `rocks.pos!` beside `rocks.pos` is a
    compile error naming the column. **ADR-0047 §3 is later and general and says
@@ -536,17 +538,28 @@ the drop is recorded.
    deleted aliasing at the **container** level, not the view level.
 
    The two are not reconcilable by reading them harder. ADR-0047 §3 *grants*
-   #25 §9's motivating case more broadly — nothing kills either operand of
-   `integrate(rocks.pos!, rocks.vel)` — while leaving #25 §9's prohibition
-   following from no rule this specification states.
+   #25 §9's motivating case more broadly — nothing kills either operand of the
+   canonical batch op — while leaving #25 §9's prohibition following from no
+   rule this specification states.
 
-   The chapter transcribes what both agree on (§7.4, §10.6, §10.11) and records
-   the disagreement at §10.10. **Not repaired here**: choosing either way
-   reverses a decision, and ADR-0044 §6 reserves a reversal for an ADR, so this
-   is filed rather than settled — [#103](https://github.com/ludo-lang/ludo/issues/103).
-   It is the first time the consolidation has found two sources that
-   *contradict* rather than one that is silent, which is why the treatment is
-   spelled out here for the chapters that follow.
+   **The chapter first transcribed only what both agree on and recorded the
+   disagreement, because ADR-0044 §6 reserves a reversal for an ADR.** That ADR
+   is now written. ADR-0052 finds the disagreement smaller than it looked: #25
+   §9 is stated over `rocks.pos!`, which chapter 1 §7.10a already makes a
+   compile error — the mark rides the root, so the only writable spelling is
+   `rocks!.pos` — and the range dimension of the same question was settled after
+   ADR-0047 by [#101](https://github.com/ludo-lang/ludo/issues/101). One rule
+   now covers both dimensions (§7.6): **the origin is the container the
+   expression names, and no disjointness is reasoned about.** #25 §9 is reversed,
+   its `pool.each()` corollary is deleted as a call the language does not have
+   (§12.1), and the chapter states the rule at §10.10.
+
+   It was the first time the consolidation found two sources that *contradict*
+   rather than one that is silent, which is why the treatment is spelled out
+   here for the chapters that follow — including the part that generalises: the
+   repair came from a **third, later** source (#101) that neither disputant
+   knew about, so the first move on a contradiction is to check whether anything
+   landed after both.
 
 3. **#25 §10's *"a tag word"* is the same clause stated loosely, and the
    mechanical rule governs.** §10 gives the layout precisely — *tag then

@@ -441,6 +441,55 @@ at the frame boundary, so nothing in the program owns its lifetime and no
 forgotten reset can leak. Its restriction is on positions, not lifetimes: no
 regions and no borrow checking (ADR-0042).
 
+## Place
+
+A named storage location a program can read from and write to — a binding, and
+the thing the `!` mutation mark attaches to. Mutability is a property of the
+place, never a type constructor: `!Pool[Entity]` and `Pool[Entity]` are the same
+type, differently accessed (#11). The mark rides the **root** of a suffix chain,
+so the place is always the binding the expression starts from and never a part
+selected out of it (ADR-0052).
+
+## View
+
+A window into memory something else owns, spelled `[]T`. It is not a value that
+carries its referent: it borrows one, and it may be sliced, passed and bound to
+a local, but never stored in a struct field, `persist`ed, or outlive the call it
+was made in. A view is derived from an [origin](#origin), and it dies when that
+origin is next marked or moved — the one rule the language has in place of a
+borrow checker, and the reason it needs no lifetimes and no regions
+(ADR-0047, ADR-0052).
+
+## Origin
+
+The [place](#place) a [view](#view) derives from, and the whole of what the
+language tracks about views. **It is the container the view's expression names,
+never a part of one** — `xs` for `xs[a..<b]`, `rocks` for `rocks.pos`. A mark or
+move on the origin kills every view derived from it, whatever part each view
+covers. **Disjointness is never reasoned about**: two ranges that do not overlap
+and two distinct columns are alike killed, because comparing the parts is the
+analysis the language declines to have. The cost is that two disjoint writable
+windows into one origin cannot be bound at once, and it is stated rather than
+worked around (ADR-0052).
+
+## Pool
+
+A handle-indexed store of many values of one type, and the allocation shape a
+game reaches for before a [`List`](#allocator). Two kinds, differing in cost and
+never in semantics: an **AoS** pool keeps each element whole, and a **columnar**
+pool splits it into [columns](#column). The pool decides the layout and the
+element struct stays layout-agnostic, which is what lets one type sit in both —
+the ECS case, where a system wants a type columnar and another wants it packed
+(#8, #25).
+
+## Column
+
+One field of a columnar [pool](#pool)'s element type, stored contiguously across
+every element, and named by field access on the pool: `rocks.pos` is the
+`[]Vec2` column. The split is exactly one level deep, so a column is a genuine
+[view](#view) with no striding. Its [origin](#origin) is the pool, not the
+column — writing one column kills a bound view of any other (#25, ADR-0052).
+
 ## Prelude
 
 The core types every program has without asking, and the answer to where

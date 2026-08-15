@@ -155,6 +155,14 @@ Many-readers-or-one-writer is the borrow checker's own rule and produces the err
 cannot read. #8 deleted aliasing at the **container** level, not the view level, and that is
 where the guarantee stays.
 
+> **Stamp ([ADR-0052](0052-the-origin-of-a-view-is-the-named-container-and-disjointness-is-never-reasoned-about.md) §2): upheld and generalised, not amended.**
+> This section says a mark on *the origin* kills the views, and leaves *what the origin is* to
+> the reader. ADR-0052 names it: **the container the view's expression names**, never a part
+> selected out of it. So a mark kills views of disjoint ranges and of distinct columns alike, and
+> no disjointness is reasoned about in either dimension. That also reverses
+> [#25](https://github.com/ludo-lang/ludo/issues/25) §9, which this section contradicted without
+> resolving.
+
 ## 4. The edge chains through a container
 
 One level is a view of a place. Two levels is a container that captured an allocator:
@@ -202,6 +210,13 @@ sub-view of a place is `name![a..<b]` or `name[a..<b]!` — remains #15's marker
 section fixes where the mark sits on a **call operand**, which the reference program already
 writes as `format(buf!, ...)`; the slice form is consistent with the prefix reading but is not
 decided by this ADR.
+
+> **Stamp ([ADR-0052](0052-the-origin-of-a-view-is-the-named-container-and-disjointness-is-never-reasoned-about.md) §1, §6): this paragraph is stale.**
+> [#101](https://github.com/ludo-lang/ludo/issues/101) closed the open item. The mark rides the
+> **root binding** and the suffix chain follows it, *whatever the suffixes are — field, call,
+> index or slice*: a writable sub-view is `name![a..<b]`, a writable column is `rocks!.pos`, and
+> the trailing forms parse but are errors. Landed at spec ch1 §7.10 / §7.10a and ch3 §6.12.
+> The rest of §5 is unaffected.
 
 ## 6. What this is not
 
