@@ -2,6 +2,9 @@
 status: accepted
 ---
 
+> **Absorbed by [spec ch5](../spec/05-runner.md):** the chapter is normative; this ADR
+> keeps the argument — reopening on the last display are transcribed there.
+
 # The runner reopens on the last display, and names none to the program
 
 [ADR-0028](0028-the-admission-test-for-a-query-that-reads-backend-state.md) §7

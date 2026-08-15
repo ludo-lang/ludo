@@ -20,6 +20,9 @@ status: accepted
 > three passing tests all hold; what refuses it is §4's own similarity-transform grounding,
 > which §4 stated and did not apply to the player case.
 
+> **Absorbed by [spec ch5](../spec/05-runner.md):** the chapter is normative; this ADR
+> keeps the argument — the single `k` and unconditional `crisp` are transcribed there.
+
 # Integer scaling loses to the priority ordering, and the fit is one formula
 
 [ADR-0030](0030-the-fit-is-a-uniform-transform-and-the-bars-are-not-the-programs.md)

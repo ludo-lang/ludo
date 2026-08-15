@@ -2,6 +2,9 @@
 status: accepted
 ---
 
+> **Absorbed by [spec ch5](../spec/05-runner.md):** the chapter is normative; this ADR
+> keeps the argument — the host-shaped corrections, the data-segment MUST and the frame-task rule are transcribed there.
+
 # The record stops assuming a process, and re-entrancy is by task
 
 Issue #79 inherited six wrong sentences from [#78](https://github.com/adamico/ludo/issues/78), the research ticket that read the runner half of the experience contract against normative WebAssembly, HTML, IndexedDB and WebGPU text. #78 established *that* they are false and proposed the narrowest correction for each; it had no standing to change them.

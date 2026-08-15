@@ -32,9 +32,10 @@ transcription and recorded here rather than repeated:
   [`../../adr/SOURCES.md`](../../adr/SOURCES.md) and transcribed at spec ch1
   §10.8, restated here at §5.7.
 - **ADR-0017 §3 and §6 extend #11.** Both are chapter 2 clauses — §6.5 and §7.5.
-- **#9 versus ADR-0045 §1/§8 on `persist` without an initialiser** is a known
+- **#9 versus ADR-0045 §1/§8 on `persist` without an initialiser** was a known
   live contradiction, deferred to chapter 5 by spec ch1 §14.5 and left there
-  (§9.6).
+  (§9.6). **Chapter 5 §4.3 resolved it for #9**, and repaired §9.6, §17.6 and
+  §21 here in the same commit ([ch5 coverage §13](05-runner.md)).
 
 ---
 
@@ -222,7 +223,7 @@ coverage file does not find its source already half-spent without a record.
 | #18 | A bug's runtime semantics are chapter 5's | §8.6 |
 | #22 | Type checking never needs the whole program; the oracle never monomorphises | §1.2, §5.3, §4.6 |
 | #24 | The payment rule, which is why §19.3 declines to author | §19.3 |
-| #26 | `persist` and the entry file | §9.6 (routed to chapter 5) |
+| #26 | `persist` and the entry file | §9.6 (routed to chapter 5, which decided it at ch5 §4.3.1) |
 | #29 | The C callback restriction ADR-0017 §4 generalises | §7.3 |
 | #82, #83 | The container set and the view-return rule are chapter 3 gaps | §9.7, §17.10 |
 | ADR-0008 §6 | Recognise-by-name, as one of the privileged-knowledge uses | §6.6 |

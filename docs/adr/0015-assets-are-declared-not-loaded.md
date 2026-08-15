@@ -12,6 +12,9 @@ status: accepted
 > siblings gain an `OutOfMemory` variant, because the calls allocate and allocation is
 > fallible.
 
+> **Absorbed by [spec ch5](../spec/05-runner.md):** the chapter is normative; this ADR
+> keeps the argument — declared assets, their resolution before top level, the startup fault and live asset reload are transcribed there.
+
 # Assets are declared, not loaded
 
 Issue #42 named `Image` and `Font` in the mandated drawing facade and explicitly

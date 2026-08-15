@@ -115,6 +115,15 @@ def main():
                 continue  # target is a spec chapter, not an ADR
             ref = ADR_REF_RE.search(label)
             if not ref:
+                # A spec chapter may amend an ADR without absorbing it (spec ch5
+                # §4.3 amends ADR-0045 §8's line while chapter 1 and 2 keep the
+                # rest). The label names no ADR; the link must still resolve.
+                if "spec/" in href:
+                    if not (path.parent / href.split("#")[0]).resolve().exists():
+                        findings.append(
+                            f"{path.name}: stamp by [{label}] links to a missing file: {href}"
+                        )
+                    continue
                 findings.append(f"{path.name}: stamp label names no ADR: [{label}]")
                 continue
             src = int(ref.group(1))

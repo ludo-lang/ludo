@@ -17,6 +17,9 @@ status: accepted
 > task rather than by thread; §3's rescue story gains a tab-discard scope
 > sentence.
 
+> **Absorbed by [spec ch5](../spec/05-runner.md):** the chapter is normative; this ADR
+> keeps the argument — the concurrency non-goal, the quiescence predicate and the frame-task rule are transcribed there.
+
 # Concurrency is a non-goal, and quiescence is a state predicate
 
 Issue #61 inherited an obligation rather than choosing one. Issue #29 recorded a

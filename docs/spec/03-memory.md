@@ -1034,6 +1034,11 @@ having inherited a silence.
 - **Which types are must-use resource types.** §15.5. #8 §5 names files, sockets
   and GPU handles as examples; the language declares none of them, and the
   storage surface (ADR-0026) is chapter 5's. No source fixes the set.
+- **Whether a fixed-array literal may be short, and what a `[N]T` field's
+  written default looks like.** §5.7 and §5.9 answer the struct half and not the
+  array half. Opened by chapter 5 §4.3.1's requirement that every `persist`
+  declaration carry an initialiser, and recorded at chapter 5 §13.1.
+  [#116](https://github.com/ludo-lang/ludo/issues/116).
 - **Binding two disjoint parts of one origin** — two ranges of a buffer, or two
   columns of a pool. §7.7.
   [#102](https://github.com/ludo-lang/ludo/issues/102).

@@ -2,6 +2,14 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0036](0036-the-window-opens-maximal-and-belongs-to-the-player.md):**
+> §5's *the contract's property list therefore ends at P13* is **superseded** — ADR-0036
+> §9 mints P14 for the window geometry. §5's decision, that §3's presentation clause
+> warrants no property of its own, is untouched.
+
+> **Absorbed by [spec ch5](../spec/05-runner.md):** the chapter is normative; this ADR
+> keeps the argument — the ceiling, the presentation clause and pacing discretion are transcribed there.
+
 # The 60Hz render ceiling is accepted, and one image is presented per frame entry
 
 Issue [#70](https://github.com/adamico/ludo/issues/70) was filed because the

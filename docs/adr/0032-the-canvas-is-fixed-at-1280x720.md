@@ -6,6 +6,9 @@ status: accepted
 > §1's "all 26 `$.graphics` calls" is 19 functions; the finding it supports — that none of
 > them reports the canvas size — is unaffected.
 
+> **Absorbed by [spec ch5](../spec/05-runner.md):** the chapter is normative; this ADR
+> keeps the argument — the fixed canvas, `set_canvas` and `canvas_size` are transcribed there.
+
 # The canvas is fixed at 1280×720
 
 Every ludo program draws in a 1280×720 logical canvas. It is not declared, not

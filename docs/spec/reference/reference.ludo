@@ -26,6 +26,16 @@
 -- Chapter 6 replaces the hand-rolled `Vec2` with the blessed `$.vec2`, and adds
 -- the facades: the program now draws, plays a voice, reads input, reads a video
 -- preference and writes a storage slot.
+--
+-- Chapter 5 adds the runner: what runs when, and what survives. Top level was
+-- already here and unexplained; now it is the entry file's top level, running
+-- once before any frame (ch5 §2.2, §2.4). The canvas is declared at that top
+-- level and is immutable for the process's life (ch5 §9.3, §9.4); a sprite is
+-- a declaration the runner resolves before top level runs, not a call (ch5
+-- §8.1, §8.3); the per-frame arena is finally used (ch5 §3.10); and the one
+-- decision this chapter had to make -- every `persist` declaration carries an
+-- initialiser (ch5 §4.3.1) -- is shown at `name` below, which is the line
+-- ADR-0045 §8 wrote without one.
 
 -- Chapter 4 makes this file the **entry file of a program with three modules**,
 -- which is the whole of what it adds. `libs/vec-utils/` is a library because it
@@ -56,6 +66,19 @@ const MAX_ROCKS = 64
 -- no path, no directory and no runtime key anywhere in this program
 -- (ch6 §8.1, §8.2).
 extern storage save1
+
+-- An asset is *declared*, never loaded: the name is fixed at compile time, so a
+-- typo is a compile error rather than a path that fails at 3am, and there is no
+-- load call to put a string inside (ch5 §8.1). The path is relative to this
+-- file and may not cross a library boundary (ch5 §8.2).
+--
+-- The runner resolves and decodes it *before* top level runs, so this program
+-- can never observe a loading state -- there is no `?Image`, no readiness poll
+-- and no progress value (ch5 §8.3). A missing file is a fault at top level and
+-- the simulation never starts (ch5 §8.4); editing the file while the program
+-- runs swaps the bytes at the next frame boundary, with `persist` untouched
+-- (ch5 §8.6).
+extern image rock = "art/rock.png"
 
 -- Chapter 6 deletes this program's hand-rolled `Vec2`. The blessed math set is
 -- `$.`-rooted and concrete: `$.vec2` holds two `f32` fields, ships with a
@@ -339,7 +362,22 @@ end
 
 $.print("reference program")
 
+-- The canvas is *not* declared here: it is 1280x720 for every ludo program, a
+-- constant of the language (ch5 §9.1). What is declared is the style token, and
+-- this is its only legal site -- top level of the entry file, once, immutable
+-- for the process's life, because a token that differed between two frames
+-- would make every fit guarantee conditional (ch5 §9.3, §9.4).
+$.graphics.set_canvas(.crisp)
+
 persist tick: u64 = 0
+
+-- The line ADR-0045 §8 wrote as `persist name: TextBuf[32]`, with the
+-- initialiser chapter 5 §4.3.1 requires. `= {}` is complete because the
+-- mandated `TextBuf[N]` defaults both of its fields (ch2 §17.6) -- an author's
+-- written default, which is exactly what #9 permits and an implicit zero is not
+-- (ch2 §9.6). A user-declared type with a fixed-array field cannot yet write
+-- that default itself; that is the gap at ch5 §13.1, issue #116.
+persist name: TextBuf[32] = {}
 
 -- A `persist` declaration holds a plain value with no pointer in it, so it
 -- survives a reload by the same rule a bare `[N]u8` does (ch3 §8.2, ADR-0042
@@ -437,9 +475,15 @@ frame(screen: !Target, scratch: !Scratch)
   -- The target is a parameter, never fetched: there is no `$.graphics.screen()`
   -- (ch6 §4.2.6). UFCS gives the short spelling and is the same function as the
   -- qualified one (ch6 §1.7).
+  -- No program types `1280`. `canvas_size` is a constant folded at compile time,
+  -- not a query -- there is nothing to ask, and it leaks no bit about the
+  -- player's hardware (ch5 §9.2). The real window size is not exposed at all
+  -- (ch5 §9.15), and what the runner does with the difference is the fit:
+  -- one uniform `k`, centred, with opaque black bars the program cannot reach
+  -- (ch5 §9.5, §9.10, §9.11).
   screen!.fill_rect({
     position = $.vec2(0.0, 0.0),
-    size     = $.vec2(1280.0, 720.0),
+    size     = $.graphics.canvas_size,
     paint    = $.rgb8(12, 12, 16),
   })
 
@@ -487,6 +531,16 @@ frame(screen: !Target, scratch: !Scratch)
   -- so what is measured is what is drawn (ch6 §4.8.1, §4.8.2).
   metrics := $.graphics.measure_text(label_desc)
 
+  -- The declared asset, drawn. Nothing here names a path or checks readiness:
+  -- `rock` is a name the compiler knows and the runner has already resolved
+  -- (ch5 §8.1, §8.3).
+  screen!.fill_sprite({
+    image    = rock,
+    position = $.vec2(metrics.advance + 40.0, 8.0),
+    size     = $.vec2(16.0, 16.0),
+    paint    = $.rgb8(255, 255, 255),
+  })
+
   -- A missing sprite draws nothing, and so does a correct transparent one. The
   -- debug image is a mandated *value*, reached explicitly -- never a fallback an
   -- implementation substitutes (ch6 §4.9.10).
@@ -530,4 +584,18 @@ frame(screen: !Target, scratch: !Scratch)
   -- (ch6 §8.10). The payload is bytes, because the spec blesses no serializer
   -- (ch6 §8.5).
   save1.write(edge) rescue return
+
+  -- The frame arena, and the only place it can be used: `scratch` is a
+  -- parameter because only the runner can supply memory it resets at a boundary
+  -- it alone controls, and its lifetime is exactly this call (ch5 §3.4, §3.10).
+  -- It is `!` because allocating mutates it, and it may not be stored anywhere
+  -- -- not in a struct, not in `persist` (ch3 §9.7).
+  --
+  -- Nothing resets it here. A program-owned arena would need that call, and a
+  -- forgotten reset is a leak with no diagnostic; the runner simply does it
+  -- (ADR-0042 §6).
+  frame_names: !List[$.vec2] = List.from(scratch!, { lo, hi }) rescue return
+  name!.clear()
+  name!.append(label)
+  _ = frame_names.len
 end

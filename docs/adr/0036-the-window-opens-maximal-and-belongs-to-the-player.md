@@ -15,6 +15,9 @@ status: accepted
 > reopening on the wrong panel is not "for nothing". §4's staleness objection is answered
 > by minting no ordinal; §2's refusal of runner discretion is the precedent §2 there reuses.
 
+> **Absorbed by [spec ch5](../spec/05-runner.md):** the chapter is normative; this ADR
+> keeps the argument — the maximal window and its relaunch behaviour are transcribed there.
+
 # The window opens maximal, and belongs to the player
 
 [ADR-0025](0025-fullscreen-is-a-player-preference-the-program-can-read-and-set.md)
@@ -288,3 +291,7 @@ have to do real work, and this ADR deliberately does not pre-empt it.
   in substance.
 - **ADR-0013** — §9 is unchanged and gains the audit that shows nothing needs it
   (§7).
+- **ADR-0035** — §5's *the contract's property list therefore ends at P13* is
+  **superseded** by §9's P14. §5's own decision, that ADR-0035 §3's presentation
+  clause warrants no property, is untouched. (Recorded retroactively with spec
+  chapter 5, which found the omission — `docs/spec/coverage/05-runner.md` §0.1.)

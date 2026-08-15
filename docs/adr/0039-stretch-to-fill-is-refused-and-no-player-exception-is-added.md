@@ -2,6 +2,9 @@
 status: accepted
 ---
 
+> **Absorbed by [spec ch5](../spec/05-runner.md):** the chapter is normative; this ADR
+> keeps the argument — the refusal of every non-similarity presentation transform are transcribed there.
+
 # Stretch-to-fill is refused, and no player exception is added
 
 [ADR-0031](0031-integer-scaling-loses-to-the-priority-ordering.md) §4 recorded

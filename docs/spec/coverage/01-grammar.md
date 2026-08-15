@@ -251,9 +251,12 @@ and listed here so the count is legible:
 Three further findings that are **not** phantoms but recorded corrections:
 
 - **§14.5 — `persist` without an initialiser.** A live contradiction between #9
-  and ADR-0045 §1/§8, **not resolved here**: it is chapter 5's call, the grammar
-  is permissive so either resolution is available, and it is flagged so chapter 5
-  finds it rather than inheriting it silently.
+  and ADR-0045 §1/§8, **not resolved here**: it was chapter 5's call, the grammar
+  was left permissive so either resolution was available, and it was flagged so
+  chapter 5 would find it rather than inherit it silently. **Chapter 5 §4.3
+  resolved it for #9** — the initialiser is required, and ADR-0045 §8's line is
+  amended — and repaired §5.13, §14.5 and §15 here in the same commit
+  ([ch5 coverage §13](05-runner.md)).
 - **§14.9 — no import alias.** #26's `use "world" as World` is stale prose
   predating ADR-0014 §3 and §7. The chapter admits the single form.
 - **§14.10 — `TextBuf`'s declaration.** ADR-0045's inline brace rendering is

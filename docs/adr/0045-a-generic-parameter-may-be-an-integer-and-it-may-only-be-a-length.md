@@ -2,6 +2,11 @@
 status: accepted
 ---
 
+> **Amended by [spec ch5 §4.3](../spec/05-runner.md):** §8's reference-program line
+> `persist name: TextBuf[32]` **gains an initialiser** — `= {}` — because chapter 5 resolved
+> the #9 contradiction §1 and §8 left by requiring one at every `persist` declaration. The
+> integer parameter, its annotation and the three restrictions are untouched.
+
 # A generic parameter may be an integer, and it may only be a length
 
 [#84](https://github.com/adamico/ludo/issues/84), split out of

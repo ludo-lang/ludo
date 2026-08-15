@@ -242,12 +242,12 @@ reload-surviving state. Chapter 5 owns its scope (entry file only), its
 initialisation ordering (cold start only) and its reload semantics. (#26 call 4
 and #26's amendment from #17; ADR-0041 §5.)
 
-**5.13** The grammar makes `PersistDecl`'s initialiser optional. **Whether an
-initialiser may be omitted is chapter 5's call, not this chapter's**, and the
-corpus is in tension: #9 requires every binding to initialise at its
-declaration, while ADR-0045 §1 and §8 write `persist name: TextBuf[32]` with no
-initialiser. The grammar is permissive so that chapter 5 can decide either way
-without a grammar change. Recorded rather than resolved here — see §14.5.
+**5.13** The grammar makes `PersistDecl`'s initialiser optional. **Chapter 5 has
+decided that it may not be omitted**: a `persist` declaration without an
+initialiser is a compile error (chapter 5 §4.3.1), resolving the tension #9 and
+ADR-0045 §1/§8 left. The grammar stays permissive — the restriction is a rule
+about a declaration's meaning rather than about its shape, and this chapter does
+not re-spell it. See §14.5.
 
 **5.14** `extern` introduces a declaration whose referent lives outside ludo
 source (`ExternDecl`). Two shapes:
@@ -897,12 +897,14 @@ file is named by an extern shader declaration "the identical shape to #29's
 greppable, and never delimits it. `do ... end` reuses the block delimiters
 `while` and `for` already spend, costing no new token.
 
-**14.5 `persist` without an initialiser — recorded, not resolved.** #9 requires
+**14.5 `persist` without an initialiser — resolved by chapter 5.** #9 requires
 every binding to initialise at its declaration; ADR-0045 §1 and §8 write
 `persist name: TextBuf[32]` with no initialiser. The grammar is permissive
-(§5.13) and **chapter 5 MUST resolve this**, either by requiring `= {}` at that
-declaration or by stating the exemption. Flagged so that chapter 5 finds it
-rather than inheriting it silently.
+(§5.13), and **chapter 5 §4.3 resolved this for #9**: the initialiser is
+required, and ADR-0045 §8's line is amended to `persist name: TextBuf[32] = {}`,
+which is legal because the mandated `TextBuf[N]` declares a default for both of
+its fields (chapter 2 §17.6, chapter 3 §5.7). This entry stays as the record of
+where the tension was found.
 
 **14.6 `x as T` for casts.** ADR-0021 §1 puts casts in the const-eval floor,
 which requires a spelling, and none was written. `as` also disambiguates nothing
@@ -941,7 +943,9 @@ having inherited a silence:
 
 - **Meaning of every construct spelled here.** Chapters 2–7 own it, per the
   clause-by-clause pointers above.
-- **The entry's parameter list.** §5.11 admits a list; chapter 5 fixes it.
-- **`persist` without an initialiser.** §5.13 and §14.5; chapter 5's call.
+- **The entry's parameter list.** §5.11 admits a list; chapter 5 fixed it at
+  `screen: !Target, scratch: !Scratch` (chapter 5 §3.4).
+- **`persist` without an initialiser.** §5.13 and §14.5; chapter 5 §4.3.1
+  requires the initialiser.
 - **The stdlib root-name companion count.** §13.11; chapter 8 publishes it.
 - **Vendor-extension conformance.** §13.10; chapter 8 tests it.

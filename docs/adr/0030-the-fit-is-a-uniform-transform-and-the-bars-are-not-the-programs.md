@@ -31,6 +31,9 @@ status: accepted
 > the argument it lacked — every ground §9 states addresses the `fit:` field, not a player,
 > which is why ADR-0031 §4 read it as still open. The `fit:` holding is untouched.
 
+> **Absorbed by [spec ch5](../spec/05-runner.md):** the chapter is normative; this ADR
+> keeps the argument — the fit, the clip and the bars are transcribed there.
+
 # The fit is a uniform transform, and the bars are not the program's
 
 Issue #67 asked whether the letterbox guarantee ships as a normative clause. It

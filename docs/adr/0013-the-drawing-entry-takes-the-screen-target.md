@@ -31,6 +31,9 @@ status: accepted
 > one rule governing the parameter list is unchanged and gains a member: only the runner
 > can supply memory it resets at a boundary it alone controls.
 
+> **Absorbed by [spec ch5](../spec/05-runner.md):** the chapter is normative; this ADR
+> keeps the argument — the entry, the fresh target and the top-level declaration site are transcribed there.
+
 # The drawing entry takes the screen target, and the canvas is declared once at top level
 
 Two accepted decisions contradicted each other, and ADR-0011 surfaced it while

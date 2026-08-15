@@ -40,6 +40,9 @@ status: accepted
 > §6's relaunch persistence governs a **third** piece of runner-owned state, stated with no
 > ordinal.
 
+> **Absorbed by [spec ch5](../spec/05-runner.md):** the chapter is normative; this ADR
+> keeps the argument — first launch, the relaunch observables and the two-mutator rule are transcribed there.
+
 # Fullscreen is a player preference the program can read and set
 
 Issue #62 asked a narrow question inherited from #60: fullscreen, windowed and

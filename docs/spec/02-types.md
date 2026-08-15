@@ -560,9 +560,9 @@ quietly collapsing it. (#9.)
 observable before it is initialised. (#9.) A struct literal MUST name every
 field that has no declared default; **an omitted field is legal only where the
 declaration supplies a default** (#15 Q21, chapter 1 §5.3) — #9's prohibition is
-on an *implicit* zero, not on an author's written default. The one unresolved
-site is `persist` without an initialiser, which chapter 5 decides (chapter 1
-§5.13, §14.5).
+on an *implicit* zero, not on an author's written default. The one site this
+chapter left open — `persist` without an initialiser — is **closed by chapter 5
+§4.3.1 in #9's favour**: the initialiser is required (chapter 1 §5.13, §14.5).
 
 **9.7** The sources of a `?T`, as fixed by this chapter's sources:
 
@@ -867,7 +867,10 @@ is handed and returns a view of exactly what it wrote.
 (ADR-0043 §4.)
 
 **17.6** **`TextBuf[N: usize]`** is a fixed-capacity text buffer: a struct of
-`bytes: [N]u8` and `len: usize`, with `append(text: []u8)`, `format(...)`,
+`bytes: [N]u8` and `len: usize`, **both of which the mandated declaration
+defaults** — `bytes` to `N` zero bytes and `len` to `0` — so that `= {}` is a
+complete initialiser for it (§9.6; chapter 3 §5.7; chapter 5 §4.3.3, which
+requires every `persist` declaration to carry one). It has `append(text: []u8)`, `format(...)`,
 `view() -> []u8` and `clear()`. It is a **plain value with no pointer**, so it
 lives in `persist` and survives a reload by the same rule as a bare `[N]u8`.
 **`append` returns nothing and truncates silently**; `len` and remaining capacity
@@ -1028,6 +1031,7 @@ inherited a silence:
 - **The allocator interface.** §10.17; chapter 3's (ADR-0042).
 - **The rest of const evaluation.** §15.4; chapter 4's (ADR-0021).
 - **What a bug does at run time.** §8.6; chapter 5's (#18).
-- **`persist` without an initialiser.** §9.6; chapter 5's (chapter 1 §14.5).
+- **`persist` without an initialiser.** §9.6; **decided by chapter 5 §4.3.1** —
+  the initialiser is required (chapter 1 §14.5).
 - **The blessed `distinct numeric` quantity types.** §3.5; a stdlib-surface call
   (ADR-0016 §4), and chapter 6's with the rest of the blessed set.
