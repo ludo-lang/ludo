@@ -150,6 +150,49 @@ pub fn count_where(xs: []Rock, keep: fn(Rock) -> bool) -> usize
   n
 end
 
+-- An interface is a fifth type body and is declared by the one `type` shape
+-- (ch2 §6.7.1). Members are `fn` headers with no body, and there is no receiver
+-- and no `Self`: the interface names the type it constrains through its own
+-- generic parameter, so `T` appears in the signature (ch2 §6.7.2).
+pub type Ranked[T] = interface
+  fn rank(v: T) -> f32
+end
+
+-- Satisfaction is declared explicitly, never structural (ch2 §6.2). The `impl`
+-- carries no body and no `pub`, its generic argument is written out, and it
+-- lives in `Rock`'s declaring module (ch2 §6.7.3, §6.7.3.1, §6.7.5, §6.7.6).
+-- `rank` below is an ordinary module-level function; nothing about it is
+-- marked, and it is what discharges the assertion.
+impl Rock: Ranked[Rock]
+
+pub fn rank(v: Rock) -> f32
+  v.radius
+end
+
+-- The constraint is the interface, in the one position an interface may appear
+-- (ch2 §6.4). Dispatch is static: this monomorphises per `T` and no boxed
+-- existential exists (ch2 §6.3).
+pub fn best[T: Ranked[T]](xs: []T) -> ?T
+  top: ?T = none
+  best_rank: f32 = 0.0
+  for x in xs do
+    r := rank(x)
+    match top do
+      none then
+        top = x
+        best_rank = r
+      end
+      some(_) then
+        if r > best_rank then
+          top = x
+          best_rank = r
+        end
+      end
+    end
+  end
+  return top
+end
+
 -- Failure is a value in the return type, and the set is elided to this file's
 -- one declared error enum (ch2 §10.1, §10.6). A failure is returned by
 -- returning a value of the error set, qualified (ch2 §10.6.1, §4.6.1).

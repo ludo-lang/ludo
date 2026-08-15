@@ -53,6 +53,7 @@ ExplicitMarker  ::= "#explicit"
 TopLevelItem    ::= LibraryDecl
                   | UseDecl
                   | Declaration
+                  | ImplDecl
                   | Statement
 
 (* Which TopLevelItems may appear in which file is not a grammar question:
@@ -85,6 +86,26 @@ AttributeArg    ::= Literal | Identifier
 LibraryDecl     ::= "library" Identifier
 
 UseDecl         ::= "use" StringLiteral
+
+ImplDecl        ::= "impl" NamedType ":" ConstraintList
+
+(* ImplDecl is the interface-satisfaction declaration (#100, chapter 2 §6.7).
+   It is a TopLevelItem and NOT a DeclarationBody, and that placement is the
+   rule: Declaration carries Visibility, so routing satisfaction through
+   DeclarationBody would admit `pub impl`. Satisfaction is always public —
+   a private one is unobservable, since its whole job is to make a generic in
+   another module accept the type — so the grammar denies the marker rather
+   than a checker rejecting it. (Chapter 2 §6.7.5.)
+
+   It reuses ConstraintList, section 2's production, so one `impl` may
+   discharge several interfaces: `impl Rock: Compare[Rock] + Hash[Rock]`.
+   The same shape states a constraint on GenericParam and discharges it here.
+   Both descents into section 2 are through NamedType, already a named entry
+   point.
+
+   `impl` has no body and no `end`: the functions that discharge it are
+   ordinary module-level FnDecls, found by name and signature. (Chapter 2
+   §6.7.3.) *)
 
 TypeDecl        ::= Attribute* "type" Identifier GenericParams? "=" TypeBody
 
@@ -314,6 +335,7 @@ LiteralItem     ::= Identifier "=" Expr
 TypeBody        ::= StructBody
                   | EnumBody
                   | DistinctBody
+                  | InterfaceBody
                   | TypeExpr
 
 StructBody      ::= "struct" FieldDecl* "end"
@@ -325,6 +347,29 @@ EnumBody        ::= "enum" VariantDecl* "end"
 VariantDecl     ::= Identifier ( "(" TypeExpr ( "," TypeExpr )* ")" )?
 
 DistinctBody    ::= "distinct" "numeric"? TypeExpr
+
+InterfaceBody   ::= "interface" MemberSig* "end"
+
+MemberSig       ::= "fn" Identifier GenericParams? "(" ParamList? ")" ReturnType?
+
+(* InterfaceBody is a fifth TypeBody rather than a declaration form of its own,
+   so an interface is declared by the one type-declaration shape every other
+   type uses — `type Compare[T] = interface ... end` — and inherits generics,
+   attributes and visibility from TypeDecl with no rule of its own. (#100,
+   chapter 2 §6.7.1.)
+
+   MemberSig is FnDecl's header with Attribute*, Block, TailExpr and `end`
+   removed. There is no receiver and no `Self`: an interface names the type it
+   constrains through its own GenericParams, so `T` appears in the signatures.
+   That follows #11, which ships no `self` and no methods. (Chapter 2 §6.7.2.)
+
+   `MemberSig*` admits the empty body. `type Marker = interface end` is legal
+   and is the purely nominal constraint — satisfied by an ImplDecl and by
+   nothing else. It cannot become dynamic dispatch: §6.4 forbids an interface
+   in type position whatever its body. (Chapter 2 §6.7.4.)
+
+   `interface` is a type-sublanguage keyword (section 3, §2.4) and is budgeted
+   there; `impl` is core. Chapter 1 §13.9.1 crossing 2 records both. *)
 
 (* ---- 2.2 Type expressions ------------------------------------------------ *)
 

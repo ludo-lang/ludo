@@ -205,6 +205,12 @@ the drop is recorded.
    the +29.1% the spec claims. The first draft picked 5.4 silently; the defect
    was the silence, not the number.
 
+   **Both figures are as-of-closing and have since moved** — to +49.0% and
+   +32.7% by §13.9.1 crossings 1 (`>..`) and 2 (`interface` + `impl`). They are
+   left as written because this file records *why the comparator is Lua 5.4*,
+   and that argument is unaffected by the numerator; §13.7 and §13.9.1 are the
+   live figures and this file never was one.
+
 3. **#24's "no reserve is pre-allocated for the four known spenders."**
    Explicitly dropped. It governs how the map spends its budget, and there is no
    clause an implementation could satisfy or violate. §13.9's recorded-overrule

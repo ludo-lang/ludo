@@ -63,7 +63,8 @@ are exactly (`Keyword`):
 
 ```
 and  as  break  const  continue  defer  do  else  elseif  end  extern  false
-fn  for  frame  if  in  library  match  not  or  persist  pub  rescue  return
+fn  for  frame  if  impl  in  library  match  not  or  persist  pub  rescue
+return
 then  true  type  unless  unsafe  use  while
 ```
 
@@ -71,7 +72,7 @@ then  true  type  unless  unsafe  use  while
 and are exactly (`TypeKeyword`):
 
 ```
-distinct  enum  numeric  struct
+distinct  enum  interface  numeric  struct
 ```
 
 They are listed apart because they are budgeted apart (§13.3, #24 call 3).
@@ -695,8 +696,8 @@ checkable property. (#24 call 3; ADR-0029 §8.)
 
 | Section | Keywords | Operators | Total |
 |---|---:|---:|---:|
-| Core grammar | 32 | 40 | **72** |
-| Type sublanguage | 4 | 1 | **5** |
+| Core grammar | 33 | 40 | **73** |
+| Type sublanguage | 5 | 1 | **6** |
 
 Core keywords are §2.3's list. Core operators are:
 
@@ -720,12 +721,12 @@ grammar**, stated as a comparison and never as a cap. (#24 call 4.)
 
 | Language | Keywords | Other tokens | Total | ludo core vs. |
 |---|---:|---:|---:|---:|
-| Lua 5.1 | 21 | 26 | 47 | +53.2% |
-| **LuaJIT 2.1 — the LÖVE2D host** | 22 | 27 | **49** | **+46.9%** |
-| Lua 5.4 | 22 | 33 | 55 | **+30.9%** |
-| LÖVE2D | +0 | +0 | **49** | **+46.9%** |
-| **ludo, core** | 32 | 40 | **72** | — |
-| ludo, type sublanguage | 4 | 1 | 5 | — |
+| Lua 5.1 | 21 | 26 | 47 | +55.3% |
+| **LuaJIT 2.1 — the LÖVE2D host** | 22 | 27 | **49** | **+49.0%** |
+| Lua 5.4 | 22 | 33 | 55 | **+32.7%** |
+| LÖVE2D | +0 | +0 | **49** | **+49.0%** |
+| **ludo, core** | 33 | 40 | **73** | — |
+| ludo, type sublanguage | 5 | 1 | 6 | — |
 | Odin | — | — | — | not yet counted |
 | Go | — | — | — | not yet counted |
 
@@ -741,8 +742,12 @@ cost of zero** — #24 call 5's stdlib escape route, exhibited by the closest pe
 this language has, and the reason §13.11's companion count is not optional.
 
 **The ~30% target binds against Lua 5.4**, and **ludo's core grammar is outside
-it at +30.9%**, under the recorded overrule at §13.9.1. It was inside at +29.1%
-until `>..` (§7.7.1); that clause is the first and so far only crossing.
+it at +32.7%**, under the recorded overrules at §13.9.1. It was inside at +29.1%
+until `>..` (§7.7.1) took it to +30.9%, and `impl` (§13.9.1 crossing 2) widened
+that overrun to its present figure. There are **two** crossings, and the second
+is a widening rather than a fresh one — which is what §13.9.1 exists to make
+visible, since a reader who saw only the table could not tell an overrun that
+grew from one that was always this size.
 #24 call 4 names "Lua (~50)" without a version, and the version
 is load-bearing — 49 is LuaJIT, 55 is 5.4 — so this chapter fixes it rather
 than leaving a citation that two readers would resolve two ways.
@@ -756,8 +761,8 @@ gaps, not this language's appetite. 5.4 is also the current release, so the
 denominator does not drift as an embedder lags upstream.
 
 **The cost, named rather than discovered:** the Lua a LÖVE2D user actually
-writes is LuaJIT, so the recognition distance that user *feels* is +46.9%, not
-the +30.9% this spec publishes. The published figure is the fair measure of
+writes is LuaJIT, so the recognition distance that user *feels* is +49.0%, not
+the +32.7% this spec publishes. The published figure is the fair measure of
 what ludo spent; it is not a claim about what a LÖVE2D user will recognise. The
 LuaJIT and LÖVE2D rows stay in the table for exactly that reason.
 
@@ -784,6 +789,7 @@ with the failure class §13.8 tier 2 charged for it. The list is the audit trail
 | # | Clause | Cost | Total | vs. Lua 5.4 | Failure class deleted |
 |---|---|---:|---:|---:|---|
 | 1 | `>..`, §7.7.1 | +1 operator | 71 → **72** | 29.1% → **30.9%** | the ascending swap-remove skip |
+| 2 | `interface` + `impl`, ch2 §6.7 | +1 core keyword (+1 type-sublanguage keyword, off this row) | 72 → **73** | 30.9% → **32.7%** | accidental satisfaction |
 
 **Crossing 1, stated in full.** `>..` is **semantics-bearing, not sugar**, by
 §13.8's machine-checkable test: `#explicit` does not reject it, so it owes a
@@ -794,6 +800,28 @@ last element into slot `i`, ahead of an ascending cursor and behind a descending
 one. There is no crash and no diagnostic. Without a descending range the correct
 loop has no spelling, so an author reaches for the ascending one and the bug is
 the **default outcome**. (ADR-0050 §13; chapter 3 §11.13, §12.2.)
+
+**Crossing 2, stated in full.** `interface` and `impl` are **one mechanism and
+one register row**, not two additions. An interface with no way to declare
+satisfaction is inert, and a satisfaction declaration with nothing to satisfy is
+meaningless; they ship together or not at all, so charging them separately would
+report a sequence of two crossings where the design took one step. Both are
+**semantics-bearing, not sugar**, by §13.8's machine-checkable test: `#explicit`
+rejects neither.
+
+**Only `impl` moves this row.** `interface` is a type-sublanguage keyword
+(§2.4), budgeted apart under §13.3, so the core figure carries the one keyword
+that is genuinely core — `impl` is a `TopLevelItem`, not a `TypeBody`, and
+putting it in the cheaper bucket to protect the percentage would be the silent
+increment §13.9 forbids.
+
+The class deleted is **accidental satisfaction**: a type gains an interface by
+happening to have functions of the right shape, and the author is never told
+which call site now compiles — nor which one stops compiling when an unrelated
+rename changes the shape back. #11 Q2 ruled structural satisfaction out for
+exactly this reason, and chapter 2 §6.2 states the rule; until this crossing the
+corpus mandated the rule while providing no syntax to express it, so the class
+was named but not actually deleted. (#100; chapter 2 §6.7.)
 
 **13.10** On an implementation the budget is not a budget at all but **no vendor
 syntax extensions**, which chapter 8 carries as a conformance property rather
@@ -822,13 +850,20 @@ module names.)
 
 | Section | Productions |
 |---|---:|
-| `grammar.ebnf` §1, core grammar | 71 |
-| `grammar.ebnf` §2, type sublanguage | 21 |
+| `grammar.ebnf` §1, core grammar | 72 |
+| `grammar.ebnf` §2, type sublanguage | 23 |
 | `grammar.ebnf` §3, lexical structure | 20 |
 
 **These counts are unchanged by §7.7.1.** `>..` is a second alternative inside
 the existing `RangeExpr` production, so it costs an operator (§13.6) and no
 production — recorded so the flat number is not read as an oversight.
+
+**They are changed by §13.9.1 crossing 2** (#100), which is the contrasting
+case: core gains `ImplDecl` (71 → 72) and the type sublanguage gains
+`InterfaceBody` and `MemberSig` (21 → 23). `InterfaceBody` is a fifth
+alternative inside the existing `TypeBody` and costs no production of its own,
+exactly as `>..` did not; the two productions charged are the body and the
+member signature it repeats.
 
 **This number is sensitive to how the grammar is factored** and is published
 with that note so that nobody games it by inlining rules. The binding unit

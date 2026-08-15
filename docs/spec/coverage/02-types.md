@@ -150,7 +150,7 @@ land below.
 | No overloading, no implicit-conversion-driven dispatch | §1.8, §2.8 |
 | The minimum-type-system table (feature → failure class) | Rationale. **Explicitly dropped** — §3 |
 | The three lenses, and the downstream list | Rationale. **Explicitly dropped** — §3 |
-| **The interface declaration and satisfaction spellings** | **Phantom — declined and filed, §6.2.1, §19.3, [#100](https://github.com/ludo-lang/ludo/issues/100)** |
+| **The interface declaration and satisfaction spellings** | **Phantom — filed, then authored at §6.7** ([#100](https://github.com/ludo-lang/ludo/issues/100) resolved; §6.2.1, §19.3 record the route; chapter 1 §13.9.1 crossing 2 carries the charge) |
 
 ### ADR-0017 — The ceiling is a named function pointer
 

@@ -334,13 +334,10 @@ only where its declaring module says so. **Structural or implicit satisfaction
 does not exist**: a type MUST NOT gain an interface by happening to have
 functions of the right shape. (#11 Q2.)
 
-**6.2.1** **Neither the interface declaration nor the satisfaction declaration
-has a spelling** — `grammar.ebnf` admits four type bodies and none of them is an
-interface, and nothing anywhere declares that a type satisfies one. **Recorded
-here, not authored**: the repair adds productions and is charged under #24, so it
-is a decision rather than a transcription defect (§19.3). Filed as
-[#100](https://github.com/ludo-lang/ludo/issues/100). §6.1–§6.6 state what the
-forms must mean once they exist.
+**6.2.1** Both declarations now have a spelling: **§6.7 authors them**, closing
+what this section previously recorded as the eighth phantom clause. The forms are
+charged as chapter 1 §13.9.1 crossing 2, against the failure class §6.2 names.
+([#100](https://github.com/ludo-lang/ludo/issues/100).)
 
 **6.3** **Dispatch is static, always.** There is **no boxed existential, no
 `dyn`, and no dynamic dispatch of any kind** in this specification.
@@ -361,6 +358,114 @@ alongside the blessed math operators (§16.1, ADR-0016 §3), the derived
 `Eq`/`Hash`/`Clone` (#15, chapter 3), the SoA transform (#25 §1, chapter 3),
 and the shader's recognise-by-name (ADR-0008 §6, chapter 6). It is **not a
 mechanism a user can invoke**. (ADR-0017 §3.)
+
+### 6.7 The spellings
+
+Authored by [#100](https://github.com/ludo-lang/ludo/issues/100). §6.1–§6.6 fix
+what these forms mean; this section fixes how they are written.
+
+**6.7.1 The interface declaration** is the ordinary type declaration with a
+**fifth type body**:
+
+```
+type Compare[T] = interface
+  fn cmp(a: T, b: T) -> i32
+end
+```
+
+`InterfaceBody ::= "interface" MemberSig* "end"` is a fifth alternative of
+`TypeBody`, so an interface is declared by the same `type X = <body> ... end`
+shape as a struct, an enum or a distinct type (chapter 1 §14.2), and inherits
+generic parameters, attributes and `pub` from `TypeDecl` with **no rule of its
+own**. A declaration form parallel to `type` was rejected on that ground: it
+would have restated all four for one body.
+
+**6.7.2 A member is a `fn` header with no body**:
+`MemberSig ::= "fn" Identifier GenericParams? "(" ParamList? ")" ReturnType?`
+— `FnDecl` with `Attribute*`, `Block`, `TailExpr` and `end` removed. There is
+**no receiver and no `Self`.** An interface names the type it constrains through
+its own generic parameters, so `T` appears in the signatures, as above. This
+follows #11, which ships no `self` and no methods; an implicit receiver would be
+the first, and `Self` would be a keyword bought for brevity alone — sugar under
+chapter 1 §13.8 rule 3, since `#explicit` rejects it. The cost is that signatures
+repeat `T`.
+
+A field-style member (`cmp: fn(T, T) -> i32`) was rejected: it is visually the
+`fn` **type**, which is the subject of §6.5 — the one rule a reader is most
+likely to confuse with structural satisfaction.
+
+**6.7.3 The satisfaction declaration** is a top-level item with no body:
+
+```
+impl Rock: Compare[Rock]
+```
+
+`ImplDecl ::= "impl" NamedType ":" ConstraintList`. The functions that discharge
+it are **ordinary module-level `fn`s**, matched by name and signature; `impl`
+asserts the whole interface and MUST NOT list members, which would duplicate the
+interface body and rot against it. A block form was rejected because it would
+make `impl` a second place functions can be declared, which is a namespacing
+question this language does not otherwise have
+([#111](https://github.com/ludo-lang/ludo/issues/111)). The consequence is that
+the discharging functions are not visually adjacent to the assertion; chapter 7's
+diagnostic carries that weight instead.
+
+Reusing `ConstraintList` lets one `impl` discharge several interfaces —
+`impl Rock: Compare[Rock] + Hash[Rock]` — and makes the shape that **states** a
+constraint on a generic parameter identical to the shape that **discharges** it.
+
+An attribute form (`#satisfies(Compare[Rock])` on the type) would have cost
+**zero** tokens, which is a real pull at chapter 1 §13.9.1's figures, and is
+rejected anyway: satisfaction is semantics-bearing, and an attribute is where
+this spec puts metadata. A clause on the type header
+(`type Rock: Compare[Rock] = struct ... end`) is rejected for putting a foreign
+claim where a reader expects the type's own shape, and for degrading as the
+interface list grows.
+
+**6.7.3.1 Generic arguments on an `impl` line MUST be written out.** `impl Rock:
+Compare[Rock]` is well-formed and `impl Rock: Compare` is not, even where the
+argument is inferable. Inference would save four characters and cost a rule with
+a boundary an author must learn, and it would make the reflexive case read
+differently from `impl Rock: Compare[Vec2]`, which is legal and deliberate.
+
+**6.7.4 An empty interface body is legal.** `type Marker = interface end` is a
+**purely nominal constraint**, satisfied by an `impl` and by nothing else. It is
+this satisfaction model in its limit case rather than an exception to it, and
+banning it would require a rule where permitting it requires none. It cannot be
+turned into dynamic dispatch: §6.4 forbids an interface in type position whatever
+its body.
+
+**6.7.5 `impl` is a `TopLevelItem`, not a `DeclarationBody`, and MUST NOT carry
+`pub`.** Satisfaction is always public. A private satisfaction is unobservable —
+its only job is to make a generic in another module accept the type — so a `pub`
+marker could only produce an `impl` that silently fails at a foreign call site.
+The grammar denies the marker rather than a checker rejecting it. This leans on
+[#111](https://github.com/ludo-lang/ludo/issues/111) for what `pub`'s boundary
+is; if #111 lands a per-file rather than a per-library boundary, this clause is
+revisited and nothing else in §6.7 is.
+
+**6.7.6 The orphan rule.** An `impl` MUST appear in the **declaring module of the
+type** (#11 Q8's radius). A local type satisfying a foreign interface is the
+ordinary case and is legal; a **foreign type satisfying a local interface is
+not**. The mirror image would let two modules declare two conflicting
+satisfactions for one type, and a generic's meaning would then depend on which
+modules happened to be linked. The consequence is stated plainly rather than
+buried: **you cannot make a third-party type satisfy your interface** — wrap it
+in a `distinct` type (§5) and `impl` that.
+
+**6.7.7 §6.5's blessed `fn` rule gets no syntactic marker.** A `fn` type
+satisfying a one-function interface is a **checker rule only**, with no `impl`
+written and none permitted. §6.6 files it as privileged compiler knowledge and
+"not a mechanism a user can invoke"; a marker would make it invocable, which is
+the structural satisfaction §6.2 forbids, reintroduced by the clause that
+disclaims it. Zero grammar delta.
+
+**6.7.8 The budget.** `interface` is a **type-sublanguage** keyword (chapter 1
+§2.4, 4 → 5) and `impl` is a **core** keyword (§2.3, 32 → 33). The two are
+charged as **one** crossing, chapter 1 §13.9.1 row 2, against the failure class
+**accidental satisfaction** — §6.2's rule, which the corpus mandated while
+providing no syntax to express it. Chapter 1 §13.6, §13.7 and §13.12 publish the
+resulting figures; the core row moves to **+32.7%** against Lua 5.4.
 
 ---
 
@@ -851,18 +956,20 @@ is required by two clauses and defined by neither. §2.6 authors it as the Unico
 scalar value that `chars()` yields, which is the only reading under which both
 clauses are true.
 
-**19.3 The interface declaration and its satisfaction — recorded, not
-authored.** #11 Q2 ships explicit nominal interface satisfaction and ADR-0017 §3
-depends on a single-function interface, but neither declaration form exists in
-`grammar.ebnf` or chapter 1 (§6.2.1). This is the eighth phantom clause the
-consolidation has found and the **first one this spec declines to repair
-itself**: the other seven cost a word, while this one adds type-sublanguage
-productions and probably a keyword, which chapter 1 §13.8 charges and §13.6,
-§13.7 and §13.12 publish. A decision with a budget consequence is not a
-transcription defect, so ADR-0044 §6 does not reach it. Filed as
-[#100](https://github.com/ludo-lang/ludo/issues/100), flagged so it is found
-rather than inherited silently — the same treatment chapter 1 §14.5 gave
-`persist`.
+**19.3 The interface declaration and its satisfaction — recorded here, authored
+in §6.7.** #11 Q2 ships explicit nominal interface satisfaction and ADR-0017 §3
+depends on a single-function interface, but neither declaration form existed in
+`grammar.ebnf` or chapter 1. This is the eighth phantom clause the consolidation
+has found and the **only one this chapter did not repair on sight**: the other
+seven cost a word, while this one adds type-sublanguage productions and a keyword
+in each budget, which chapter 1 §13.8 charges and §13.6, §13.7 and §13.12
+publish. A decision with a budget consequence is not a transcription defect, so
+ADR-0044 §6 did not reach it and it went out as
+[#100](https://github.com/ludo-lang/ludo/issues/100) rather than being written
+inline — the same treatment chapter 1 §14.5 gave `persist`. **#100 is now
+resolved and §6.7 carries the spellings**; the delay is recorded, not the gap,
+because the route matters to whoever next finds a phantom clause with a price
+tag on it.
 
 ---
 
@@ -897,10 +1004,12 @@ because §10.11's must-use and §10.12's explicit propagation are unaffected.
 Recorded so the boundary is legible, and so a later chapter is not read as having
 inherited a silence:
 
-- **The interface and satisfaction spellings.** §6.2.1 and §19.3; the meaning is
-  fixed here, the forms are not. Filed as
-  [#100](https://github.com/ludo-lang/ludo/issues/100), and it moves chapter 1
-  §13.6's published counts when it lands.
+- ~~**The interface and satisfaction spellings.**~~ **Closed.**
+  [#100](https://github.com/ludo-lang/ludo/issues/100) resolved and the forms are
+  authored at §6.7; chapter 1 §13.6, §13.7, §13.9.1 and §13.12 moved with it.
+  Kept in this list, struck rather than deleted, because a reader arriving from
+  §6.2.1 or §19.3 must be able to see that the boundary moved rather than
+  wonder whether they are reading a stale copy.
 - **The blessed math type set.** §16.1 transcribes ADR-0016 §3's operator rule
   because the typing of `+` cannot be stated without it, and §2.5 takes §6's
   float-evaluation rule; **the rest of ADR-0016 is chapter 6's**, which is
