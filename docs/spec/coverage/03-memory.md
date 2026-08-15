@@ -456,7 +456,7 @@ mean for containers.
 | §11 The buffer survives; `truncate(0)` is the per-frame reuse call | §11.13.5 |
 | §11 No `clear()` — one spelling per meaning | §11.13.5 |
 | §11 The name is contested and ships on corpus grounds | Rationale. **Explicitly dropped** — §3 |
-| §12 `retain` is deferred pending #100, not rejected | §11.13.8 |
+| §12 `retain` is deferred pending #100, not rejected | §11.13.8, carried as [#110](https://github.com/ludo-lang/ludo/issues/110) |
 | §12 No `swap`, no `List.with_capacity` | §11.13.8 |
 | §12 No front-drop or FIFO; ruled out of scope to #108 | §11.13.9 |
 | §13 The budget overrule and its tier-2 payment | **Chapter 1 §13.9.1**, and §13.6, §13.7, §13.12 |

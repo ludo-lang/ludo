@@ -696,7 +696,9 @@ not mandated. The mitigation that ships is §11.13's naming. (ADR-0050 §5.)
 constructor.** `retain(pred)` is **deferred, not rejected**: chapter 2 §7.2
 makes closures a stated non-goal, so a predicate needing frame state must take
 §7.4's interface-bounded form, and §12.5's interface declaration form does not
-exist ([#100](https://github.com/ludo-lang/ludo/issues/100)). Nothing is blocked
+exist ([#100](https://github.com/ludo-lang/ludo/issues/100)), which withholds
+the spelling of the answer and not the question — carried as
+[#110](https://github.com/ludo-lang/ludo/issues/110). Nothing is blocked
 meanwhile — §12.2.1's range loop is the sanctioned cull. `swap(i, j)` is
 unnecessary: plain-struct elements copy on assignment, so a stable cull packs
 survivors forward with an ordinary assignment and cuts the tail with

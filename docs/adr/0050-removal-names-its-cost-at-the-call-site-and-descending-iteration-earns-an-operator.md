@@ -214,7 +214,10 @@ the conflict to be named rather than resolved silently.
 closures a stated non-goal (ADR-0017) — no capture of any kind — so a predicate needing frame state
 (*cull everything outside the camera*) must take chapter 2 §7.4's interface-bounded form, and
 chapter 3 §12.5 says the interface declaration form does not exist (#100). `retain` is deferred to
-the map's fog, not rejected: it becomes writable when #100 lands. §6's range loop is why nothing is
+the backlog as [#110](https://github.com/ludo-lang/ludo/issues/110), blocked by #100 — **deferred,
+not rejected**, and backlog rather than fog by the same ADR-0044 §7 test §12's last paragraph
+applies to #108: the question is sharp (it is stated in full on that ticket), and what #100
+withholds is the spelling of the answer. §6's range loop is why nothing is
 blocked in the meantime.
 
 **`clear()`.** `truncate(0)` is the same meaning. Chapter 1 §7.10a's principle — one spelling per
