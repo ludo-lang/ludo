@@ -9,6 +9,9 @@ status: accepted
 > a runtime fault, because ADR-0006 R3 makes the rung known at compile time. Criterion 4 is
 > not reopened: `extern` is visible in the signature, per ADR-0019 §2.
 
+> **Absorbed by [spec ch6 §9](../spec/06-stdlib.md):** the chapter is normative; this ADR
+> keeps the argument.
+
 # Shader ludo is a strict subset with a vacuous guarantee set; `.wgsl` is reached by an extern declaration, not ingested as an asset
 
 ADR-0003 settled the *shape* of the shader story — two authoring paths, one shader

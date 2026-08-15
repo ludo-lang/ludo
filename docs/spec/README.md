@@ -28,7 +28,7 @@ clauses** — rules three ADRs depend on that nobody ever wrote.
 | 3 | [Memory and aggregates](03-memory.md) | written |
 | 4 | [Modules and libraries](04-modules.md) | written |
 | 5 | The program and the runner | not started |
-| 6 | The standard library | not started |
+| 6 | [The standard library](06-stdlib.md) | written |
 | 7 | Diagnostics | not started |
 | 8 | Conformance | not started |
 

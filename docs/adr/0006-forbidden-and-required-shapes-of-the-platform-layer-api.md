@@ -19,6 +19,9 @@ status: accepted
 > the Specifiability parenthetical citing a rotated sprite's texel-centre tie-break rule is
 > corrected — no such rule was ever written, and the boundary case is implementation-defined.
 
+> **Absorbed by [spec ch6 §10](../spec/06-stdlib.md):** the chapter is normative; this ADR
+> keeps the argument.
+
 # The forbidden and required shapes of the platform-layer API
 
 ADR-0001 made the web a *shaping constraint* on the platform-layer API from day

@@ -22,6 +22,14 @@ status: accepted
 > stamps above are discharged — the clause has no fate left to decide. Its citation of
 > ADR-0005's texel-centre and tie-break convention goes with it: that convention was never
 > written. `fill_sprite` and `stroke_sprite` are otherwise untouched.
+>
+> **Amended by [ADR-0043](0043-a-string-is-a-literal-and-constructed-text-is-bytes.md):**
+> `TextDesc`'s `text` field is `[]u8`, not `string` — the same descriptor and the same
+> change as ADR-0009's. ADR-0043 §11 declares this amendment and no stamp was applied;
+> added retroactively while transcribing spec chapter 6, per #72.
+
+> **Absorbed by [spec ch6 §4.3-§4.7](../spec/06-stdlib.md):** the chapter is normative; this ADR
+> keeps the argument.
 
 # `Paint` and the two-verb drawing facade: `fill_` and `stroke_`, and `draw_` deleted
 

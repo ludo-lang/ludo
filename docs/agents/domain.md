@@ -109,7 +109,7 @@ the argument and loses the authority, and says so in a stamp of its own — same
 as amendment, in the chapter's commit, owed **whether or not the chapter changed the rule**:
 
 ```markdown
-> **Absorbed by [spec §6.2](../spec/06-the-facades.md):** the chapter is normative; this ADR
+> **Absorbed by [spec ch6 §6.2](../spec/06-stdlib.md):** the chapter is normative; this ADR
 > keeps the argument.
 ```
 

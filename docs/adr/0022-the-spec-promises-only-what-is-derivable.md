@@ -23,6 +23,9 @@ status: accepted
 > **unaffected**, and is now spelled at the call site. (Stamp added retroactively while
 > transcribing spec chapter 3, per #72.)
 
+> **Absorbed by [spec ch6 §4.9, §4.11](../spec/06-stdlib.md):** the chapter is normative; this ADR
+> keeps the argument.
+
 # The spec promises only what is derivable, and says so where it cannot
 
 Issue #58 inherited four falsified graphics clauses from [issue

@@ -23,6 +23,10 @@
 -- prototypes/07-syntax/b-lua-flavoured.ludo is not a starting point, and breaks
 -- six ways against the current corpus (ADR-0044 §7).
 
+-- Chapter 6 replaces the hand-rolled `Vec2` with the blessed `$.vec2`, and adds
+-- the facades: the program now draws, plays a voice, reads input, reads a video
+-- preference and writes a storage slot.
+
 -- Chapter 4 makes this file the **entry file of a program with three modules**,
 -- which is the whole of what it adds. `libs/vec-utils/` is a library because it
 -- claims a name; `hud.ludo` is this program's own file and is reached by path;
@@ -32,6 +36,12 @@
 -- and moving it -- to a cache, to a vendor directory -- changes no line here
 -- (ch4 §3.3). The runner finds it by scanning `libs/` because no build tool
 -- supplied a mapping (ch4 §8.1).
+-- Chapter 6 makes this a program that **draws, plays, reads input and saves**.
+-- Everything it adds is a name under `$.`: the blessed math set replaces the
+-- hand-rolled `Vec2`, `$.graphics` draws against the `Target` the runner hands
+-- the frame entry, `$.input` is read as an ambient per-frame constant,
+-- `$.audio` plays one voice, `$.video` reports a preference the program does
+-- not own, and `$.storage` writes a slot declared like an asset.
 use "vec-utils"
 
 -- A path reference names one file, extension written, relative to this file's
@@ -41,26 +51,35 @@ use "./hud.ludo"
 
 const MAX_ROCKS = 64
 
-type Vec2 = struct
-  x: f32 = 0.0
-  y: f32 = 0.0
-end
+-- A storage slot is declared, never opened: `extern` is reused and `storage`
+-- occupies the kind-noun slot, so the core grammar gains nothing and there is
+-- no path, no directory and no runtime key anywhere in this program
+-- (ch6 §8.1, §8.2).
+extern storage save1
+
+-- Chapter 6 deletes this program's hand-rolled `Vec2`. The blessed math set is
+-- `$.`-rooted and concrete: `$.vec2` holds two `f32` fields, ships with a
+-- positional constructor because struct literals are named-field only, and is
+-- the type every drawing descriptor names (ch6 §3.1, §3.2, §3.5). Declaring a
+-- second one was the #4 failure the blessed set exists to prevent.
 
 type Rock = struct
-  pos:    Vec2
-  vel:    Vec2
+  pos:    $.vec2
+  vel:    $.vec2
   radius: f32 = 4.0
 end
 
 type Shape = enum
   point
   circle(f32)
-  box(Vec2, Vec2)
+  box($.vec2, $.vec2)
 end
 
 type RockId = distinct u32
 
-type Seconds = distinct numeric f32
+-- `Seconds` is likewise blessed and is no longer declared here: it is one of
+-- the three shipped quantities, and it ships because `$.time.now` returns it
+-- (ch6 §3.7).
 
 -- One error set, declared in this file, so `rescue` with no set named elides to
 -- it (spec ch2 §10.6).
@@ -69,13 +88,11 @@ type FieldError = enum
   too_many(usize)
 end
 
-pub fn add(a: Vec2, b: Vec2) -> Vec2
-  { x = a.x + b.x, y = a.y + b.y }
-end
-
-pub fn scale(v: Vec2, k: f32) -> Vec2
-  { x = v.x * k, y = v.y * k }
-end
+-- `add` and `scale` are gone with the local `Vec2`. Arithmetic operators are admitted on
+-- the blessed math types and on no user type; the rule is chapter 2's typing
+-- rule and chapter 6 only names it (ch6 §3.6, ch2 §16.1). `a + b` and `v * k`
+-- below are that exception, and they are why shader code and CPU code read the
+-- same.
 
 pub fn overlaps(a: Rock, b: Rock) -> bool
   dx := a.pos.x - b.pos.x
@@ -85,7 +102,7 @@ pub fn overlaps(a: Rock, b: Rock) -> bool
 end
 
 pub fn advance(r: !Rock)
-  r!.pos = r.pos.add(r.vel)          -- UFCS, and the mutation mark on the place
+  r!.pos = r.pos + r.vel             -- the blessed-type operator; the mark on the place
 end
 
 -- `match` is a statement, so it has no tail position: each arm returns.
@@ -237,15 +254,15 @@ end
 -- are exactly what is written here, with no reordering (ch3 §8.2).
 #align(16)
 type Bounds = struct
-  lo: Vec2
-  hi: Vec2
+  lo: $.vec2
+  hi: $.vec2
 end
 
 -- The two core aggregates are `struct` and `[N]T`; everything else is a library
 -- generic (ch3 §4.1). This is an SoA field by hand: two columns, one length.
 type Field = struct
-  pos:  [MAX_ROCKS]Vec2 = {}
-  vel:  [MAX_ROCKS]Vec2 = {}
+  pos:  [MAX_ROCKS]$.vec2 = {}
+  vel:  [MAX_ROCKS]$.vec2 = {}
   live: usize = 0
 end
 
@@ -261,16 +278,16 @@ end
 -- literal means (ch3 §5.1), literals nest (ch3 §5.9), and struct literals are
 -- named-field only (ch3 §5.6).
 pub fn unit_bounds() -> Bounds
-  { lo = { x = 0.0, y = 0.0 }, hi = { x = 1.0, y = 1.0 } }
+  { lo = $.vec2(0.0, 0.0), hi = $.vec2(1.0, 1.0) }
 end
 
--- `[]T` is the universal boundary: this one function accepts a `[N]Vec2`, a
--- `List[Vec2]` and an SoA pool's `pos` column alike, and mentions none of them
+-- `[]T` is the universal boundary: this one function accepts a `[N]$.vec2`, a
+-- `List[$.vec2]` and an SoA pool's `pos` column alike, and mentions none of them
 -- (ch3 §6.1). The writable view is marked at the parameter, and the mutation
 -- mark rides the root binding at the use site (ch1 §7.10).
-pub fn integrate(pos: ![]Vec2, vel: []Vec2, dt: f32)
+pub fn integrate(pos: ![]$.vec2, vel: []$.vec2, dt: f32)
   for i in 0..<pos.len do
-    pos![i] = pos[i].add(vel[i].scale(dt))
+    pos![i] = pos[i] + vel[i] * dt
   end
 end
 
@@ -281,14 +298,14 @@ end
 --
 -- `pos` and `vel` are two views live at once, which is legal: there is no
 -- exclusivity rule between views (ch3 §7.4).
-pub fn integrate_live(pos: ![]Vec2, vel: []Vec2, live: usize, dt: f32)
+pub fn integrate_live(pos: ![]$.vec2, vel: []$.vec2, live: usize, dt: f32)
   integrate(pos![0..<live], vel[0..<live], dt)
 end
 
 -- A function may return a view only where the view derives from its receiver
 -- (ch3 §6.5) — here, the receiver's own array. A function with no receiver to
 -- derive from could not write this signature at all.
-pub fn positions(f: Field) -> []Vec2
+pub fn positions(f: Field) -> []$.vec2
   f.pos[0..<f.live]
 end
 
@@ -301,9 +318,9 @@ end
 --   $.print(v.len)                  -- error: v was invalidated by `f!` above
 --
 -- The fix needs no annotation: take the view again after the mutation.
-pub fn spawn(f: !Field, at: Vec2) -> usize
+pub fn spawn(f: !Field, at: $.vec2) -> usize
   f!.pos[f.live] = at
-  f!.vel[f.live] = { x = 0.0, y = 0.0 }
+  f!.vel[f.live] = $.vec2(0.0, 0.0)
   f!.live += 1
   v := positions(f)
   v.len
@@ -312,7 +329,7 @@ end
 -- Fixed-arity multiple returns, destructured at the call site. The returned
 -- group has no type, cannot be stored or passed on, and destructuring must be
 -- total (ch3 §14).
-pub fn extremes(f: Field) -> Vec2, Vec2
+pub fn extremes(f: Field) -> $.vec2, $.vec2
   b := unit_bounds()
   return b.lo, b.hi if f.live == 0
   b.lo, b.hi
@@ -337,7 +354,7 @@ persist field: !Field = {}
 -- `heap` is legal here and nowhere else (ch3 §1.6, §9.12), and the `List`
 -- implementation is runner-owned, which is what keeps this declaration clear of
 -- #17 §3's function-pointer check (ch3 §11.12).
-persist trail: !List[Vec2] = List.from(heap, { { x = 0.0, y = 0.0 } })
+persist trail: !List[$.vec2] = List.from(heap, { $.vec2(0.0, 0.0) })
 
 frame(screen: !Target, scratch: !Scratch)
   tick! += 1
@@ -347,7 +364,7 @@ frame(screen: !Target, scratch: !Scratch)
 
   return unless tick % 60 == 0       -- statement modifier over a bool condition
 
-  n := spawn(field!, { x = 8.0, y = 8.0 })
+  n := spawn(field!, $.vec2(8.0, 8.0))
 
   -- `reserve` is additional and idempotent -- room for 2 *beyond* `len` -- and
   -- exists for timing, not failure: a program that must not allocate mid-frame
@@ -400,4 +417,117 @@ frame(screen: !Target, scratch: !Scratch)
   reach := hud.squared(lo.x, lo.y) + vec_utils.EPSILON
   edge: [32]u8 = {}
   $.print(format(edge!, "reach {} banner {}", reach, hud.banner_radius(reach)))
+
+  -- ---------------------------------------------------------------------
+  -- Chapter 6: the standard library.
+  -- ---------------------------------------------------------------------
+
+  -- Input is an ambient *constant*, not ambient state: the runner latches it
+  -- once before this entry runs, so two calls in one frame cannot disagree
+  -- (ch6 §6.8.1, §6.8.2). Nothing here names a key: `direction` unions the
+  -- d-pad, the stick and the bound keys, and its magnitude is already dead-zoned
+  -- and rescaled (ch6 §6.3.4, §6.3.5).
+  move := $.input.direction()
+  if $.input.button_pressed(.one) then
+    -- `one` is the physically-south button on every pad, by the ordinal table
+    -- and not by a per-platform remap (ch6 §6.2.3, §6.2.4).
+    _ = spawn(field!, move * 16.0)
+  end
+
+  -- The target is a parameter, never fetched: there is no `$.graphics.screen()`
+  -- (ch6 §4.2.6). UFCS gives the short spelling and is the same function as the
+  -- qualified one (ch6 §1.7).
+  screen!.fill_rect({
+    position = $.vec2(0.0, 0.0),
+    size     = $.vec2(1280.0, 720.0),
+    paint    = $.rgb8(12, 12, 16),
+  })
+
+  -- Every descriptor carries `paint`, not `color`: `Color` is a `Paint` variant
+  -- and is no longer a field type anywhere (ch6 §4.3.7). `blend` is per-call and
+  -- defaults to `alpha` (ch6 §4.5.3, §4.5.4).
+  for p in positions(field) do
+    screen!.fill_ellipse({
+      position = p,
+      size     = $.vec2(8.0, 8.0),
+      paint    = $.rgb8(220, 90, 40),
+      blend    = .additive,
+    })
+  end
+
+  -- A stroke is a path with thickness, and `thickness` is not `width` because
+  -- `width` is already the x of a `size` (ch6 §4.6.1, §4.5.7). The band of a
+  -- stroked ellipse is not constant width, and the spec says so rather than
+  -- letting implementations differ (ch6 §4.6.4).
+  screen!.stroke_rect({
+    position  = lo,
+    size      = hi - lo,
+    thickness = 2.0,
+    paint     = $.rgb8(255, 255, 255),
+  })
+
+  -- `fill_text`, never `draw_text`: the pair is reserved and `draw_` does not
+  -- exist (ch6 §4.4.3, §4.8.8). `text` is `[]u8` because drawn text is not
+  -- necessarily a literal (ch6 §4.8.7) -- which is exactly what `format` above
+  -- returned.
+  -- A `{...}` literal needs a target type, so this one is annotated (ch3 §5.1);
+  -- the type lives in `$.graphics` because one-module-per-area covers types as
+  -- well as functions (ch6 §1.6).
+  label_desc: $.graphics.TextDesc = {
+    text      = line,
+    font      = $.graphics.default_font,
+    font_size = 16.0,
+    position  = $.vec2(8.0, 8.0),
+    anchor    = $.vec2(0.0, 0.0),
+    paint     = $.rgb8(255, 255, 255),
+  }
+  screen!.fill_text(label_desc)
+
+  -- `measure_text` is pure, takes no target, and takes the *same* descriptor,
+  -- so what is measured is what is drawn (ch6 §4.8.1, §4.8.2).
+  metrics := $.graphics.measure_text(label_desc)
+
+  -- A missing sprite draws nothing, and so does a correct transparent one. The
+  -- debug image is a mandated *value*, reached explicitly -- never a fallback an
+  -- implementation substitutes (ch6 §4.9.10).
+  screen!.fill_sprite({
+    image    = $.graphics.debug_image,
+    position = $.vec2(metrics.advance + 16.0, 8.0),
+    size     = $.vec2(16.0, 16.0),
+    paint    = $.rgb8(255, 255, 255),
+  })
+
+  -- One voice, one call. `play` returns a handle and never absence: there is no
+  -- voice cap to be exhausted (ch6 §5.1.3, §5.2.3). No abbreviation appears in
+  -- any field name (ch6 §1.1.4).
+  voice := $.audio.play({
+    waveform  = .square,
+    frequency = 440.0,
+    amplitude = 0.4,
+    pan       = 0.0,
+  })
+
+  -- `set` is one call with a patch whose absent fields mean unchanged; there are
+  -- no per-parameter setters (ch6 §5.2.5). The change ramps linearly over one
+  -- frame, in Hz and not in cents (ch6 §5.3.1, §5.3.2).
+  $.audio.set(voice, { frequency = 660.0 })
+
+  -- The cursor is `SampleFrames`, and converting it takes the device rate as an
+  -- argument so a stale-rate division is unspellable (ch6 §5.2.6, §5.2.7).
+  elapsed: Seconds = $.audio.seconds($.audio.cursor(), $.audio.sample_rate())
+  _ = elapsed
+
+  -- A preference the program may read and set but must not cache: the runner can
+  -- change it without telling this program (ch6 §7.9). The getter reports the
+  -- quantised grid value, never the argument (ch6 §7.11).
+  if $.video.render_scale() > 0.5 then
+    $.video.set_render_scale(0.5)
+  end
+
+  -- Submit and forget: `write` never blocks, returns no completion, and the
+  -- program never learns whether the disk was full (ch6 §8.8, §8.11). Oversize
+  -- is the one failure it *can* see, and it is a value at the call site
+  -- (ch6 §8.10). The payload is bytes, because the spec blesses no serializer
+  -- (ch6 §8.5).
+  save1.write(edge) rescue return
 end

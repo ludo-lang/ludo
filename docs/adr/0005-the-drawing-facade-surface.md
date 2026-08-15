@@ -47,6 +47,9 @@ status: accepted
 > convention was ever written**, and ADR-0022 §2 plus ADR-0034 §3 cover the fractional and
 > rotated cases as implementation-defined.
 
+> **Absorbed by [spec ch6 §4.1-§4.2, §4.7-§4.8](../spec/06-stdlib.md):** the chapter is normative; this ADR
+> keeps the argument.
+
 # The drawing facade's surface: top-left Y-down, straight alpha, and a target that carries the frame
 
 ADR-0004 fixed the *line* — the spec mandates a thin drawing facade and delegates

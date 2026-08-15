@@ -2,6 +2,9 @@
 status: accepted
 ---
 
+> **Absorbed by [spec ch6 §4.11](../spec/06-stdlib.md):** the chapter is normative; this ADR
+> keeps the argument.
+
 # The byte-exact blit is withdrawn, and a texel-selection rule replaces it
 
 Issue [#69](https://github.com/adamico/ludo/issues/69) was split out of

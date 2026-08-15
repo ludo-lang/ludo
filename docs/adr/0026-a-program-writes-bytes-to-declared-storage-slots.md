@@ -6,6 +6,9 @@ status: accepted
 > §5's flush bound is restated as the last moment the host guarantees it can run
 > code, since a discarded browser tab has no exit hook.
 
+> **Absorbed by [spec ch6 §8](../spec/06-stdlib.md):** the chapter is normative; this ADR
+> keeps the argument.
+
 # A program writes bytes to declared storage slots
 
 Issue #64 recorded a hole nothing in the map had noticed: **nothing under `$.`

@@ -20,12 +20,21 @@ status: accepted
 > `$.graphics.checkerboard` is **`$.graphics.debug_image`**; the `Target`-not-`Canvas`
 > rationale cites a field ADR-0032 removed, and survives on its `Screen` ground alone.
 >
+> **Amended by [ADR-0043](0043-a-string-is-a-literal-and-constructed-text-is-bytes.md):**
+> `TextDesc`'s `text` field is `[]u8`, not `string` — drawn text is not necessarily a
+> literal, and `string` is a view into the runner's constant blob. ADR-0043 §11 declares
+> this amendment and no stamp was applied; added retroactively while transcribing spec
+> chapter 6, per #72.
+>
 > **Amended by [ADR-0047](0047-a-returned-view-is-derived-from-its-receiver-and-mutation-kills-it.md):**
 > §111's `get_pixels(image: Image) -> []u32` is restamped
 > **`get_pixels(image: !Image) -> []u32`** — a returned view is writable if and only if the
 > operand it derives from was marked at the call site, so the corpus's designated mutation
 > signal now carries the mark it signals with. (Stamp added retroactively while transcribing
 > spec chapter 3, per #72.)
+
+> **Absorbed by [spec ch6 §4](../spec/06-stdlib.md):** the chapter is normative; this ADR
+> keeps the argument.
 
 # The drawing facade's call spellings: `$.graphics`, verb-first, a descriptor per call
 

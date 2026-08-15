@@ -22,6 +22,9 @@ status: accepted
 > "a clip adds no root name" is **superseded** — `Clip` is a root type, and the type count is
 > six rather than five.
 
+> **Absorbed by [spec ch6 §5](../spec/06-stdlib.md):** the chapter is normative; this ADR
+> keeps the argument.
+
 # The audio facade's surface: voices that play, a clip as the procedural path, and a push that is not it
 
 ADR-0006 fixed the *set* and the *line* for audio — the mandated facade gains a

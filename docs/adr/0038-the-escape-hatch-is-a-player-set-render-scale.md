@@ -2,6 +2,9 @@
 status: accepted
 ---
 
+> **Absorbed by [spec ch6 §7](../spec/06-stdlib.md):** the chapter is normative; this ADR
+> keeps the argument.
+
 # The one performance escape hatch is a player-set render scale
 
 Issue #75 was split out of [#71](https://github.com/adamico/ludo/issues/71) /

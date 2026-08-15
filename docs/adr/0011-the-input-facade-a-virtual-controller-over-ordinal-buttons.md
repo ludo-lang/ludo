@@ -12,6 +12,15 @@ status: accepted
 >
 > **Amended by [ADR-0033](0033-a-stamp-can-go-stale-and-the-companion-count-is-reconciled.md):**
 > `to_world`, owed by this ADR and shipped by ADR-0013 §8, is counted for the first time.
+>
+> **Amended by [ADR-0043](0043-a-string-is-a-literal-and-constructed-text-is-bytes.md):**
+> `$.input.text()` returns `[]u8`, not `string`, and the view is runner-owned memory valid
+> until the frame entry returns. ADR-0043 §11 declares this amendment and only §294's prose
+> records it; the header stamp is added retroactively while transcribing spec chapter 6,
+> per #72.
+
+> **Absorbed by [spec ch6 §6](../spec/06-stdlib.md):** the chapter is normative; this ADR
+> keeps the argument.
 
 # The input facade: a virtual controller over ordinal buttons, with the raw devices beneath
 

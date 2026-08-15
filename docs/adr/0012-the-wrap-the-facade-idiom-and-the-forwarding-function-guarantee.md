@@ -14,6 +14,9 @@ status: accepted
 > §1's *"the spec owes exactly one normative thing"* is stronger for recording that a
 > second constraint was proposed, shipped and withdrawn.
 
+> **Absorbed by [spec ch6 §2](../spec/06-stdlib.md):** the chapter is normative; this ADR
+> keeps the argument.
+
 # The wrap-the-facade idiom, and the forwarding-function guarantee that makes it free
 
 ADR-0007, ADR-0009, ADR-0010 and ADR-0011 all spent verbosity deliberately: no

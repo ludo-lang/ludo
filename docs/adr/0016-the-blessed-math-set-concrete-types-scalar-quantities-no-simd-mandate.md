@@ -2,6 +2,9 @@
 status: accepted
 ---
 
+> **Absorbed by [spec ch6 §3](../spec/06-stdlib.md):** the chapter is normative; this ADR
+> keeps the argument.
+
 # The blessed math set: concrete types, scalar quantities, no SIMD mandate
 
 Issue #51 asked three questions the game-facing stdlib fog had carried since
