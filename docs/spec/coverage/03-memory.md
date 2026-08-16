@@ -157,14 +157,21 @@ they are not re-derived. Verified, not assumed:
   exercised for the reference program, and the split is recorded on the map as
   §4 requires. No stamp.
 
-**One record is filed rather than stamped.**
+**One record was filed rather than stamped, and is now discharged.**
 [#107](https://github.com/ludo-lang/ludo/issues/107) — chapter 3 §12.2's
-`for x in !xs` contradicts chapter 1 §7.10's postfix mark. Found while resolving
-#105 and **not fixed here**: it is independent of removal, it touches a clause
-this commit already edits for another reason, and folding it in would put an
-unrelated reversal inside a resolution commit. §12.2's prefix spelling therefore
-**survives this commit unrepaired**, which is a known defect with a ticket and
-not an oversight.
+`for x in !xs` contradicted chapter 1 §7.10's postfix mark. Found while
+resolving #105 and deliberately **not fixed there**: it was independent of
+removal, it touched a clause that commit already edited for another reason, and
+folding it in would have put an unrelated repair inside a resolution commit.
+**Repaired since**, in §12.2's own text: the spelling is `for x in xs!`, the
+subject is an ordinary expression that §7.10 already reaches, and the mark
+fires once at loop entry. **No chapter 1 clause was added** — a carve-out there
+would have conceded that the loop subject is special, when the whole finding is
+that it is not. The defect's source is #15 Q19, which predates §7.10 being
+written; **the corpus sweep found no second site**, only quotations of §12.2
+itself (ADR-0050 §14, ADR-0052 §7 and [#114](https://github.com/ludo-lang/ludo/issues/114),
+which are rationale records and stand as written). Zero #24 delta — one glyph
+moves and nothing is spelled.
 
 ---
 
@@ -260,7 +267,7 @@ Per issue [#87](https://github.com/ludo-lang/ludo/issues/87): #8, #15, #25
 | Q17 `==` is structural elementwise; a `Map` comparison ignores insertion order | §13.1 |
 | Q6, Q19 One iteration construct over everything, via a nominal `Iter[T]` constraint | §12.1 |
 | Q19 Static dispatch and monomorphisation; no iterator boxing; user types can satisfy it | §12.1 |
-| Q19 `for x in xs` binds a copy; `for x in !xs` binds a writable view per element | §12.2 |
+| Q19 `for x in xs` binds a copy; `for x in !xs` binds a writable view per element | §12.2 — **respelled `for x in xs!`** ([#107](https://github.com/ludo-lang/ludo/issues/107)); Q19 predates chapter 1 §7.10 and the prefix mark is type position only |
 | Q19 The loop's lend is exclusive, so structural mutation during iteration is a compile error | §12.2, §17 |
 | Q24 Half-open ranges only; no `..=`; ranges are ordinary `Iter[int]` values | §12.3 |
 | Q19 `for i, x in xs.pairs()` | §12.4 |

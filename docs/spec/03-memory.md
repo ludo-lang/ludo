@@ -754,12 +754,20 @@ over every aggregate (chapter 1 §6.10), via a **nominal `Iter[T]` constraint
 with static dispatch and monomorphisation**. There is no iterator boxing and no
 `dyn` (chapter 2 §6.3). **A user type can satisfy `Iter[T]`.** (#15 Q6, Q19.)
 
-**12.2** **`for x in xs` binds a copy; `for x in !xs` binds a writable view per
-element.** The loop's lend is **exclusive for its duration**, so **structural
-mutation of the aggregate during iteration is a compile error** — iterator
-invalidation is deleted rather than documented. **Removal falls under this
-clause**: it is structural mutation, and the clause takes no carve-out for it.
-(#15 Q19; ADR-0050 §6.)
+**12.2** **`for x in xs` binds a copy; `for x in xs!` binds a writable view per
+element.** The mark is **postfix on the loop subject**, because the subject is
+an ordinary expression and chapter 1 §7.10 puts the mark on the root binding
+with the suffix chain — here empty — following it; the shape is
+`format(buf!, ...)`'s, not a construct of its own, and §7.10 needs no carve-out
+to reach it. **The mark fires once, at loop entry**, not per iteration: the
+subject is evaluated once, so §7.1's kill is a single event and the loop does
+not invalidate the element view it just bound. The loop's lend is **exclusive
+for its duration**, so **structural mutation of the aggregate during iteration
+is a compile error** — iterator invalidation is deleted rather than documented.
+**Removal falls under this clause**: it is structural mutation, and the clause
+takes no carve-out for it. (#15 Q19 — whose `!xs` predates the mark rule and is
+respelled here, [#107](https://github.com/ludo-lang/ludo/issues/107); chapter 1
+§7.10; ADR-0050 §6.)
 
 **12.2.1** **The sanctioned cull iterates a range, not the container**, so
 §12.2 costs nothing:
@@ -1093,7 +1101,7 @@ having inherited a silence.
   every-binding-initialises rule makes the exception a decision, and it reaches
   §5.7, §5.9 and chapter 5 §4.3.1.
   [#118](https://github.com/ludo-lang/ludo/issues/118).
-- **Whether `for x in !rocks` is legal on a columnar pool.** §12.2 gives a
+- **Whether `for x in rocks!` is legal on a columnar pool.** §12.2 gives a
   writable view per element; §10.8 rejects the synthesised in-place `!Entity`
   lend and confines in-place mutation to columns. Nothing states which wins.
   [#114](https://github.com/ludo-lang/ludo/issues/114).

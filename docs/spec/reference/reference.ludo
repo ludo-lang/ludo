@@ -421,6 +421,24 @@ frame(screen: !Target, scratch: !Scratch)
   trail!.push(lo) rescue return
   trail!.push(hi) rescue return
 
+  -- Mutable iteration. The mark is *postfix on the loop subject* -- `trail!`,
+  -- never `!trail` -- because the subject is an ordinary expression and the
+  -- mark rides the root binding there as it does everywhere else (ch1 §7.10,
+  -- ch3 §12.2). Prefix `!` is type position only, which is why the declaration
+  -- above reads `persist trail: !List[$.vec2]` and this line does not.
+  --
+  -- The mark fires *once*, at loop entry: the subject is evaluated once, so the
+  -- kill is a single event and the loop does not invalidate `p` on the next
+  -- turn. `p` is a writable view of the element, so `p!.y` is the same shape as
+  -- `advance`'s `r!.pos` one function scope up.
+  --
+  -- Nothing here pushes, removes or truncates: the lend is exclusive for the
+  -- loop's duration, and structural mutation inside it is a compile error
+  -- rather than a documented invalidation hazard (ch3 §12.2).
+  for p in trail! do
+    p!.y = p.y + 1.0
+  end
+
   -- `string` is the type of a literal and of nothing else; it widens one way
   -- to `[]u8` at parameter position (ch2 §17.1, §17.2).
   label: string = "elapsed"
