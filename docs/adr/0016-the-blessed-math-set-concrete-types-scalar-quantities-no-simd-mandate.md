@@ -4,6 +4,9 @@ status: accepted
 
 > **Absorbed by [spec ch6 §3](../spec/06-stdlib.md):** the chapter is normative; this ADR
 > keeps the argument.
+>
+> **Absorbed by [spec ch8 §7](../spec/08-conformance.md):** §6's two conformance halves — SIMD
+> lowering is not required, float evaluation binds every implementation — are chapter 8's.
 
 # The blessed math set: concrete types, scalar quantities, no SIMD mandate
 

@@ -2,6 +2,9 @@
 status: accepted
 ---
 
+> **Absorbed by [spec ch8 §3](../spec/08-conformance.md):** the chapter is normative; this ADR
+> keeps the argument.
+
 # Claimants conform alone, and `extern` is the only door below `$.`
 
 ADR-0014 §9 made a backend a library claiming a root name, satisfying a nominal

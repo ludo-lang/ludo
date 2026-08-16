@@ -30,7 +30,10 @@ clauses** — rules three ADRs depend on that nobody ever wrote.
 | 5 | [The program and the runner](05-runner.md) | written |
 | 6 | [The standard library](06-stdlib.md) | written |
 | 7 | [Diagnostics](07-diagnostics.md) | written |
-| 8 | Conformance | not started |
+| 8 | [Conformance](08-conformance.md) | written |
+
+**All eight chapters are written.** The spec is now the only normative surface
+(ADR-0051 §3), and the ADR corpus keeps the argument and loses the authority.
 
 ## Closing test
 
@@ -46,5 +49,10 @@ reading.
 [`reference/reference.ludo`](reference/reference.ludo) is written fresh and
 grows one chapter at a time; each chapter's last step extends it, which keeps it
 green by construction. Until a frontend exists it is checked by hand.
+
+**Chapters 7 and 8 add nothing to it, deliberately.** Both specify toolchain and
+implementation obligations, and neither has a line a ludo program can write;
+each says so in its own §0.6 and its `coverage/` file, because *unchanged* and
+*the author skipped the last step* look identical in a diff.
 
 **The map is done when a prototype runs it** (ADR-0044 §4).

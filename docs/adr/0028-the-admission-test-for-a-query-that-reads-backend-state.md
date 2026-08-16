@@ -19,6 +19,9 @@ status: accepted
 > §7's hand-off is **discharged by declining to exercise it** — display count stays
 > admitted and no program-facing shape ships, so the test is never run; §3's return guard
 > is what kills all three candidate shapes, each dragging a count behind it.
+>
+> **Absorbed by [spec ch8 §8](../spec/08-conformance.md):** the chapter is normative; this ADR
+> keeps the argument.
 
 # The admission test: reformulate, guard the return, then require necessity
 

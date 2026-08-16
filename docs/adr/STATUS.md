@@ -19,6 +19,17 @@ row and the ADR disagree, the ADR wins and the row is the bug.
 chapter that lands converts its sources to `absorbed-by-ch-N`. When the last chapter lands this
 file says only that the spec is normative, and is deleted.
 
+> **Chapter 8 has landed and this file is not deleted.** ADR-0051 §5's condition is *the last
+> chapter lands*, but the state it was written to produce is *every row converted* — and that
+> state has not been reached. Chapters 1–4 landed without stamping or converting the ADRs they
+> absorbed, so ADR-0014, ADR-0017, ADR-0021, ADR-0027, ADR-0029, ADR-0042, ADR-0043, ADR-0045,
+> ADR-0047, ADR-0048, ADR-0050, ADR-0052 and ADR-0053 still read `live` or `amended` while their
+> content is normative in a landed chapter — and that list is a floor, since ADR-0001, ADR-0002 and
+> ADR-0004 are arguably chapter 6's too. Deleting the bridge now would lose the only place that
+> backlog is visible, which is the opposite of what ADR-0051 §4 wants. The backfill is
+> [#120](https://github.com/ludo-lang/ludo/issues/120), and this file dies with it.
+> (`../spec/coverage/08-conformance.md` §8.)
+
 ## The columns
 
 `ADR | status | one-clause gist | declared edges`
@@ -49,10 +60,10 @@ ADR-0012 | absorbed-by-ch-6 | the wrap-the-facade idiom is blessed and made free
 ADR-0013 | absorbed-by-ch-5 | the drawing entry takes `screen: !Target`, and the logical canvas/style are declared once at top level via `set_canvas` | amends:0009, amended-by:0030, amended-by:0032, amended-by:0033, amended-by:0035, amended-by:0036, amended-by:0042
 ADR-0014 | amended | a library is a directory that declares its own name via a `library` line; `use` is file-scoped and non-transitive | amends:0006, amended-by:0027
 ADR-0015 | absorbed-by-ch-5 | assets are declared at compile time via `extern` and resolved/decoded before top-level code runs, with no program-visible loading state | amends:0007, amended-by:0033, amended-by:0042
-ADR-0016 | absorbed-by-ch-6 | blessed math set ships as concrete f32 vec2/3/4 and square mat2/3/4 plus Radians/Seconds/SampleFrames quantities, with no SIMD lowering mandate | supersedes:0007 (cursor signature, `int` to `SampleFrames`)
+ADR-0016 | absorbed-by-ch-6,ch-8 | blessed math set ships as concrete f32 vec2/3/4 and square mat2/3/4 plus Radians/Seconds/SampleFrames quantities, with no SIMD lowering mandate | supersedes:0007 (cursor signature, `int` to `SampleFrames`)
 ADR-0017 | live | the ceiling above a bare function pointer is interface-bounded generics only; closures, anonymous function literals and UFCS on function values are all rejected | -
 ADR-0018 | absorbed-by-ch-7 | compiler and faulted-program diagnostics share one structured stream (mandatory newline-delimited JSON) with normative fields, stable spec-owned codes and closed severity | amended-by:0023, amended-by:0041
-ADR-0019 | live | each claimant of a spec-defined root conforms to the spec alone, never to agreement with another claimant, and `extern` remains the only program-visible door below `$.` | -
+ADR-0019 | absorbed-by-ch-8 | each claimant of a spec-defined root conforms to the spec alone, never to agreement with another claimant, and `extern` remains the only program-visible door below `$.` | -
 ADR-0020 | live | the bootstrap compiler is written in C for the self-hosting port and reproducible-bootstrap-chain reasons, and ludo self-hosts only after v1 ships | -
 ADR-0021 | live | const evaluation folds only literals/constants/arithmetic/comparison/bitwise/casts, forbids calls and loops so non-termination is impossible, and introduces the `const` keyword | -
 ADR-0022 | absorbed-by-ch-6 | spec promises only what is derivable from a backend's own specs, so falsified graphics-exactness claims are deleted or restated with implementation-defined boundaries | amends:0004, amends:0005, amends:0007, amends:0009(unchanged), amends:0010, amended-by:0034, amended-by:0037, amended-by:0047
@@ -61,7 +72,7 @@ ADR-0024 | absorbed-by-ch-5 | concurrency is a stated non-goal and quiescence is
 ADR-0025 | absorbed-by-ch-5 | fullscreen is a player preference the runner and the program may both read and set, split out from resize (a permission) and bordered/borderless (runner discretion) | amended-by:0028, amended-by:0030, amended-by:0031, amended-by:0033, amended-by:0036, amended-by:0038, amended-by:0040
 ADR-0026 | absorbed-by-ch-6 | a program gets a minimal byte-sink surface, extern storage slots plus $.storage.read/write, since runner-owned persistence cannot carry program-defined meaning | amends:0024(quiescence predicate gains resolved storage contents), amended-by:0041
 ADR-0027 | live | the compiler is handed a complete name-to-location mapping and performs no search, with the runner building a default mapping by one-level scanning of libs/ when none is supplied | amends:0014(§4 clarifying line on $. never being a mapping key)
-ADR-0028 | amended | the admission test (reformulate, guard the return against hardware magnitude, then require strict spec-mandated necessity) is the perimeter for any future $. query reading backend state | supersedes:0025(§8, operative half), amended-by:0030, amended-by:0032, amended-by:0038, amended-by:0040
+ADR-0028 | absorbed-by-ch-8 | the admission test (reformulate, guard the return against hardware magnitude, then require strict spec-mandated necessity) is the perimeter for any future $. query reading backend state | supersedes:0025(§8, operative half), amended-by:0030, amended-by:0032, amended-by:0038, amended-by:0040
 ADR-0029 | amended | `#explicit` marks a module and forbids only spellings that omit a name, per a closed list of four | amended-by:0033
 ADR-0030 | absorbed-by-ch-5 | the fit is a uniform-scale-plus-translation coordinate mapping (not an intermediate framebuffer), with bars opaque and content clipped | amended-by:0031, amended-by:0032, amended-by:0034, amended-by:0038, amended-by:0039
 ADR-0031 | absorbed-by-ch-5 | integer scaling on `crisp` targets is deleted under the performance-above-fidelity ordering, leaving one real-`k` fit formula | amends:0030, amended-by:0036, amended-by:0038, amended-by:0039
@@ -70,7 +81,7 @@ ADR-0033 | live | reconciles stale stamps and count deltas across the corpus (st
 ADR-0034 | absorbed-by-ch-6 | withdraws the byte-exact blit and ADR-0022 §4's copy-not-quad condition, replacing them with a texel-selection rule under nearest sampling | amends:0005, amends:0006, amends:0010, amends:0012, amends:0022
 ADR-0035 | absorbed-by-ch-5 | accepts a permanent 60Hz render ceiling with no render/simulation split, and mandates exactly one presented image per frame entry | amended-by:0036(§5's "list ends at P13", found by ch5)
 ADR-0036 | absorbed-by-ch-5 | first launch opens a maximal 16:9 window sized to the work area, and its size (not position) persists across relaunch | amended-by:0038, amended-by:0040, amends:0025, amends:0031, amends:0013, amends:0035
-ADR-0037 | live | backend admissibility has no enumerated roster, only the normative surface as floor, and shader authoring becomes a third conformance rung above core/full | amends:0002, amends:0004, amends:0022, amends:0008, discharges:0033§10
+ADR-0037 | absorbed-by-ch-8 | backend admissibility has no enumerated roster, only the normative surface as floor, and shader authoring becomes a third conformance rung above core/full | amends:0002, amends:0004, amends:0022, amends:0008, discharges:0033§10
 ADR-0038 | absorbed-by-ch-6 | ships a player-set render scale s∈[0.25,1.0] as the spec's one performance escape hatch, rasterising at s·k and upscaling to k | amends:0030, amends:0025, discharges:0033§9, amends:0028, amends:0031, discharges:0036§8
 ADR-0039 | absorbed-by-ch-5 | refuses stretch-to-fill and zoom-and-crop outright, with no player-preference exception to the uniform-fit rule | amends:0030, amends:0031
 ADR-0040 | absorbed-by-ch-5 | a program reopens on the display it last occupied, runner-tracked with no ordinal and no program-facing surface | amends:0025, discharges:0028§7, amends:0036§4(splits)

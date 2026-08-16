@@ -2,6 +2,9 @@
 status: accepted
 ---
 
+> **Absorbed by [spec ch8 §2-§3](../spec/08-conformance.md):** the chapter is normative; this ADR
+> keeps the argument.
+
 # A backend clears a floor, not a roster; shaders are the third conformance rung
 
 Issue #74 asked what the admissible backend set is, and whether WebGL2 is in it.
