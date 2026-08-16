@@ -12,12 +12,18 @@
 -- program exercises it: a fallible `push`, a `reserve` before a batch, and a
 -- `persist` container. What it still does not name is a pool.
 --
--- Container *removal* is no longer a gap: ch3 §11.13-§11.13.9 specify it, and
--- ADR-0050 adds the descending range operator `>..` that its cull needs. This
--- program does not exercise any of it yet -- the extension is split out to
--- #109 under ADR-0049 §4, which lets a large reference-program extension
--- become its own work while the clause repair never splits. Until #109 lands,
--- `trail` below grows unbounded and is the leak that ticket also fixes.
+-- Container *removal* is specified by ch3 §11.13-§11.13.9, with the descending
+-- range operator `>..` that its cull needs (ch1 §7.7.1), and this program now
+-- exercises it in four shapes: the pool's hand-written swap-down (`despawn`),
+-- the descending `swap_remove` cull (`cull`), the order-preserving pack-forward
+-- (`compact`), and `truncate(0)` per-frame reuse of a `persist` buffer
+-- (`marks`). The extension landed as #109 under ADR-0049 §4, which lets a large
+-- reference-program extension become its own work while the clause repair never
+-- splits.
+--
+-- `trail` is **bounded** and no longer the leak it was, at the cost the spec
+-- states rather than hides: the cap keeps the oldest entries, which is the
+-- wrong end for a trail and the stated absence at ch3 §11.13.9 (issue #108).
 --
 -- Until a frontend exists this file is checked by hand. It is written fresh:
 -- prototypes/07-syntax/b-lua-flavoured.ludo is not a starting point, and breaks
@@ -349,6 +355,74 @@ pub fn spawn(f: !Field, at: $.vec2) -> usize
   v.len
 end
 
+-- `spawn`'s opposite, and it is deliberately *not* a container call. `Field` is
+-- a fixed `[MAX_ROCKS]` SoA with a `live` count, so removing element `i` is the
+-- swap-down the program writes by hand: copy the last live element over the
+-- hole, then shorten. There is no `swap_remove` here because there is no `List`
+-- here -- the two columns and the count are the whole data structure.
+--
+-- The shape is `swap_remove`'s and so is the consequence: this reorders, and an
+-- index held across the call names a different rock afterwards (ch3 §11.13.7).
+-- The difference is that a `List` names the cost in the method name, while an
+-- SoA pool names it in the code the program wrote itself.
+pub fn despawn(f: !Field, i: usize)
+  last := f.live - 1
+  f!.pos[i] = f.pos[last]
+  f!.vel[i] = f.vel[last]
+  f!.live -= 1
+end
+
+-- The sanctioned cull, and the first `>..` in this program (ch1 §7.7.1).
+--
+-- **The direction is the correctness condition, not a style.** `swap_remove(i)`
+-- moves the last element into slot `i`; an *ascending* cursor has already
+-- passed that slot and never looks at the moved element again, so a rock that
+-- should have died survives -- silently, with no fault and no diagnostic. That
+-- is the failure class ch1 §13.9.1 charges the operator's budget overrule
+-- against: `>..` exists because `for i in 0..<rocks.len` is the shape a program
+-- reaches for and the shape that is wrong.
+--
+-- `rocks.len>..0` yields `len-1` down to `0`, and the length is the excluded
+-- bound in both directions, which is what makes it the always-correct
+-- descending shape (ch1 §7.7.1). The loop's subject is a `RevRange`, so **no
+-- lend on `rocks` exists** and §12.2's ban on structural mutation during
+-- iteration has nothing to fire on (ch3 §12.2.1) -- which is the entire reason
+-- the cull iterates a range rather than the container.
+--
+-- The returned element is discarded with the one greppable token: removal
+-- returns what it removed (ch3 §11.13.2), and must-use is discharged, not
+-- ignored.
+pub fn cull(rocks: !List[Rock])
+  for i in rocks.len>..0 do
+    _ = rocks!.swap_remove(i) if rocks[i].radius <= 0.0
+  end
+end
+
+-- The order-preserving cull, for a list something else indexes into. Survivors
+-- pack forward and the tail is cut once (ADR-0050 §7).
+--
+-- **No `swap(i, j)` is needed and none exists** (ch3 §11.13.8): `Rock` is plain
+-- data, so `rocks![w] = rocks[i]` is an ordinary copying assignment. A
+-- container-valued element would move rather than copy (#15), which is why the
+-- clause states the precondition instead of blessing the pattern generally.
+--
+-- `truncate(w)` is a **bound**, not an index, so `w == len` -- nothing culled --
+-- is legal rather than the fault an out-of-range removal would be (ch3
+-- §11.13.5, §11.13.3). This loop ascends, and correctly: it reads `i` and
+-- writes `w`, with `w <= i` always, so nothing is written over before it is
+-- read. `>..` is not a habit to acquire; it is the answer to `swap_remove`
+-- specifically.
+pub fn compact(rocks: !List[Rock])
+  w: usize = 0
+  for i in 0..<rocks.len do
+    if rocks[i].radius > 0.0 then
+      rocks![w] = rocks[i]
+      w += 1
+    end
+  end
+  rocks!.truncate(w)
+end
+
 -- Fixed-arity multiple returns, destructured at the call site. The returned
 -- group has no type, cannot be stored or passed on, and destructuring must be
 -- total (ch3 §14).
@@ -397,11 +471,44 @@ persist field: !Field = {}
 -- #17 §3's function-pointer check (ch3 §11.12).
 persist trail: !List[$.vec2] = List.from(heap, { $.vec2(0.0, 0.0) })
 
+-- The list the culls operate on. It is seeded rather than sized: there is no
+-- `List.with_capacity`, because `reserve` is already the one sizing spelling
+-- and a second would be a second way to say one thing (ch3 §11.13.8, §11.7).
+persist rocks: !List[Rock] = List.from(heap, { { pos = $.vec2(0.0, 0.0), vel = $.vec2(0.0, 0.0) } })
+
+-- The per-frame scratch list, and the dominant real use of `truncate` (ch3
+-- §11.13.5). It is `persist` so the *buffer* outlives the frame while its
+-- *contents* do not: `truncate(0)` at the top of every frame drops the elements
+-- and keeps the allocation, so this list allocates once at cold start and never
+-- again. A frame-arena list would allocate nothing but could not outlive the
+-- frame; a fresh `List` each frame would allocate every frame. This is the
+-- shape that does neither, and it is why `truncate` returns `()` and keeps the
+-- buffer rather than handing back the dropped tail.
+persist marks: !List[$.vec2] = List.from(heap, { $.vec2(0.0, 0.0) })
+
 frame(screen: !Target, scratch: !Scratch)
   tick! += 1
 
   -- The batch op runs every frame, over exactly the live prefix.
   integrate_live(field!.pos, field.vel, field.live, 1.0 / 60.0)
+
+  -- Empty and refill. `truncate(0)` is the spelling: **there is no `clear()`**,
+  -- because it would be a second spelling of one meaning and ch1 §7.10a admits
+  -- one (ch3 §11.13.5). It cannot fail -- it drops, it never grows -- so unlike
+  -- `push` and `reserve` below it needs no `rescue`.
+  marks!.truncate(0)
+
+  lo, hi := extremes(field)          -- total destructuring of a multi-return
+  marks!.push(lo) rescue return
+  marks!.push(hi) rescue return
+
+  -- Removal on the pool and on a `List`, side by side, so the contrast is
+  -- visible rather than asserted. The pool despawns by hand against `live`; the
+  -- list culls through the mandated call. Both reorder, and only one says so in
+  -- its name.
+  despawn(field!, 0) if field.live > 0
+  cull(rocks!)
+  compact(rocks!)
 
   return unless tick % 60 == 0       -- statement modifier over a bool condition
 
@@ -417,9 +524,25 @@ frame(screen: !Target, scratch: !Scratch)
   -- `push` is argument-free because the `List` captured its allocator, and
   -- fallible because it may grow. The `rescue` is the ceremony ch3 §11.1 names,
   -- and it declares nothing on `frame`: propagation is local (ch3 §11.11).
-  lo, hi := extremes(field)          -- total destructuring of a multi-return
   trail!.push(lo) rescue return
   trail!.push(hi) rescue return
+
+  -- **The bound, and the honest note about which end it keeps.** Before this
+  -- line the program pushed two points every 60 ticks forever: a live leak in
+  -- the spec's own reference program, growing without limit for as long as it
+  -- runs.
+  --
+  -- `truncate(64)` bounds it, and keeps the **oldest** 64 points -- the wrong
+  -- end for a trail, which wants the most recent. This is not an oversight to
+  -- be worked around here: the mandated container set has **no front-drop and
+  -- no FIFO**, and the ring buffer that would answer it is blessed but
+  -- unmandated, so a portable program cannot rely on it (ch3 §11.13.9,
+  -- issue #108). A hand-rolled shift-down would cost O(n) every frame to
+  -- simulate a container the set deliberately does not mandate.
+  --
+  -- The program therefore takes the bound and states the cost, which is what
+  -- the spec's own exemplar owes a reader who is about to hit this.
+  trail!.truncate(64)
 
   -- Mutable iteration. The mark is *postfix on the loop subject* -- `trail!`,
   -- never `!trail` -- because the subject is an ordinary expression and the

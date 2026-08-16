@@ -471,6 +471,35 @@ mean for containers.
 | §14 The stamp list | **Verified** — §0.6 |
 | §15 Costs and the three lenses | Rationale. **Explicitly dropped** — §3 |
 
+**The reference-program half is discharged**
+([#109](https://github.com/ludo-lang/ludo/issues/109)), split out under
+[ADR-0049](../../adr/0049-a-marked-gap-and-its-repair-are-one-obligation.md) §4
+and landed separately from the clause repair. [`reference.ludo`](../reference/reference.ludo)
+now exercises removal in **four shapes**, and the split was worth taking because
+they answer different questions:
+
+| Shape | What it exercises | Clause |
+|---|---|---|
+| `despawn(f, i)` — the pool's hand-written swap-down against `live` | Removal without a container: an SoA pool names the reorder in the code it wrote, where a `List` names it in the method name | §11.13, §11.13.7 |
+| `cull(rocks)` — `for i in rocks.len>..0`, `swap_remove(i)` | The **first `>..`** and the first `RevRange` loop in the program; ascending silently skips the swapped-in element, which is the failure class the operator's budget overrule buys | §12.2.1, §11.13, ch1 §7.7.1, §13.9.1 |
+| `compact(rocks)` — ascending pack-forward, then `truncate(w)` | The stable cull needs **no `swap(i, j)`**: plain-struct elements copy. `w == len` is legal because `truncate` is a bound, not an index | §11.13.8, §11.13.5, §11.13.3 |
+| `marks` — a `persist` list emptied with `truncate(0)` at the top of every frame | The dominant real use: the *buffer* outlives the frame while the *contents* do not, so the list allocates once at cold start. Also exhibits **there is no `clear()`** | §11.13.5 |
+
+`_ = rocks!.swap_remove(i)` discharges must-use on the returned element
+(§11.13.2). The culls read `rocks[i].radius`; no `hp` field was added, because
+the clause under test is the loop direction and not the predicate.
+
+**The leak is capped and the cap is annotated.** `trail` pushed two points every
+60 ticks forever — an unbounded growth in the spec's own exemplar.
+`trail!.truncate(64)` bounds it and keeps the **oldest** 64 points, the wrong
+end for a trail. **No front-drop was invented**: §11.13.9 records the absence
+deliberately, the ring buffer that answers it is blessed-unmandated, and the
+comment states the cost rather than hiding it behind an O(n) hand-rolled shift
+([#108](https://github.com/ludo-lang/ludo/issues/108)).
+
+**The header no longer lists removal as unexercised**, which was the clause of
+this ticket's definition of done that a reader would have caught first.
+
 ### #101 — Where the mutation mark sits on a sub-view
 
 | Source clause | Landed |
