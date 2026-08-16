@@ -463,8 +463,15 @@ its only job is to make a generic in another module accept the type — so a `pu
 marker could only produce an `impl` that silently fails at a foreign call site.
 The grammar denies the marker rather than a checker rejecting it. This leans on
 [#111](https://github.com/ludo-lang/ludo/issues/111) for what `pub`'s boundary
-is; if #111 lands a per-file rather than a per-library boundary, this clause is
-revisited and nothing else in §6.7 is.
+is. **#111 landed the per-file boundary this clause named as its revisit
+condition, and the clause is revisited and stands** — chapter 4 §5.5 makes `pub`
+gate every module boundary uniformly, which **strengthens** the argument rather
+than upsetting it: there are now more boundaries at which a private satisfaction
+would silently fail, and *satisfaction is always public* is the only rule that
+does not multiply with them. §6.7.6's orphan rule is unaffected — an `impl` in a
+non-root file of a library is globally effective, and the type it names is not
+reachable from outside that library anyway (chapter 4 §3.4.1). Nothing else in
+§6.7 was in scope of the condition.
 
 **6.7.6 The orphan rule.** An `impl` MUST appear in the **declaring module of the
 type** (#11 Q8's radius). A local type satisfying a foreign interface is the

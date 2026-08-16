@@ -66,6 +66,23 @@ declaration is the whole difference. (ADR-0014 §3.)
 **2.2** The `library` declaration carries **a name and nothing else** — no
 version, no hash, no origin. (ADR-0014 §3, §10.)
 
+**2.2.1 The file carrying the `library` line is the library's root file, and
+that is the whole rule.** An implementation MUST NOT require the file's stem to
+match the claimed name, and MUST NOT look for a conventional filename. A stem
+requirement would make a filename authoritative one level below the directory
+name §2.5 already refuses; a conventional filename would be a second thing to
+know for no gain. (ADR-0014 §3, whose *at the library root* this spells;
+ADR-0027 §3; [#111](https://github.com/ludo-lang/ludo/issues/111). Authored by
+this chapter — see §15.)
+
+**2.2.2 A directory carries at most one `library` declaration**, and a second is
+a compile error naming both sites. §2.1's *if and only if* and §2.3's *the name
+the library claims* both presuppose one claim per directory; two would make
+§2.2.1's root file ambiguous and §6's one-root-name-one-library rule
+unstatable. (Derived from §2.1, §2.3 and §6.1;
+[#111](https://github.com/ludo-lang/ludo/issues/111). Authored by this chapter —
+see §15.)
+
 **2.3** The name a call site writes belongs to the **library**, not to the
 consumer. The `use` string is a lookup key; the **bound identifier is the name
 the library claims**. (ADR-0014 §3.)
@@ -110,6 +127,27 @@ binds the target's file **stem** as the module's identifier. The stem MUST be a
 valid identifier (chapter 1 §2.1) or the reference is a compile error. This
 spelling is **authored by this chapter** — see §15.1. (ADR-0014 §7, which fixes
 the rule and never spells it.)
+
+**3.4.1 A library's surface is its root file.** `<library>.<name>` resolves in
+the root file (§2.2.1) and in no other file of the library. Other files of the
+library are reached **only by relative path from within it** (§3.2, §3.4), so a
+declaration that is not in the root file is not reachable by name from outside,
+whatever it is marked.
+
+A flat namespace over the whole directory was rejected on two counts: two files
+each declaring one name would need a tie-break rule, and **adding a file to the
+directory would enlarge the API**, which is §5.3's prohibition one scope up. A
+**nested** spelling — `<library>.<dir>.<name>` — was rejected because it makes a
+directory name load-bearing, which §2.5 and §3.3 refuse for the root name and
+never licensed below it, and because a multi-segment qualified path is grammar
+this language would be buying for nothing.
+
+**A root file makes a declaration reachable by declaring it itself**, not by
+forwarding: §5.4 forbids re-export, so a root file that wants another file's
+work in its surface writes its own `pub` declaration that calls it. ADR-0014
+§1's *a directory is a namespace node* describes the **tree**, not the reachable
+surface. ([#111](https://github.com/ludo-lang/ludo/issues/111). Authored by this
+chapter — see §15.)
 
 **3.5** A path reference MUST resolve to a file that exists. There is no search,
 no extension inference and no directory-index file: the key names one file and
@@ -158,13 +196,29 @@ the directory tree. Moving a file MUST NOT change the API surface. (ADR-0014
 **5.4** There is **no re-export**. A module MUST NOT make another module's
 declaration part of its own surface. (ADR-0014 §5, §8; #5.)
 
-**5.5** A reference from **outside a library** to a declaration that is not
-`pub` is a compile error. Whether `pub` also gates a reference between two
-modules **inside** one library, or between two files of a plain program, is not
-decided by this chapter — see §16 and
-[#111](https://github.com/ludo-lang/ludo/issues/111). (ADR-0014 §5, which argues
-the marker across the library boundary and states no other; the diagnostic is
-chapter 7's.)
+**5.5 `pub` gates every module boundary, uniformly**: a declaration is reachable
+from a module other than the one declaring it **if and only if** it is marked
+`pub`. A reference to an unmarked declaration from any other module is a compile
+error. This holds between two modules **inside** one library, between two files
+of a plain program, and across a library boundary alike — *private* means
+**not visible outside my file**, and it means that everywhere. (ADR-0014 §5,
+which argues the marker across the library boundary and states no other;
+[#111](https://github.com/ludo-lang/ludo/issues/111); the diagnostic is chapter
+7's. Authored by this chapter — see §15.)
+
+**5.5.1 Being API is `pub` *and* being in the root file.** §5.5 and §3.4.1 are
+two independent gates and they compose: `pub` decides whether another module may
+name a declaration at all, §3.4.1 decides which module a consumer outside the
+library may name. Neither acquires a second meaning from the other. Consequently
+**`pub` on a non-root file of a library is meaningful and not decorative** — it
+is what lets the root file reach it — and a declaration can be `pub` without
+being API. ([#111](https://github.com/ludo-lang/ludo/issues/111).)
+
+**5.5.2** A plain program takes **no exemption**. Two files of a program with no
+`library` line between them are two modules, and §5.5 binds them. An exemption
+would give *private* one meaning inside a library and another outside it, which
+is the two-senses defect §5.5 exists to prevent rather than relocate.
+([#111](https://github.com/ludo-lang/ludo/issues/111).)
 
 ---
 
@@ -478,8 +532,9 @@ convention, not a spec rule**. (ADR-0014 §11, Consequences.)
 ## 15. Spellings authored by this chapter
 
 Recorded under ADR-0044 §6: **a hole is repaired in the spec text, and an ADR is
-written only for a reversal.** The entry below is a spelling the corpus required
-and never wrote. It reverses nothing, so it takes no ADR.
+written only for a reversal.** The entries below are rules the corpus required
+and never wrote. None reverses anything, so none takes an ADR, and **all are
+zero against #24**: no keyword, no operator, no production.
 
 **15.1 `use "./<path>.ludo"` — the path reference (§3.4).** ADR-0014 §7 fixes
 that a program reaches its own files by relative path and a library by its
@@ -503,6 +558,29 @@ properties decided the shape:
 - **The extension is written**, so a key names exactly one file and §3.5 needs
   no search, no inference and no index-file rule.
 
+**15.2 The library surface, the root file, and `pub`'s boundary (§2.2.1,
+§2.2.2, §3.4.1, §5.5, §5.5.1, §5.5.2).** ADR-0014 §1 calls a directory a
+namespace node and §3 puts the `library` line *at the library root*; §5 makes
+visibility a declaration-site marker and argues it **only** across the library
+boundary. Between them the corpus never says which of a multi-file library's
+declarations the claimed name reaches, nor whether `pub` binds two modules of
+one library. [#111](https://github.com/ludo-lang/ludo/issues/111) settles both,
+and they are one repair because either answer constrains the other.
+
+- **The surface is the root file.** The flat and nested alternatives are
+  rejected in §3.4.1 on their own terms; what decides between them and the root
+  file is that `<library>.<name>` then resolves in **exactly one file**, which
+  is [#4](https://github.com/adamico/ludo/issues/4)'s naming-failure finding
+  paid directly. ADR-0014 §1's *namespace node* is read as describing the tree.
+- **`pub` gates every module boundary uniformly.** Under a library-only reading
+  a `pub` in a non-root file would mark something that can never be API — a
+  keyword that is sometimes decorative, which is the shape §5's own
+  declaration-site argument exists to avoid. The uniform rule gives `pub` one
+  meaning and lets §3.4.1 supply the second, orthogonal gate.
+- **The root file is the file carrying the line**, and there is at most one.
+  Both fall out of refusing to make a filename authoritative, which is §2.5's
+  rule about directory names applied one level down.
+
 ---
 
 ## 16. What this chapter does not decide
@@ -516,16 +594,14 @@ properties decided the shape:
   report a #24 delta because a second reserved root would be an exception to
   ADR-0014's Consequences claim that the companion count is otherwise
   unaffected. §10 is unaffected by the answer except for the name itself.
-- **What a consumer reaches when it writes `<library>.<name>`, and which
-  boundary `pub` gates.** ADR-0014 §1 makes a directory a namespace node and §3
-  puts the `library` line "at the library root", without saying whether a
-  multi-file library's surface is its root file, a flat namespace over the
-  directory, or a nested one; and §5's declaration-site marker is argued
-  entirely across the library boundary, so §5.5 states the rule only there.
-  Whether `pub` also gates a sibling module **inside** one library, or a second
-  file of a plain program, is unstated. Filed as
-  [#111](https://github.com/ludo-lang/ludo/issues/111). Everything §2, §3, §4
-  and §5 do state is unaffected, and #111 may not reverse any of it.
+- ~~**What a consumer reaches when it writes `<library>.<name>`, and which
+  boundary `pub` gates.**~~ **Closed by
+  [#111](https://github.com/ludo-lang/ludo/issues/111)**: the surface is the
+  root file (§3.4.1), the root file is the one carrying the `library` line
+  (§2.2.1), and `pub` gates every module boundary uniformly (§5.5), with API
+  being both conditions at once (§5.5.1). No fixed point was reversed and the
+  #24 delta is zero. Struck rather than deleted, so a reader who arrives from
+  ADR-0014 §1's *namespace node* finds where it was answered.
 - **The entry file and top-level execution.** #26 calls 1, 3 and 4; chapter 5.
 - **`persist`, reload and the reload set.** #17; chapter 5.
 - **Asset declarations**, which live in any module (ADR-0015) but whose form and

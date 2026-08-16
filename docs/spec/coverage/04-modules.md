@@ -289,6 +289,33 @@ it would be deciding a budget question by drafting. The reference program is
 arranged to survive either answer (`libs/vec-utils/scale.ludo`), and ch4 §5.5
 and §16 mark the boundary of what is settled.
 
+#### 6.1.1 #111 is resolved, and the deferral was the right call
+
+The gap is closed and the chapter repaired in place, no ADR, **zero #24 delta**
+— the nested spelling that would have moved the count is the answer that was
+rejected. Filing rather than authoring was vindicated: the resolution turned on
+grounds a transcriber had no standing to settle.
+
+| Rule | Where | Why |
+|---|---|---|
+| A library's surface is its **root file** | **§3.4.1** | Flat would let *adding a file* enlarge the API — §5.3's prohibition one scope up — and would need a collision tie-break. Nested makes a directory name load-bearing, which §2.5 and §3.3 refuse for the root name and never licensed below it, and costs grammar. The root file makes `<library>.<name>` resolve in **exactly one file**, which is #4's naming finding paid directly. |
+| The **root file is the file carrying the `library` line** | **§2.2.1** | No stem match, no conventional filename — both would make a filename authoritative one level below the directory name §2.5 already refuses. |
+| **At most one `library` line per directory** | **§2.2.2** | Falls out: two claims make §2.2.1's root file ambiguous and §6.1 unstatable. Derived, not decided. |
+| **`pub` gates every module boundary uniformly** | **§5.5** | The library-only reading makes `pub` in a non-root file mark something that can never be API — a keyword that is sometimes decorative, the shape §5's own declaration-site argument exists to avoid. |
+| **API is `pub` *and* root-file** | **§5.5.1** | Two independent gates that compose; neither acquires a second sense from the other. |
+| **No exemption for a plain program** | **§5.5.2** | An exemption would give *private* one meaning inside a library and another outside it — relocating the two-senses defect rather than fixing it. |
+
+**Nothing fixed was reversed**: §3.2's boundary, §3.4's path form, §5.3's
+no-position-derived-visibility, §5.4's no-re-export and §2.5's folder-name
+irrelevance all hold, and three of them are what *decided* the answer.
+**ADR-0014 §1's *a directory is a namespace node* is read as describing the
+tree, not the reachable surface** — the one phrase in the corpus that pulled the
+other way, and it is named in §3.4.1 rather than left for a reader to trip over.
+The reference program stops hedging: `scale.ludo`'s comment now says `pub` is
+load-bearing **and** not what makes `halve` API, and the root file's comment
+says the way into the surface is to declare something that calls it — §5.4, not
+a forwarding form.
+
 ## 7. Explicitly dropped
 
 Everything marked *explicitly dropped* above falls into four kinds, and none is
@@ -345,8 +372,9 @@ inherits them explicitly.
 - **Chapter 7** inherits the diagnostic text for the duplicate-claim error
   (ch4 §6.5), the unresolvable-name error (§7.2, §7.8), and the four
   `#explicit` codes.
-- **[#111](https://github.com/ludo-lang/ludo/issues/111)** inherits the
-  multi-file library namespace and `pub`'s boundary (§6.1). Its resolution
-  repairs ch4 §2, §3 and §5 in place.
+- ~~**[#111](https://github.com/ludo-lang/ludo/issues/111)** inherits the
+  multi-file library namespace and `pub`'s boundary (§6.1).~~ **Resolved**, and
+  it repaired ch4 §2, §3 and §5 in place exactly as predicted — §2.2.1, §2.2.2,
+  §3.4.1, §5.5, §5.5.1, §5.5.2, recorded at §15.2. See §6.1.1.
 - **Chapter 8** inherits ADR-0019's claimant obligations (ch4 §10.5–§10.7) and
   the runner obligations at ch4 §8.

@@ -7,11 +7,17 @@
 -- library exports nothing of it that the root does not itself declare `pub`:
 -- there is no re-export (ch4 §5.4).
 --
--- `pub` here is written against the library boundary, which is the boundary
--- ch4 §5.5 states the rule for. **Whether it also gates a sibling module
--- inside one library, and how a multi-file library's names are reached, is
--- undecided** -- ch4 §16 and the ticket it names. This file is written to be
--- correct either way: `halve` is `pub`, and the root reaches it by path.
+-- `pub` here is **load-bearing and not decorative**, which is the point #111
+-- settled. `pub` gates every module boundary uniformly -- private means *not
+-- visible outside my file*, in a library, in a plain program, and across a
+-- library boundary alike (ch4 §5.5). Without it the root file next door could
+-- not call `halve` at all.
+--
+-- It is also **not** what makes `halve` API. A library's surface is its root
+-- file, so nothing declared here is reachable as `vec_utils.halve` however it
+-- is marked (ch4 §3.4.1). Being API is both conditions at once: `pub`, and
+-- declared in the file that carries the `library` line (ch4 §5.5.1). The two
+-- gates are independent and neither gives the other a second meaning.
 
 pub fn halve(x: f32) -> f32
   x * 0.5

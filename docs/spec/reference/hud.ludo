@@ -19,6 +19,10 @@ use "vec-utils"
 -- what makes `vec_utils` writable here; the entry file's line does not reach
 -- it, and this line does not reach the entry file (ch4 §4.1, §4.2).
 
+-- `pub` on both functions below is required, and a plain program takes no
+-- exemption from it: two files with no `library` line between them are two
+-- modules, and `pub` gates every module boundary the same way (ch4 §5.5,
+-- §5.5.2). The entry file calls both, so both are marked.
 pub fn banner_radius(r: f32) -> f32
   p: vec_utils.Polar = vec_utils.Polar{ r = r, theta = 0.0 }
   small: vec_utils.Polar = vec_utils.shrink(p)

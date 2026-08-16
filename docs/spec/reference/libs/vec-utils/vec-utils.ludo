@@ -39,6 +39,16 @@ end
 -- and the path may not leave this directory (ch4 §3.2, §3.4).
 use "./scale.ludo"
 
+-- **This file is the library's root, and therefore its whole surface**: it
+-- carries the `library` line, and that is the entire rule -- the stem need not
+-- match the claim and no conventional filename is looked for (ch4 §2.2.1). A
+-- consumer writing `vec_utils.<name>` resolves it here and in no other file of
+-- this directory (ch4 §3.4.1).
+--
+-- So `shrink` is API and `scale.halve` is not, however `scale.ludo` marks it.
+-- The way to put another file's work in the surface is to **declare something
+-- that calls it**, which is this function: there is no re-export (ch4 §5.4),
+-- and a forwarding `pub use` has no spelling and needs none.
 pub fn shrink(p: Polar) -> Polar
   return { r = 0.0, theta = p.theta } if near_zero(p.r)
   { r = scale.halve(p.r), theta = p.theta }
