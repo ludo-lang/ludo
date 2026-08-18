@@ -796,9 +796,12 @@ therefore the whole spec's, not chapter 1's alone. (ch1 §13.9.1; each chapter's
 lexical. Published with that note so nobody games them by inlining rules. (ch1
 §13.2, §13.12.)
 
-**9.2.3 The Odin and Go rows are a stated gap**, open as
-[#93](https://github.com/ludo-lang/ludo/issues/93), and left empty rather than
-filled with a number nobody could reproduce. (ch1 §13.7; #24 call 4.)
+**9.2.3 The Odin and Go rows are filled**, closing
+[#93](https://github.com/ludo-lang/ludo/issues/93): **Go 73, Odin 99, against
+ludo's core 74.** ludo is one token above Go and 25 below Odin. The target is
+unaffected — it is stated against Lua and the §9.2.1 overrun is measured against
+Lua — but the two rows **bound how that overrun reads**: it lands ludo in Go's
+size class, not Odin's. (ch1 §13.7, §13.7.1; #24 call 4.)
 
 **9.3 The stdlib root-name companion count** is published here, with **no
 target**, because relocating a feature into the standard library satisfies a

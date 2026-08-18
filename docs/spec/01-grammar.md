@@ -776,8 +776,8 @@ grammar**, stated as a comparison and never as a cap. (#24 call 4.)
 | LÖVE2D | +0 | +0 | **49** | **+51.0%** |
 | **ludo, core** | 33 | 41 | **74** | — |
 | ludo, type sublanguage | 5 | 1 | 6 | — |
-| Odin | — | — | — | not yet counted |
-| Go | — | — | — | not yet counted |
+| Go 1.22 | 25 | 48 | 73 | **+1.4%** |
+| Odin | 39 | 60 | **99** | **−25.3%** |
 
 Each Lua row is that version's reference manual §3.1. LuaJIT 2.1 is Lua 5.1 plus
 `goto` and `::`; it has **no bitwise operators and no `//`**, which is the whole
@@ -816,10 +816,57 @@ the +34.5% this spec publishes. The published figure is the fair measure of
 what ludo spent; it is not a claim about what a LÖVE2D user will recognise. The
 LuaJIT and LÖVE2D rows stay in the table for exactly that reason.
 
-**The Odin and Go rows are a stated gap.** #24 call 4 asks for them in the same
-table; counting two more languages to §13.5's rules is work this chapter did not
-do, and the rows are left empty rather than filled with a number nobody could
-reproduce ([#93](https://github.com/adamico/ludo/issues/93)).
+**13.7.1 The Odin and Go rows, and what they change.**
+([#93](https://github.com/ludo-lang/ludo/issues/93).) Both are counted to
+§13.5's rules from each language's own lexical inventory: Go from the Go
+specification's *Keywords* and *Operators and punctuation* sections; Odin from
+`src/tokenizer.cpp`'s `TOKEN_KIND` table, between its operator and keyword
+boundary markers.
+
+**ludo's core grammar is one token larger than Go's and a quarter smaller than
+Odin's.** That is the whole content of these two rows, and it does not move the
+target: §13.7's ~30% is stated against Lua and §13.9's overrules are recorded
+against Lua. What the rows do is **bound the reading of §13.9.1's three
+crossings** — a +34.5% overrun against Lua lands ludo in the same size class as
+Go, not in Odin's. A reader who saw only the Lua row could not tell whether the
+crossings had bought a large language or a small one.
+
+**Odin is the informative row, and its size is the reason.** It is the closest
+language to this one in intent — a natively compiled, non-lifetime-managed game
+language ([research/02](../research/02-language-survey.md)) — so its inventory is
+the best available answer to *what does this class of language cost when nobody
+holds a budget*. **99 is that answer, 25 tokens above ludo's core.** Its operator
+list alone carries 23 spellings that appear nowhere in ludo's, and they cluster:
+compound assignment taken to its closure (`%%=`, `&=`, `|=`, `~=`, `&~=`, `<<=`,
+`>>=`, `&&=`, `||=`), operators for cases ludo declines outright (`++`, `--`,
+`---`, `%%`, `**`, `&~`), and a second attribute sigil (`@`, beside `#`).
+**None of the three clusters is a feature ludo lacks** — they are spellings for
+things ludo either writes longhand or refuses — which is the shape of a 25-token
+gap that costs no capability. The clearest case is the pair left out of those
+clusters: Odin's `&&` and `||` are ludo's `and` and `or` (§2.3), a keyword where
+Odin spends an operator. That is not a saving, since both are counted; it is
+§1.2's Lua-flavoured spelling showing up in the inventory.
+
+**13.7.2 Three caveats, named rather than buried.**
+
+1. **Two of the five sources are normative documents and one is not.** Lua's
+   rows and Go's row come from a published reference manual and specification.
+   **Odin has no specification**, so its row is counted from the compiler, which
+   is an implementation. It is the authority for what Odin accepts and it is not
+   a promise.
+2. **The Odin figure disagrees with Odin's own library tokenizer.**
+   `core/odin/tokenizer/token.odin` lists **41** keywords and **59** operators —
+   it keeps `inline` and `no_inline`, which the compiler no longer reserves, and
+   omits the compiler's `\\`. The compiler's list is the one published here. A
+   language whose two tokenizers disagree cannot be counted to a decimal place,
+   and this row should be read as ±2.
+3. **ludo's count is over the grammar; theirs is over the lexer.** §13.5 counts
+   `grammar.ebnf` §1–§2 — tokens a production actually uses. Go's and Odin's
+   lists are lexical inventories, which may hold a token no production reaches.
+   **This asymmetry flatters ludo**, so both figures here are read as ceilings on
+   the comparators, and the direction of the error is stated rather than
+   corrected: correcting it would mean re-deriving two grammars, which is more
+   than the row is worth.
 
 **13.8 The payment rule, tiered.** (#24 call 5.)
 

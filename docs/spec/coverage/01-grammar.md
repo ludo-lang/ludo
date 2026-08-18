@@ -180,12 +180,13 @@ the drop is recorded.
    is not re-litigated. #7 predates the closed list. Recorded here because a
    reader of #7 alone would find the chapter contradicting it.
 
-2. **#24 call 4's Odin and Go columns.** §13.7 publishes the Lua comparison,
-   which is the one the target is stated against. The Odin and Go columns are
-   **not yet transcribed**: they require counting two more languages'
-   grammars to this file's rules, which is research this chapter did not do and
-   would have had to invent numbers to fake. Left as a **stated gap** in the
-   table rather than filled with a guess ([#93](https://github.com/adamico/ludo/issues/93)).
+2. **#24 call 4's Odin and Go columns — now transcribed, after this chapter
+   closed.** §13.7 published the Lua comparison, which is the one the target is
+   stated against, and left these two as a **stated gap** rather than a guess.
+   [#93](https://github.com/ludo-lang/ludo/issues/93) counted them from Go's
+   specification and Odin's compiler tokenizer: **Go 73, Odin 99**, added at
+   §13.7 with the method and three caveats at §13.7.1–§13.7.2. No clause of this
+   chapter changed; the table gained two rows and the budget did not move.
 
 2a. **#24 call 4's Lua version — under-specified in the source, resolved here.**
    The call says "Lua (~50)" and names no version, and the version is
