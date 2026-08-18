@@ -885,13 +885,15 @@ it into **explicit panic** would report a bug the program never wrote, which
 §6.5.1's concrete-values rule forbids and which costs an agent the one field
 that locates the failure.
 
-**13.2 There is no spelling for a zero-filled fixed array.** §4.3.3's `= {}`
-works for `TextBuf[N]` because the mandated type declares defaults for both of
-its fields. A **user-declared** type with a fixed-array field has no way to
-write that default itself: chapter 3 §5.7 permits omitting a defaulted field,
-and nothing in the corpus says whether a fixed-array literal may supply fewer
-than `N` elements. The gap is chapter 3's territory and pre-dates this chapter;
-§4.3.1 is what makes it bite, so it is recorded here and filed as
-[#116](https://github.com/ludo-lang/ludo/issues/116). Until it closes, a
-`persist` declaration of such a type spells its initialiser element by element.
+**13.2** ~~**There is no spelling for a zero-filled fixed array.**~~
+**Closed.** [#116](https://github.com/ludo-lang/ludo/issues/116) resolved in
+chapter 3, whose territory it was: **ch3 §5.10.1's fill arm `[_] = v`** gives
+`[N]T` a value of `N` equal elements, and **ch3 §5.10** states for the first
+time that a fixed-array literal otherwise supplies exactly `N` items. The author
+writes the value and the compiler repeats it, so #9's ban on an *implicit* zero
+is untouched and `{}` against `[N]T` stays an error (ch3 §5.10.6). §4.3.1's
+mandate is now satisfiable at any `N`; before it, the escape was to move the
+buffer out of `persist` rather than write 4096 elements. **Zero #24 delta** —
+the shape already parses (ch3 §5.10.2). Both marked gaps this chapter opened are
+now closed.
 

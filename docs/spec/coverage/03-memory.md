@@ -242,7 +242,7 @@ Per issue [#87](https://github.com/ludo-lang/ludo/issues/87): #8, #15, #25
 | Q2 Literals nest recursively | §5.9 |
 | Q2 `{x = 1}` is a struct or a `Map` by target — the fix for Luau#745 | §5.1. The Luau comparison is rationale — **explicitly dropped**, §3 |
 | Q8 Struct literals are named-field only | §5.6, §18 |
-| Q21 Field defaults are allowed; literals may omit only defaulted fields | §5.7 (reconciled with #9 at chapter 2 §9.6) |
+| Q21 Field defaults are allowed; literals may omit only defaulted fields | §5.7 (reconciled with #9 at chapter 2 §9.6); **array arity and the fill arm `[_] = v` are §5.10–§5.10.7**, authored for [#116](https://github.com/ludo-lang/ludo/issues/116) — the field-default rule never reached inside `[N]T` |
 | Q15, Q16 `l: List[int] = {1,2,3}` is illegal — construction *is* growth | §5.5 |
 | Q15, Q16 A `List` carries its allocator, captured at construction | §11.1 |
 | Q10, Q23 `[]T` is a transient non-escaping view | §6.1, §6.3 |
@@ -665,6 +665,12 @@ declined.
 | 14 | What `n` may be in `#align(n)` | #25 §3 ships the attribute; ch1 §12.2 lists it; ADR-0016 §1 depends on it; no source constrains the argument | Authored, §8.3.1 / §19.2 |
 | 15 | The raw-pointer type | #8 §6 requires *"a distinct, greppable type"*; §8's guarantee table and ch3 §16.2 both depend on it existing; no source spells it, and neither `grammar.ebnf` nor ch1 §9 has a pointer production | Declined at §16.5 / §19.3; **[#104](https://github.com/ludo-lang/ludo/issues/104) since decided** — `^T` at ch1 §9.4a, `p^` at §7.10b, `&x` at §7.10c, under [ADR-0053](../../adr/0053-the-raw-pointer-is-a-caret-type-with-no-arithmetic-and-no-null.md) and charged as ch1 §13.9.1 crossing 3 |
 | 17 | Uninitialised memory | #8 §3/§6 and #9's *uninitialised memory in `unsafe` only* clause both require it; ch3 §16.2 lists it as a permission; no source spells how a program writes it | **Declined**, §16.6 → [#118](https://github.com/ludo-lang/ludo/issues/118) — split out of #104's grilling because it is an initialisation-obligation question reaching §5.7, §5.9 and ch5 §4.3.1 |
+| 18 | A fixed-array value of `N` equal elements | ch2 §17.6 mandates a `TextBuf[N]` whose `bytes` field defaults to `N` zero bytes, and ch5 §4.3.1 mandates an initialiser for every `persist` declaration; no source spells the value, and no source says whether a short literal is legal | **Authored**, §5.10–§5.10.7 / §19.4 — the fill arm `[_] = v`, at **zero #24 cost** because `LiteralItem` and `_`-as-`PrimaryExpr` already ship ([#116](https://github.com/ludo-lang/ludo/issues/116)) |
+
+**Entry 18 was found by the reference program, not by reading.** `Field`'s two
+array fields were written `= {}` and two local `[32]u8` buffers with them —
+four sites the corpus never licensed, in the artifact whose job is to keep the
+spec honest. §5.10 is what makes them legal, and they now spell the arm.
 
 The numbering continues chapter 2's twelve. **16 is not missing**: #104's repair
 is grammar, so it is tabled in [chapter 1's coverage](01-grammar.md) §4 where the

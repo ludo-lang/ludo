@@ -176,6 +176,66 @@ fields.** (#15 Q21; chapter 1 §5.3; chapter 2 §9.6, which reconciles this with
 **5.9** **Literals nest recursively**: `grid: [2][2]int = { {1, 2}, {3, 4} }`.
 (#15 Q2.)
 
+**5.10 A fixed-array literal supplies every element, unless it carries a fill
+arm.** For a target `[N]T`, a literal of positional items MUST supply exactly
+`N` of them. No source had ever stated this, and no source had stated the
+alternative either; both are stated here.
+([#116](https://github.com/ludo-lang/ludo/issues/116).)
+
+**5.10.1 The fill arm is `[_] = v`**, written **last** and **at most once**:
+
+```ludo
+bytes: [1024]u8      = { [_] = 0 }
+head:  [4]u8         = { 0xCA, 0xFE, [_] = 0 }
+grid:  [2][2]int     = { [_] = { [_] = 0 } }
+```
+
+It supplies the value for **every element the literal does not write
+positionally**, and for no other. A literal with fewer than `N` positional items
+and no fill arm is a **compile error naming the arity**, as before.
+
+**5.10.2 No production is added and no terminal is spent.** `LiteralItem`
+already admits `"[" Expr "]" "=" Expr` (§5.8) and `_` is already a
+`PrimaryExpr` (chapter 1 §2.2), so `[_] = v` **parses under the grammar as
+shipped** — this clause assigns a meaning to a shape the grammar already
+accepts and that no rule gave a meaning to. **Zero delta against #24**, and no
+chapter 1 §13.9.1 crossing: §13.8's payment rule is charged on a new operator or
+keyword, and there is neither.
+
+**5.10.3 `_` means here what it means in a pattern.** It is *the case not
+otherwise named* — chapter 1 §2.2's discard token in its wildcard reading, the
+same one `Pattern`'s `"_"` alternative carries. It is **not** an expression and
+evaluates to nothing; `[_]` is legal in this position and nowhere else, and an
+implementation MUST reject `_` as an array index elsewhere.
+
+**5.10.4 The arm is for `[N]T` only.** A struct already has per-field defaults
+(§5.7) and its fields have different types, so one fill value could not be
+well-typed across them; a `Map` literal has no unwritten keys to fill. An
+implementation MUST reject `[_] = v` against any target that is not a fixed
+array.
+
+**5.10.5 `v` is evaluated exactly once**, after the positional items and in
+source order, and the resulting value is copied into each unwritten element —
+including when it fills **zero** elements. An implementation MUST NOT evaluate
+it per element.
+
+**5.10.6 This does not reopen #9.** The prohibition is on an **implicit** zero:
+a value the language picks because the author wrote nothing. Here the author
+writes the value and the compiler repeats it, which is chapter 2 §9.6's *written
+default* one container deeper. **`{}` against `[N]T` with `N > 0` remains an
+error** — it writes no value and asks for none — and that is what keeps #9
+sharp rather than eroded. (#9; chapter 2 §9.3, §9.6.)
+
+**5.10.7 What this deletes.** Chapter 5 §4.3.1 requires every `persist`
+declaration to carry an initialiser, and before this clause a user type with a
+`bytes: [4096]u8` field could satisfy it only by writing 4096 elements. The
+realistic author does none of that: the buffer moves into a heap container it
+does not belong in, or out of `persist` altogether, to dodge an initialiser that
+cannot be written. The mandate was unsatisfiable at any realistic `N`, which is
+the sense in which the spelling is semantics-bearing rather than sugar
+(chapter 1 §13.8 rule 3: `#explicit`'s closed list rejects nothing here — the
+arm omits no name).
+
 ---
 
 ## 6. Views: `[]T`
@@ -1084,6 +1144,17 @@ permission is over operations rather than over the spelling, and that a view's
 representation is still #29's. **The decline recorded here stands as the record
 of why the consolidation did not repair it in place**, which is the same reason
 §16.6 now declines uninitialised memory.
+
+**19.4 The fixed-array fill arm `[_] = v`.** Chapter 5 §4.3.1 mandates an
+initialiser for every `persist` declaration and chapter 2 §17.6 mandates a
+`TextBuf[N]` whose `bytes` field **defaults to `N` zero bytes**, while **no
+source spelled a fixed-array value of `N` equal elements** and no source said
+whether a short literal was legal. §5.10–§5.10.7 author the arm. **Zero cost
+against #24**: `LiteralItem`'s `"[" Expr "]" "=" Expr` and `_` as a
+`PrimaryExpr` both already ship, so the repair assigns meaning to a shape that
+already parses and spends no terminal — unlike §19.3, which moved a published
+budget and therefore went to an ADR.
+([#116](https://github.com/ludo-lang/ludo/issues/116).)
 
 ---
 

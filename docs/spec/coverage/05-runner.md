@@ -487,5 +487,6 @@ rather than by reading.
 - **No spelling for a zero-filled fixed array** — opened by §4.3.1's requirement
   that every `persist` declaration carry an initialiser, which is the repair
   chapter 1 §14.5 asked for. It lands in **chapter 3** (the literal's arity
-  against `[N]T`), is recorded as ch5 §13.2, and is filed as
+  against `[N]T`), is recorded as ch5 §13.2, is **closed** by chapter 3
+  §5.10's fill arm at zero #24 cost, and was filed as
   [#116](https://github.com/ludo-lang/ludo/issues/116).

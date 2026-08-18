@@ -317,6 +317,13 @@ LiteralItem     ::= Identifier "=" Expr
                   | "[" Expr "]" "=" Expr
                   | Expr
 
+(* The second alternative carries two meanings the grammar does not separate:
+   the computed- or non-string-key form (ch3 section 5.8), and — when the key is
+   the discard token "_", against a fixed-array target, written last — the fill
+   arm that supplies every element the literal does not write positionally
+   (ch3 section 5.10.1). Both already parse here; no production and no terminal
+   was added for the fill arm. *)
+
 (* "$" is the reserved standard-library root and is reached only by "." — it is
    a PrimaryExpr so that $.graphics.fill_text is an ordinary PostfixExpr chain
    with no rule of its own. *)

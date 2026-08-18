@@ -289,9 +289,15 @@ end
 
 -- The two core aggregates are `struct` and `[N]T`; everything else is a library
 -- generic (ch3 §4.1). This is an SoA field by hand: two columns, one length.
+-- The two array fields are the program's exhibit of the fill arm (ch3 §5.10.1).
+-- `= {}` is what these lines said before #116, and it was never legal: a
+-- fixed-array literal supplies exactly `N` items (ch3 §5.10), and the empty one
+-- asked the language to invent `MAX_ROCKS` zeroes -- the implicit zero #9 bans.
+-- `[_] = v` writes the value once and the compiler repeats it, which is a
+-- written default one container deeper (ch3 §5.10.6).
 type Field = struct
-  pos:  [MAX_ROCKS]$.vec2 = {}
-  vel:  [MAX_ROCKS]$.vec2 = {}
+  pos:  [MAX_ROCKS]$.vec2 = { [_] = $.vec2(0.0, 0.0) }
+  vel:  [MAX_ROCKS]$.vec2 = { [_] = $.vec2(0.0, 0.0) }
   live: usize = 0
 end
 
@@ -449,8 +455,9 @@ persist tick: u64 = 0
 -- initialiser chapter 5 §4.3.1 requires. `= {}` is complete because the
 -- mandated `TextBuf[N]` defaults both of its fields (ch2 §17.6) -- an author's
 -- written default, which is exactly what #9 permits and an implicit zero is not
--- (ch2 §9.6). A user-declared type with a fixed-array field cannot yet write
--- that default itself; that is the gap at ch5 §13.2, issue #116.
+-- (ch2 §9.6). §17.6 spells that `bytes` default `{ [_] = 0 }`, and a
+-- user-declared type writes its own the same way -- ch3 §5.10.1, issue #116,
+-- exhibited by `Field` above.
 persist name: TextBuf[32] = {}
 
 -- A `persist` declaration holds a plain value with no pointer in it, so it
@@ -580,7 +587,7 @@ frame(screen: !Target, scratch: !Scratch)
 
   -- `format` writes into a buffer the caller owns and returns a view of what it
   -- wrote; the format string is a literal the compiler checks (ch2 §17.5).
-  buf: [32]u8 = {}
+  buf: [32]u8 = { [_] = 0 }
   line := format(buf!, "{}: {} ({} chars, {} live)", label, secs, glyphs, n)
   $.print(line)
 
@@ -597,7 +604,7 @@ frame(screen: !Target, scratch: !Scratch)
   -- there is no `use` that would help -- non-transitivity is not a resolution
   -- question (ch4 §4.2, §4.3).
   reach := hud.squared(lo.x, lo.y) + vec_utils.EPSILON
-  edge: [32]u8 = {}
+  edge: [32]u8 = { [_] = 0 }
   $.print(format(edge!, "reach {} banner {}", reach, hud.banner_radius(reach)))
 
   -- ---------------------------------------------------------------------

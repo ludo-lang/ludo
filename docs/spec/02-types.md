@@ -912,7 +912,10 @@ is handed and returns a view of exactly what it wrote.
 `bytes: [N]u8` and `len: usize`, **both of which the mandated declaration
 defaults** — `bytes` to `N` zero bytes and `len` to `0` — so that `= {}` is a
 complete initialiser for it (§9.6; chapter 3 §5.7; chapter 5 §4.3.3, which
-requires every `persist` declaration to carry one). It has `append(text: []u8)`, `format(...)`,
+requires every `persist` declaration to carry one). **The `bytes` default is
+spelled `{ [_] = 0 }`** — chapter 3 §5.10.1's fill arm. Until that clause the
+mandated declaration named a default no author could write, this type included
+([#116](https://github.com/ludo-lang/ludo/issues/116)). It has `append(text: []u8)`, `format(...)`,
 `view() -> []u8` and `clear()`. It is a **plain value with no pointer**, so it
 lives in `persist` and survives a reload by the same rule as a bare `[N]u8`.
 **`append` returns nothing and truncates silently**; `len` and remaining capacity
