@@ -24,6 +24,12 @@ fixes.
 
 ---
 
+**Absorbed here:** ADR-0013, ADR-0015, ADR-0024, ADR-0025, ADR-0030, ADR-0031, ADR-0032, ADR-0035, ADR-0036, ADR-0039, ADR-0040, ADR-0041.
+
+Read by `tools/check-absorption.py`, which asserts that each carries the
+ADR-0051 §4 stamp naming this chapter, and that no ADR claims this chapter
+without appearing here (ADR-0055 §4). The clauses of ADR-0042, ADR-0045 and ADR-0048 this chapter reaches (§12) belong to chapters 3 and 1, and are not absorbed here.
+
 ## 0. Source check (#72, #73)
 
 Run over **this chapter's sources only** — ADR-0013, ADR-0015, ADR-0024,

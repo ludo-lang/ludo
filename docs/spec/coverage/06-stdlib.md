@@ -20,6 +20,12 @@ types: `$.vec2` is a `$.`-rooted stdlib type, not a facade.
 
 ---
 
+**Absorbed here:** ADR-0004, ADR-0005, ADR-0006, ADR-0007, ADR-0008, ADR-0009, ADR-0010, ADR-0011, ADR-0012, ADR-0016, ADR-0022, ADR-0026, ADR-0034, ADR-0038.
+
+Read by `tools/check-absorption.py`, which asserts that each carries the
+ADR-0051 §4 stamp naming this chapter, and that no ADR claims this chapter
+without appearing here (ADR-0055 §4). ADR-0004 is here though §0 predates the entry: the mandated facade over a delegated renderer is transcribed as rules in this chapter, and no other chapter claims it (chapter 8 §7 *reaches* its core/full split without absorbing it).
+
 ## 0. Source check (#72, #73)
 
 Run over **this chapter's sources only** — ADR-0005, ADR-0006, ADR-0007,

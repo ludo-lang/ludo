@@ -16,6 +16,12 @@ happened in each case.
 
 ---
 
+**Absorbed here:** ADR-0029, ADR-0045, ADR-0053.
+
+Read by `tools/check-absorption.py`, which asserts that each carries the
+ADR-0051 §4 stamp naming this chapter, and that no ADR claims this chapter
+without appearing here (ADR-0055 §4). ADR-0029 is chapter 1's though chapter 4 §3 also covers it: chapter 1 §11 transcribes it whole and chapter 4 routes rather than restates. ADR-0053 landed after the chapter, spelling `^T`, `p^` and `&x` at §9.4a, §7.10b and §7.10c.
+
 ## 1. Sources this chapter covers
 
 Per issue #85: #7 (candidate B), #24 (the grammar budget and its counting

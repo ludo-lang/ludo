@@ -22,6 +22,12 @@ chapter the shape they all share.
 
 ---
 
+**Absorbed here:** ADR-0018, ADR-0023.
+
+Read by `tools/check-absorption.py`, which asserts that each carries the
+ADR-0051 §4 stamp naming this chapter, and that no ADR claims this chapter
+without appearing here (ADR-0055 §4). ADR-0041 §3, and the clauses of ADR-0029, ADR-0037 and ADR-0027 this chapter reaches, belong to other chapters and are not absorbed here.
+
 ## 0. Source check (#72, #73)
 
 Run over **this chapter's sources only** — ADR-0018, ADR-0023, and the clauses

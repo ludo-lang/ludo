@@ -156,7 +156,20 @@ It checks that every amendment an ADR *declares* is stamped on its target, that 
 files that exist, that a stamp's label and link agree, and that an amendment always points
 backwards.
 
-It is a **floor**. An ADR that amends something without declaring it is invisible to it — that
+The second one exists too: **`python3 tools/check-absorption.py`** (#126). Run it before
+committing a spec chapter or an ADR that repairs one. It reads the `**Absorbed here:**` line in each
+`docs/spec/coverage/NN-*.md` and checks both directions — every ADR a chapter claims carries the §4
+stamp naming that chapter, and every stamp is claimed by the chapter it names. A chapter that lands
+without stamping its sources is the #120 failure, and this is what would have caught it.
+
+That line is **authored**, not scraped from the coverage prose, and the reason is worth keeping: the
+prose source lists name absorbed and merely *reached* ADRs in one breath, and they were written when
+the chapter landed, so they miss the repair ADRs a chapter absorbs later. So when a chapter absorbs
+an ADR — at landing, or in a later repair like ADR-0054 into chapter 4 — **add it to that line in the
+same commit**.
+
+Both checkers are **floors**. An ADR that amends something without declaring it is invisible to the
+first, and a chapter that absorbs a source it leaves off its own line is invisible to the second — that
 case is the one that actually bit us (#72) and stays human, assigned to the spec chapter covering
 the ADR. Its first run over the corpus produced nine findings of which one was real; the eight
 false positives came from reading every reference under an amendments heading rather than the
