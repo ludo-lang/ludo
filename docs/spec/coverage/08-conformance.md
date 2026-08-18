@@ -228,7 +228,7 @@ itself.
 | Source clause | Where it landed |
 |---|---|
 | Call 6's implementation-facing half — no vendor syntax extensions | §5.9 (P9), §5.9.2 |
-| Call 5's second consequence — the stdlib root-name companion count, no target, published by this chapter | §9.3, §9.3.1, §9.3.2, §9.3.3 |
+| Call 5's second consequence — the stdlib root-name companion count, no target, published by this chapter | §9.3, §9.3.1, §9.3.2, §9.3.3. **31 since [#119](https://github.com/ludo-lang/ludo/issues/119)**; §9.3.1.1 records the `+18` and the zero grammar delta |
 | Call 4's comparison target and the Odin/Go gap | §9.2, §9.2.3 — both by pointer to ch1 §13.7, which owns the table |
 | Call 1, 2, 3, 5 tier rule, 7 home | **Ch1 §13's**, cited at §9.1 and §9.4. This chapter runs the count; it does not restate the process. |
 | The three consequences — labelled break rejected, the stdlib escape route, recorded overrules | **Ch1 §13.8–§13.9.1's.** §9.2 reports the register's outcome and names the register as authoritative. |
@@ -361,7 +361,7 @@ form; only the numbering was missing, exactly as with P13.
 
 | Gap | Where | Ticket |
 |---|---|---|
-| The `$.` root is enumerated nowhere, so ch8 §9.3's mandated count is a floor rather than a total | ch8 §11.1, §9.3.1, §9.3.4 | [#119](https://github.com/ludo-lang/ludo/issues/119) |
+| ~~The `$.` root is enumerated nowhere, so ch8 §9.3's mandated count is a floor rather than a total~~ **Closed.** The root is enumerated at ch6 §12; §9.3.1 publishes a total of 31 (`+18`), §9.3.2 re-cuts the LÖVE2D comparison on facade areas (5 v 21), §9.3.4 and §11.1 are restated, and ch6 §0.7.1, §3.2, §3.7, §11.3 and §12 carry the repair | ch8 §11.1, §9.3.1, §9.3.2, §9.3.4; ch6 §12 | [#119](https://github.com/ludo-lang/ludo/issues/119) — **closed** |
 
 **This is the second *inherited* marked gap, and the two differ in an
 instructive way.** Chapter 7 §9.1's gap was inherited too — open since ADR-0023
@@ -374,7 +374,13 @@ same in both cases — a chapter obliged to apply a rule finds what the rule nee
 — which is the argument ADR-0044 §5 made for transcription over generation.
 
 **Induced holes opened by this chapter: none.** This chapter authored no repair;
-it transcribed, numbered two undelivered properties, and marked one gap.
+it transcribed, numbered two undelivered properties, and marked one gap. **The
+gap's repair, landed later by [#119](https://github.com/ludo-lang/ludo/issues/119),
+opened none either**: ch6 §12 spells surfaces three existing rules already
+required, and every clause it authors is cited from ch2 §8.5, ch5 §6.5.1,
+ADR-0016 §2 or ADR-0016 §9. The one thing it decides without a source is the
+`ivec` prefix's conflict with ch6 §1.1.4, and that is recorded in place at ch6
+§12.3.3 with the precedent bounded to the blessed math set.
 
 The ledger across chapters 4–8 therefore reads: **ch4 no section at all, ch5
 one, ch6 none, ch7 none, ch8 none.** Two observations on that:
@@ -412,8 +418,10 @@ line of ludo.
 
 The one place a reference-program line *is* owed is **not this chapter's**: ch8
 §11.1's gap covers `$.assert`, which is a call a program writes and which the
-reference program does not yet contain because it has no spelling. That line is
-[#119](https://github.com/ludo-lang/ludo/issues/119)'s, and #119's body names it.
+reference program did not contain because it had no spelling. That line was
+[#119](https://github.com/ludo-lang/ludo/issues/119)'s and **is now written** —
+`despawn`'s precondition asserts, `spawn`'s full field panics, and `cell_of`
+returns an `$.ivec2` (ch6 §12.2, §12.3).
 
 Recorded rather than silently skipped, because *the reference program is
 unchanged* and *the author forgot the last step* look identical in a diff. The

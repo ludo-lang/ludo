@@ -489,12 +489,12 @@ chapter's commit, owed whether or not the chapter changed the rule. Their
 | §1 the three grounds (emitter, dimensional algebra, root surface) | Rationale. **Explicitly dropped**, see §17 |
 | §1 the named cost: the unit discipline stops at scalars | §3.11 |
 | §2 vec2/3/4, mat2/3/4, integer vectors at three widths | §3.2 |
-| §2 integer vectors ship | §3.2 |
+| §2 integer vectors ship | §3.2; **spelled `$.ivec2`/`$.ivec3`/`$.ivec4`, `i32` components, at §12.3 ([#119](https://github.com/ludo-lang/ludo/issues/119))** |
 | §2 `mat2` ships despite redundancy | §3.3 |
 | §2 non-square matrices and quaternions rejected | §3.4 |
 | §3 operators on the blessed types and nowhere else | **Chapter 2 §16.1** (#99). Named at §3.6 |
 | §3 the operator restrictions (no vector `/`, no elementwise `*`) | **Chapter 2 §16.1.** Named at §3.6 |
-| §4 `Radians`, `Seconds`, `SampleFrames`; `Color` unchanged | §3.7 |
+| §4 `Radians`, `Seconds`, `SampleFrames`; `Color` unchanged | §3.7; **stated to be root names, with the qualified-spelling rule, at §12.4 ([#119](https://github.com/ludo-lang/ludo/issues/119))** |
 | §4 each shipped quantity appears in a `$.` return type | §3.7 |
 | §4 `PxPerSec`, `PxPerTick`, `Ticks` dropped | §3.7 |
 | §5 `cursor()` returns `SampleFrames` | §5.2.6 |
@@ -505,6 +505,7 @@ chapter's commit, owed whether or not the chapter changed the rule. Their
 | §6 clause 3 float evaluation exactly as written | **Chapter 8**, with ch2 §2.5 (#99). Named at §3.9 |
 | §7 no blessed batch functions | §3.10 |
 | §7 positional constructors ship | §3.5 |
+| §9's #24 delta — 9 types and 3 quantity types counted as root names | §12.4.1, and ch8 §9.3.1's table. Previously **bookkeeping dropped by §16**, which is how thirteen counted names reached no chapter's list ([#119](https://github.com/ludo-lang/ludo/issues/119)) |
 
 ## 10. ADR-0022 — the spec promises only what is derivable
 
@@ -648,6 +649,10 @@ one of this chapter's sources that **lands in chapter 5**, not in this one:
   ADR-0011's 22 functions and five types, ADR-0026's `+1` root, ADR-0038's `+1`
   module and `+4` functions, ADR-0008's zero-grammar result, ADR-0016's nine
   types and three quantities, and ADR-0022's and ADR-0034's zero deltas.
+  **Routing a delta to chapter 8 is not the same as listing the names it
+  counts**, and ADR-0016's row is where the difference bit: thirteen counted
+  types had no list in either chapter until §12.4.1
+  ([#119](https://github.com/ludo-lang/ludo/issues/119)).
 - The **conformance rungs** (core ⊂ full ⊂ shader) every clause above names:
   ch6 §4.9.7, §5.8, §8.18, §9.2, §9.3, §9.28, §10.12.
 - The **property list**: ADR-0006 R8's two full-conformance observables (P1, P2),
@@ -658,7 +663,20 @@ one of this chapter's sources that **lands in chapter 5**, not in this one:
 ## 17. Phantom clauses, and what was explicitly dropped
 
 **Two phantom clauses were met, and both were already resolved before this
-chapter began.** No new phantom was found, and **no clause was authored here.**
+chapter began.** No new phantom was found, and — as this chapter originally
+shipped — no clause was authored here.
+
+**That last claim did not survive chapter 8** ([#119](https://github.com/ludo-lang/ludo/issues/119)).
+Chapter 8 §9.3 is obliged to *count* the root, and a count found what reading
+this chapter's sources had not: three rules with no surface — `$.assert` and
+`$.panic` (ch2 §8.5), the integer vector spellings (ADR-0016 §2), and the
+thirteen types ADR-0016 §9 counts (§16's dropped bookkeeping). §12 authors all
+three, so **chapter 6's authored count is one section, not nothing**, and §0.7's
+completeness claim is discharged at §0.7.1. The original *nothing authored, no
+marked gap* result was cited as evidence that the standard library was the
+best-specified region of the corpus; what it actually measured is that
+transcription cannot find a missing surface, and a count can. Recorded here
+rather than overwritten, because that is the transferable finding.
 
 1. **The texel-centre and tie-break convention.** Cited by ADR-0005, ADR-0006
    and ADR-0010; never written. ADR-0034 §4 deleted the three citations rather
@@ -696,3 +714,8 @@ rather than by reading.
 - **None.** Chapter 6 authored no clause (§17), so it opened no induced hole.
   The one defect it found — §0.4's checker blind spot — was found by reading,
   is a tooling gap rather than a corpus hole, and is filed as its own ticket.
+- **§12's repair, landed by [#119](https://github.com/ludo-lang/ludo/issues/119),
+  opens none.** Every clause is cited from ch2 §8.5, ch5 §6.5.1 or ADR-0016; the
+  one unsourced decision is the `ivec` prefix against §1.1.4, recorded in place
+  at §12.3.3 with the precedent bounded to the blessed math set. No ADR is
+  written: nothing here reverses a decision (ADR-0044 §6).

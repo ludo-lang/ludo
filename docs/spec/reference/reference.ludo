@@ -29,6 +29,11 @@
 -- prototypes/07-syntax/b-lua-flavoured.ludo is not a starting point, and breaks
 -- six ways against the current corpus (ADR-0044 §7).
 
+-- The reserved root is enumerated by ch6 §12, and this program now writes the
+-- three surfaces that enumeration authored: `$.assert` in `despawn`, `$.panic`
+-- in `spawn`, and `$.ivec2` in `cell_of`. Until #119 none of the three had a
+-- spelling, so the language's own bug-declaring call was unwritable here.
+--
 -- Chapter 6 replaces the hand-rolled `Vec2` with the blessed `$.vec2`, and adds
 -- the facades: the program now draws, plays a voice, reads input, reads a video
 -- preference and writes a storage slot.
@@ -316,6 +321,14 @@ pub fn unit_bounds() -> Bounds
   { lo = $.vec2(0.0, 0.0), hi = $.vec2(1.0, 1.0) }
 end
 
+-- The integer vector set, and the only place this program leaves `f32` for a
+-- coordinate (ch6 §12.3). A cell index is a count of cells, not a distance, and
+-- `$.ivec2` says so in the return type; the `as i32` casts are explicit because
+-- no conversion is implicit (ch2 §2.9).
+pub fn cell_of(p: $.vec2, cell: f32) -> $.ivec2
+  $.ivec2((p.x / cell) as i32, (p.y / cell) as i32)
+end
+
 -- `[]T` is the universal boundary: this one function accepts a `[N]$.vec2`, a
 -- `List[$.vec2]` and an SoA pool's `pos` column alike, and mentions none of them
 -- (ch3 §6.1). The writable view is marked at the parameter, and the mutation
@@ -354,6 +367,14 @@ end
 --
 -- The fix needs no annotation: take the view again after the mutation.
 pub fn spawn(f: !Field, at: $.vec2) -> usize
+  -- The first `$.panic` in this program (ch6 §12.2.6). `Field` is a fixed
+  -- `[MAX_ROCKS]` SoA, so a spawn into a full field would write past `live`'s
+  -- last legal slot; the container the program wrote itself has no fallible
+  -- `push` to return an error from, so the bug is declared instead of returned.
+  -- `$.panic` diverges -- it is the only call in the language that does, and
+  -- there is no `never` type -- so the modifier form carries it with nothing to
+  -- return on the taken path (ch1 §6.13, §6.14).
+  $.panic("spawn into a full field") if f.live >= MAX_ROCKS
   f!.pos[f.live] = at
   f!.vel[f.live] = $.vec2(0.0, 0.0)
   f!.live += 1
@@ -372,6 +393,13 @@ end
 -- The difference is that a `List` names the cost in the method name, while an
 -- SoA pool names it in the code the program wrote itself.
 pub fn despawn(f: !Field, i: usize)
+  -- The first `$.assert` in this program (ch6 §12.2). The precondition is the
+  -- caller's to keep and cannot be expressed in the signature: `i` is a `usize`
+  -- and every `usize` type-checks here. A failed assert is a bug, not an error
+  -- (ch2 §8.3), so there is no `rescue` on this call and no value to discard.
+  -- The message is required (ch6 §12.2.4) and the fault report carries it
+  -- alongside the source text of the condition (ch5 §6.5.1).
+  $.assert(i < f.live, "despawn index is not live")
   last := f.live - 1
   f!.pos[i] = f.pos[last]
   f!.vel[i] = f.vel[last]
@@ -520,6 +548,11 @@ frame(screen: !Target, scratch: !Scratch)
   return unless tick % 60 == 0       -- statement modifier over a bool condition
 
   n := spawn(field!, $.vec2(8.0, 8.0))
+
+  -- The spawn's grid cell, in the integer vector set (ch6 §12.3). Asserted
+  -- rather than drawn: this program has no grid, and the line exists because
+  -- `$.ivec2` had no spelling until #119 and nothing exercised it.
+  $.assert(cell_of($.vec2(8.0, 8.0), 4.0).x == 2, "cell index truncates toward zero")
 
   -- `reserve` is additional and idempotent -- room for 2 *beyond* `len` -- and
   -- exists for timing, not failure: a program that must not allocate mid-frame

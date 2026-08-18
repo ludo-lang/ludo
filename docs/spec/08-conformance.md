@@ -805,7 +805,7 @@ target**, because relocating a feature into the standard library satisfies a
 grammar budget by pure relocation and must therefore show up. It is a stdlib
 figure, not a grammar figure. (#24 call 5's second consequence; ch1 §13.11.)
 
-**9.3.1 The spelled root names are 13**, of which 5 are facade modules:
+**9.3.1 The root names are 31**, of which 5 are facade modules:
 
 | Root name | Kind | Contents |
 |---|---|---:|
@@ -816,10 +816,25 @@ figure, not a grammar figure. (#24 call 5's second consequence; ch1 §13.11.)
 | `$.storage` | module | 2 functions, 0 types |
 | `$.vec2` `$.vec3` `$.vec4` | constructors | the `f32` vector set |
 | `$.mat2` `$.mat3` `$.mat4` | constructors | the square `f32` matrix set |
+| `$.ivec2` `$.ivec3` `$.ivec4` | constructors | the `i32` vector set (ch6 §12.3) |
 | `$.rgb8` `$.rgbf` | constructors | both returning `Color` |
+| `$.assert` `$.panic` | calls | the two bug-declaring calls (ch6 §12.2) |
+| `Vec2` `Vec3` `Vec4` `Mat2` `Mat3` `Mat4` | types | the `f32` blessed set |
+| `IVec2` `IVec3` `IVec4` | types | the `i32` blessed set |
+| `Radians` `Seconds` `SampleFrames` | types | the shipped quantities |
+| `Color` | type | `distinct`, from #28 |
 
 **Functions under the five modules total 59.** (ADR-0033 §9's reconciled base of
 55 across four modules, plus ADR-0038's `$.video` at 4; ch6 §4–§8, §3.2, §1.4.)
+
+**9.3.1.1 The figure moved from 13 to 31 when the root was first enumerated**
+([#119](https://github.com/ludo-lang/ludo/issues/119); ch6 §12). `+18`: the two
+calls chapter 2 §8.5 had placed in the root without a spelling, the three
+integer vector constructors ADR-0016 §2 shipped without one, and the thirteen
+blessed types ADR-0016 §9 counted as a #24 delta and no chapter had listed.
+**No grammar delta accompanies it** — ch6 §12.5.1 — so chapter 1 §13's budget and
+its §13.9.1 register are unmoved. This is the count doing the job §9.3 gives it:
+a stdlib figure moves and is visible.
 
 **9.3.2 LÖVE2D is the comparator for this count, and not for §9.2's.** It adds
 **21 stdlib roots** to LuaJIT for **zero grammar tokens**, which is #24 call 5's
@@ -827,22 +842,37 @@ escape route in its purest observed form. A grammar comparison against LÖVE2D i
 vacuous — its grammar *is* LuaJIT's exactly — and this is the axis on which the
 two are actually comparable. (ch1 §13.11.1; [research/06](../research/06-love-dragonruby-batteries-line.md).)
 
-| | Grammar tokens over its host | Stdlib roots |
-|---|---:|---:|
-| LÖVE2D over LuaJIT 2.1 | 0 | 21 |
-| ludo over Lua 5.4 | +19 | 13 |
+| | Grammar tokens over its host | Stdlib roots | of which facade areas |
+|---|---:|---:|---:|
+| LÖVE2D over LuaJIT 2.1 | 0 | 21 | 21 |
+| ludo over Lua 5.4 | +19 | 31 | 5 |
 
-**9.3.3** The reading the table supports, and the only one: **ludo bought its
-robustness in grammar and not in root names**, where the closest peer this
-language has did the reverse. Neither figure has a target, and this clause states
-no judgement beyond what the two rows show. (#24 call 5; #4.)
+**9.3.2.1 The two totals are not like for like, and the fourth column is why.**
+Every one of LÖVE2D's 21 roots is a **module** — an area of platform surface.
+Only 5 of ludo's 31 are; the other 26 are types, constructors and two calls,
+which LÖVE2D's host language does not put at a root because it has no types to
+put there. The comparison a reader should run is **5 against 21**, and the
+31 is published beside it so that no later chapter has to reconstruct what the
+5 excludes. (#24 call 5; ch6 §12.1.)
 
-**9.3.4 The count is of what is spelled, and the root is not enumerated
-anywhere.** §13.1 is the marked gap: `$.assert` and `$.panic` are placed in the
-root by chapter 2 §8.5 and are absent from chapter 6, and the integer vector
-constructors chapter 6 §3.2 admits have no spellings. The figure above therefore
-counts **13 spelled names** and is a floor, not a total. (ADR-0033 §9; ch2 §8.5;
-ch6 §0.7, §3.2.)
+**9.3.3** The reading the two rows support, and the only one: **ludo bought its
+robustness in grammar and not in facade area**, where the closest peer this
+language has did the reverse — 21 areas for zero grammar, against 5 areas for
++19 tokens. Neither figure has a target, and this clause states no judgement
+beyond what the rows show. The 31-name column supports no such reading in either
+direction, because its bulk is the type set a statically typed language must
+name somewhere. (#24 call 5; #4.)
+
+**9.3.4 The count is a total, and the root is enumerated at chapter 6 §12.**
+This clause previously read *the count is of what is spelled, and the root is not
+enumerated anywhere*, and published 13 as a **floor**: `$.assert` and `$.panic`
+were placed in the root by chapter 2 §8.5 and absent from chapter 6, and the
+integer vector constructors of chapter 6 §3.2 had no spellings. §11.1's gap is
+**closed** by [#119](https://github.com/ludo-lang/ludo/issues/119), chapter 6
+§12 spells all of them, and the figure above is now a total. The floor is
+recorded rather than deleted because ADR-0033 §9 first wrote the absence down
+and three documents cite the floor reading. (ADR-0033 §9; ch2 §8.5; ch6 §0.7.1,
+§12.)
 
 **9.4 `#explicit` is in neither grammar count**, and chapter 1 §13.4 asserts
 that as a checkable property. (#24 call 3; ch1 §13.4.)
@@ -881,30 +911,27 @@ Per ADR-0044 §8, gaps this chapter writes down rather than blocks on. Each is
 filed as a ticket that owns the repair of this chapter's text and its
 `coverage/` rows in one commit (ADR-0049).
 
-**11.1 The `$.` root is enumerated nowhere, so §9.3's count is a floor.**
-Chapter 6 §0.7 states that it is the reserved root's whole contents, and it
-transcribes the five facade modules and the blessed math set. Two things sit
-outside that:
-
-- **`$.assert` and `$.panic`.** Chapter 2 §8.5 places both *in the standard-
-  library root* and makes them *always on*, and chapters 5 and 6 cite `$.assert`
-  in normative clauses (ch5 §6.1.1; ch6 §5.5.4, §5.7.8, §5.10.6). Neither has a
-  signature, a module, or an entry anywhere under `$.`.
-- **The integer vector constructors.** Chapter 6 §3.2 ships *integer vectors at
-  the same three widths* and gives them no spellings, while every other member
-  of the blessed set is spelled.
-
+**11.1 The `$.` root is enumerated nowhere, so §9.3's count is a floor —
+CLOSED.** Chapter 6 §0.7 stated that it was the reserved root's whole contents
+and transcribed the five facade modules and the blessed math set; three things
+sat outside that and had no spelling anywhere — `$.assert` and `$.panic`
+(ch2 §8.5), the integer vector constructors (ch6 §3.2), and whether a blessed
+type is itself a root name (ADR-0016 §9 counted them; no chapter listed them).
 ADR-0033 §9 recorded the same absence — *the root itself … is not enumerated
-anywhere in the corpus* — and could not fix it, because the fix is chapter 6's
-subject and chapter 6's sources do not contain it. It reaches this chapter
-because §9.3's count is mandated (ch1 §13.11) and a count cannot include names
-that have no spelling. §9.3.1 therefore publishes **what is spelled** and
-§9.3.4 says so. Filed as
-[#119](https://github.com/ludo-lang/ludo/issues/119), which owns the repair of
-§9.3.1, §9.3.4, this entry, the coverage rows, and chapter 6's §0.7 and §3.2, in
-one commit. Until it closes, an implementation MUST provide `$.assert` and
-`$.panic` with the semantics chapter 2 §8.3 and §8.5 fix, and the count above is
-read as a floor.
+anywhere in the corpus* — and could not fix it, because the fix was chapter 6's
+subject and chapter 6's sources did not contain it.
+
+**Closed by [#119](https://github.com/ludo-lang/ludo/issues/119)**, which
+authored chapter 6 §12 and moved §9.3.1 from a floor of 13 to a total of 31,
+with §9.3.2's comparison re-cut on facade areas and §9.3.4 restated. The interim
+obligation this entry carried — *an implementation MUST provide `$.assert` and
+`$.panic` with the semantics chapter 2 §8.3 and §8.5 fix* — is discharged by
+chapter 6 §12.2, which now carries their signatures and their always-on rule.
+
+Kept, not deleted, because a marked gap is a claim this chapter made about
+itself and a reader arriving from ADR-0033 §9 or from an older §9.3.4 must be
+able to see that it was closed rather than wonder which text is stale
+(ADR-0049).
 
 ---
 

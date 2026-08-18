@@ -44,6 +44,15 @@ Chapter 4 §9 establishes that `$.` is an ordinary module set privileged in
 exactly two ways — the root name is reserved, and it is in scope with no `use`.
 Nothing in this chapter re-privileges it. (ADR-0014 §4; ch4 §9.1–§9.2.)
 
+**0.7.1 The claim of §0.7 is discharged by §12, which enumerates the root.**
+Until [#119](https://github.com/ludo-lang/ludo/issues/119) this chapter asserted
+completeness and did not deliver it: `$.assert` and `$.panic` were placed in the
+root by chapter 2 §8.5 and spelled nowhere, §3.2's integer vectors had no
+constructor spellings, and whether a blessed type is itself a root name was
+unstated. §12 spells all three and closes chapter 8 §11.1's marked gap. A reader
+checking §0.7 reads §12, not this chapter's facade sections alone.
+([#119](https://github.com/ludo-lang/ludo/issues/119).)
+
 ---
 
 ## 1. How everything under `$.` is named
@@ -150,10 +159,12 @@ integer vectors**:
 ```
 $.vec2  $.vec3  $.vec4        f32 components
 $.mat2  $.mat3  $.mat4        square, f32
-                              integer vectors at the same three widths
+$.ivec2 $.ivec3 $.ivec4       i32 components (§12.3)
 ```
 
-(ADR-0016 §2.)
+(ADR-0016 §2.) ADR-0016 §2 ships the integer widths and never spelled them;
+**§12.3 authors the three spellings and fixes the component type as `i32`**
+([#119](https://github.com/ludo-lang/ludo/issues/119)).
 
 **3.3** **`mat2` ships** even though `mat3` subsumes it, because *2/3/4 across
 the board* is one rule with no exception. (ADR-0016 §2.)
@@ -176,7 +187,10 @@ and is not restated here. (ADR-0016 §3; #99.)
 `Color` is a `distinct` type from #28 and is unchanged. Each shipped quantity
 appears in a `$.` return type; a quantity the stdlib would define and never use
 does not ship. **`PxPerSec`, `PxPerTick` and `Ticks` are not in the set.**
-(ADR-0016 §4.)
+(ADR-0016 §4.) **Each shipped quantity is a root name in its own right**, and so
+is `Color`; their spellings and the rule that governs a type's spelling under
+`$.` are §12.4's ([#119](https://github.com/ludo-lang/ludo/issues/119); ADR-0016
+§9, which counts them).
 
 **3.8 Alignment is specified on the blessed types**, by the type-level
 `#align(n)` mechanism chapter 3 §8.3 owns. `vec4` is **16-byte aligned by
@@ -1573,10 +1587,22 @@ forwarding guarantee (ADR-0012, whose *outcome* is §2.4). Where a rejection pro
 a rule a program can violate, that rule **is** transcribed — §4.10.2, §6.5.8,
 §7.22, §2.7 and §2.8 are the cases.
 
-**11.3 Authored here.** Nothing. Every clause above was located in a source. The
-two spellings this chapter's sources leave to others — the loader that produces an
-`Image` (§4.9.2) and the frame entry's parameter (§4.2.6) — are routed, not
-authored.
+**11.3 Authored here.** §12, and nothing else. Every other clause above was
+located in a source. §12 authors what chapter 2 §8.5 and ADR-0016 §2 and §9
+*assert into existence and never spell* — the two bug-declaring calls, the three
+integer vector constructors, and the rule that a type under `$.` is a root name
+with a qualified spelling — because §0.7 claims this chapter is the root's whole
+contents and, until [#119](https://github.com/ludo-lang/ludo/issues/119), it was
+not. The two spellings this chapter's sources leave to others — the loader that
+produces an `Image` (§4.9.2) and the frame entry's parameter (§4.2.6) — are
+routed, not authored.
+
+**11.3.1** The original text of §11.3 read *Authored here. Nothing.* and the
+chapter shipped as the first to close with no authored clause and no marked gap.
+That claim was false in the direction the corpus keeps failing in — a rule that
+exists with no surface — and it is recorded rather than quietly overwritten,
+because *chapter 6 authored nothing* was cited as evidence that the standard
+library was the best-specified region of the corpus.
 
 **11.4 Marked gaps.** None. Where a source's clause was found to have been
 withdrawn (§4.7.4, §4.11.7, §4.11.8), the withdrawal is transcribed as the rule,
@@ -1584,3 +1610,147 @@ which is what a reader needs.
 
 **11.5** The source-by-source checklist discharging the closing test is
 [`coverage/06-stdlib.md`](coverage/06-stdlib.md).
+
+---
+
+## 12. The reserved root, enumerated
+
+**12.1** This section discharges §0.7. The reserved root holds names of **four
+kinds**, and this section is the list:
+
+1. the **five facade modules** — `$.graphics`, `$.audio`, `$.input`, `$.video`,
+   `$.storage` (§4–§8);
+2. the **blessed math constructors** — §3.5's positional constructors, including
+   §12.3's integer widths;
+3. the **blessed types**, which are root names under §12.4;
+4. the **two bug-declaring calls**, `$.assert` and `$.panic` (§12.2).
+
+Nothing else is in the root. A future addition is a #24 delta against chapter 8
+§9.3 and obeys §1.1's naming rules like every name above.
+([#119](https://github.com/ludo-lang/ludo/issues/119); ch1 §13.11.)
+
+### 12.2 `$.assert` and `$.panic`
+
+**12.2.1** Chapter 2 §8.5 places both in the standard-library root and makes
+them **always on**. Their spellings are:
+
+```
+$.assert(condition: bool, message: string)
+$.panic(message: string)
+```
+
+(ch2 §8.5; [#119](https://github.com/ludo-lang/ludo/issues/119).)
+
+**12.2.2** A `$.assert` whose `condition` is `false` **is a bug** — a member of
+chapter 2 §8.3's closed class — and raises the fault kind **assert** (ch5 §6.5.1
+member 2). A `$.assert` whose condition is `true` evaluates to nothing and the
+program continues. There is no value to inspect and no result to discard.
+
+**12.2.3 An implementation MUST NOT make either call conditional on a build
+mode.** There is no `debug_assert`, no compile-time switch that removes an
+assertion, and no flag that turns a fault into a return. (ch2 §8.5, *always on*;
+#8's rule for checked overflow, applied to the calls that share its class.)
+
+**12.2.4 `message` is a required parameter and not an optional one.** Two
+clauses force it: §1.1.6 admits no optional argument that changes meaning, and
+chapter 5 §6.5.1 requires a fault report to carry **both** the asserted
+expression's source text **and** its message, which a message-less call cannot
+supply. A program with nothing to say writes the empty string, visibly, at the
+call site.
+
+**12.2.5** The **source text of `condition`** is captured by the implementation
+at the call site and reaches the fault report (ch5 §6.5.1). This is the only
+call in the language whose argument's source text is a normative observable, and
+it is why `$.assert` is a root name rather than a library function a user could
+write: a user function cannot see its argument's text.
+
+**12.2.6 `$.panic` diverges: it never returns.** It raises the fault kind
+**explicit panic** (ch5 §6.5.1 member 5). It is **the** call that panics for the
+purposes of chapter 1 §6.14, and it is the only one: there is no `never` type,
+no `noreturn` marker, and **no user function can be declared diverging**.
+Divergence is a property of this one name, checked by name. A program that needs
+a diverging call of its own calls `$.panic` in tail position.
+([#119](https://github.com/ludo-lang/ludo/issues/119); ch1 §6.14.)
+
+**12.2.7 Neither call is in a module**, and this is not an exception to §1.1.1.
+§1.1.1 governs **facade areas**, and the bug line is not one — it is chapter 2's
+language rule, reached from every area and belonging to none. §1.4's statement
+that root names are constructors for blessed types is **widened here**
+accordingly: the root also carries the two calls chapter 2 §8.5 put there.
+
+**12.2.8** No variant of either name ships: no `$.assert_equal`, no
+`$.assert_near`, no `$.panic_with`. §1.1.6 makes a variant a second name and
+§2.8 forbids a second spelling for an entity the root already names; a
+comparison an author wants to see is written into `message`.
+
+### 12.3 The integer vector constructors
+
+**12.3.1** The three spellings are `$.ivec2`, `$.ivec3` and `$.ivec4`, with
+**`i32` components**, positional like every other blessed constructor (§3.5).
+Their types are `IVec2`, `IVec3` and `IVec4` (§12.4). (ADR-0016 §2, which ships
+the widths and spells none of them;
+[#119](https://github.com/ludo-lang/ludo/issues/119).)
+
+**12.3.2 The component type is `i32` and there is no other integer width**, on
+§3.1's rule: the blessed set is concrete, so `IVec2` no more carries an element
+parameter than `Vec2` does. A program needing `i16` or `u32` components declares
+its own struct.
+
+**12.3.3 The `i` prefix is the one place this chapter admits an abbreviation**,
+against §1.1.4, and it is recorded as a conflict rather than resolved silently.
+ADR-0016 §8 rests the whole blessed set on **shader knowledge transferring
+unmodified** — the operators match GLSL exactly and the set exists so an agent
+finds the name it already knows in the oracle's name table (#4). `ivec2` *is*
+that name; `integer_vector2` and `vec2i` are not, and either would spend the
+transfer to satisfy a rule whose own subject — `frequency`, not `freq` — is
+about abbreviations the reader must decode. The reader does not decode this one.
+**The precedent is bounded to the blessed math set** and licenses no further
+abbreviation under `$.`. (§1.1.4; ADR-0016 §8; #4.)
+
+### 12.4 A type under `$.` is a root name, and its spelling is qualified
+
+**12.4.1** The blessed types are root names: `Vec2`, `Vec3`, `Vec4`, `Mat2`,
+`Mat3`, `Mat4`, `IVec2`, `IVec3`, `IVec4`, the three quantity types `Radians`,
+`Seconds` and `SampleFrames` (§3.7), and `Color` (#28). **Thirteen names**, and
+they are counted as root names by chapter 8 §9.3.1. (ADR-0016 §9, which counts
+nine types and three quantities as a #24 delta;
+[#119](https://github.com/ludo-lang/ludo/issues/119).)
+
+**12.4.2 A program spells them qualified**, like every other name under the
+root: `$.Color`, `$.Vec2`, `$.Radians`. A type owned by a facade module carries
+that module's qualifier — `$.graphics.TextMetrics`, `$.audio.Voice` — by
+§1.6.
+
+**12.4.3 The bare spellings in this chapter's signature blocks are a
+presentation convention of this document, not a second name.** `size: Vec2` at
+§4.4.2 and `-> TextMetrics` at §4.4.2 elide the qualifier for legibility inside
+a block whose subject is already the module. §2.8 forbids a second spelling for
+an entity the root names, and this clause states that no second spelling exists:
+there is one name, written qualified, and this document sometimes prints it
+short. A conforming implementation MUST NOT accept the bare form in program
+text on the strength of these blocks.
+
+**12.4.4 Chapter 4 §9.2's *in scope with no `use`* privileges the root name, not
+its members.** `$.` needs no import; its members are still reached through it.
+This is stated because §12.4.3's convention makes the opposite reading
+available, and a reader who takes it would expect `Vec2` to resolve bare.
+(ch4 §9.1–§9.2.)
+
+### 12.5 What §12 costs
+
+**12.5.1 #24: `+18` root names, and no grammar delta.** Two calls, three
+constructors and thirteen types, against chapter 8 §9.3.1's previous 13. No
+production, token or keyword is added — every spelling above is an ordinary
+qualified call or type name in the existing grammar — so chapter 1 §13's budget
+and its §13.9.1 register are untouched. (ch1 §13.11; ch8 §9.3.)
+
+**12.5.2 The three lenses.** *Simplicity*: `$.assert` is the first call a
+beginner meets after a draw call and it now has a written form; the required
+`message` is the one place this section asks more of a beginner than Lua's
+`assert` does, and it buys the fault report chapter 5 already promised.
+*Robustness*: three normative rules that named a surface the spec did not spell
+now have one, which is the phantom-clause shape arriving from the opposite
+direction and closed. *Agent-friendliness*: #4 measures naming things that do not
+exist as the largest agent failure class, and `ivec2` and `$.assert` are the two
+names an agent is most likely to reach for from prior corpora — both now resolve
+to what the agent expects.
