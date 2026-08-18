@@ -16,6 +16,12 @@ happened.
 
 ---
 
+**Absorbed here:** ADR-0014, ADR-0021, ADR-0027, ADR-0054.
+
+Read by `tools/check-absorption.py`, which asserts that each carries the
+ADR-0051 §4 stamp naming this chapter, and that no ADR claims this chapter
+without appearing here (ADR-0055 §4). ADR-0054 landed after the chapter and repaired §10 in place. ADR-0029 is **not** here: this chapter routes it to chapter 1 §11.
+
 ## 0. Source check (#72, #73)
 
 Run over **this chapter's sources only** — ADR-0014, ADR-0027, ADR-0029,

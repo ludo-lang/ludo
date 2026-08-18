@@ -16,6 +16,12 @@ happened in each case.
 
 ---
 
+**Absorbed here:** ADR-0017, ADR-0043.
+
+Read by `tools/check-absorption.py`, which asserts that each carries the
+ADR-0051 §4 stamp naming this chapter, and that no ADR claims this chapter
+without appearing here (ADR-0055 §4).
+
 ## 0. Source check (#72, #73)
 
 Discharged on [#86](https://github.com/ludo-lang/ludo/issues/86) before

@@ -23,6 +23,12 @@ normative surface conformance is measured against.
 
 ---
 
+**Absorbed here:** ADR-0016, ADR-0019, ADR-0028, ADR-0037.
+
+Read by `tools/check-absorption.py`, which asserts that each carries the
+ADR-0051 §4 stamp naming this chapter, and that no ADR claims this chapter
+without appearing here (ADR-0055 §4). ADR-0016 is a **second** absorption — §6's two conformance halves are this chapter's, the rest is chapter 6's. The ADRs of §7 are reached, not absorbed.
+
 ## 0. Source check (#72, #73)
 
 Run over **this chapter's sources only** — #19, #24, #54, ADR-0019, ADR-0028,

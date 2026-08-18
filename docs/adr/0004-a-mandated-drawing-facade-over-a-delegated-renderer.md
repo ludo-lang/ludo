@@ -46,9 +46,7 @@ status: accepted
 > vendor's shipping schedule.
 
 > **Absorbed by [spec ch6](../spec/06-stdlib.md):** the chapter is normative; this ADR
-> keeps the argument — the mandated drawing facade over a delegated, unmandated renderer is transcribed there.
-> **Absorbed by [spec ch8 §2.2, §2.3](../spec/08-conformance.md):** the chapter is normative; this ADR
-> keeps the argument — the core/full split is chapter 8's.
+> keeps the argument — the mandated drawing facade over a delegated, unmandated renderer is transcribed there, and the core/full split it names is restated as clauses at ch8 §2.2-§2.3.
 
 # The spec mandates a thin drawing facade; the renderer and platform layer are delegated
 
