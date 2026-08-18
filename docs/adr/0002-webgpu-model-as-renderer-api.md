@@ -2,6 +2,11 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0056](0056-the-platform-layer-is-delegated-to-a-third-party-library.md):**
+> the *implemented over native backends* premise is withdrawn with ADR-0001. Whether the
+> renderer API still adopts the WebGPU **model** depends on what the delegated library
+> exposes, and is deferred to #132 rather than settled here.
+
 > **Amended by [ADR-0037](0037-a-backend-clears-a-floor-and-shaders-are-the-third-rung.md):** the four API
 > names here are **non-normative evidence of tractability, not an admissible set** — issue
 > #74 found the corpus had no statement of the admissible set and none is added, because a

@@ -2,6 +2,13 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0056](0056-the-platform-layer-is-delegated-to-a-third-party-library.md):**
+> **reversed in full** — the platform layer is delegated to a third-party library, not
+> ours. The spec never required ownership (ch6 §10.1 leaves the platform-layer API
+> unspecified; ADR-0055's audit found this ADR unabsorbable), and the #19 argument below
+> does not hold: the runner keeps the frame loop, so the half said to be lost is not lost.
+> ADR-0056 §4 lists what survives.
+
 # The platform layer is ours, written against OS and GPU APIs — not bound from SDL
 
 Issue #12 settled that ludo is standalone and binding-first: every pixel, sample
