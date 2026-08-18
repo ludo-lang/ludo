@@ -12,7 +12,7 @@ RFC 2119 sense.
 
 **0.3** This chapter owns **conformance**: what an implementation must be to
 call itself ludo. That is the posture (§1), the three rungs (§2), what one
-claimant of a spec-defined root owes (§3), the **experience contract's property
+claimant owes (§3), the **experience contract's property
 list P1–P17** (§4–§5), the reload-latency measurement and its reference set
 (§6), the two conformance halves of the blessed math set (§7), the admission
 test as a binding on spec authorship (§8), and the published counts (§9). It is
