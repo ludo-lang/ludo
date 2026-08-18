@@ -387,3 +387,26 @@ inherits them explicitly.
   §3.4.1, §5.5, §5.5.1, §5.5.2, recorded at §15.2. See §6.1.1.
 - **Chapter 8** inherits ADR-0019's claimant obligations (ch4 §10.5–§10.7) and
   the runner obligations at ch4 §8.
+
+## 10. Induced holes opened by this chapter
+
+Per `docs/agents/domain.md`, one line per hole opened by **writing a repair**
+rather than by reading. **Backfilled by
+[#127](https://github.com/ludo-lang/ludo/issues/127)**: chapter 4 is the first
+chapter the ledger binds and the only one that shipped without this section.
+It is reconstructed, not from archaeology, but from §8 — which the author wrote
+in the same commit and which enumerates every repair this chapter made.
+
+- **Which root name a backend claims, and whether it is reserved** — opened by
+  §10.1's repair, which pinned the chapter's sense of "backend" to
+  `CONTEXT.md` §Backend. Naming the sense is what made the unclaimed root
+  visible; before the pin the question could not be stated. It lands in
+  **chapter 4**, was filed as
+  [#112](https://github.com/ludo-lang/ludo/issues/112), and is **closed**.
+- **The multi-file namespace rule and `pub`'s boundary**
+  ([#111](https://github.com/ludo-lang/ludo/issues/111)) is **not** an induced
+  hole. It was opened by **reading** ADR-0014 against §6.1 and finding no
+  clause, which is the scanner working. Named here only so it is not
+  miscounted as one.
+- **The relative-path reference** was authored in this chapter at a zero #24
+  delta and opened nothing downstream.

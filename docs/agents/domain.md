@@ -144,6 +144,22 @@ names the repairs driving it, which no amount of auditing would tell you.
 The ledger starts with chapter 4. Chapters 1–3 are not backfilled: reconstructing cause for closed
 tickets is archaeology, and a trend needs the chapters still to come.
 
+**Chapter 4 was backfilled anyway, and that is not a precedent.** It shipped without the section and
+nothing detected it ([#127](https://github.com/ludo-lang/ludo/issues/127)); chapters 5–8 all kept the
+rule, so it was skipped once, at the first chapter it bound. The backfill stands on **evidence, not
+cost**: ch4's coverage §8 enumerates its own repairs, written by the author in the same commit, so
+cause was on record rather than reconstructed. Chapters 1–3 have no such section, so the archaeology
+objection holds for them undiminished. Do not read "ch4 was cheap" as licence to backfill anything
+cheap.
+
+**The spec is complete, so the ledger now appends to closed chapters.** A repair lands in a chapter
+already marked written, and its induced hole goes in that chapter's `coverage/` file all the same —
+the hole lands where it lands. What is enforced is that the section **exists**, never that it is
+**current**: nothing mechanical can know a repair opened a hole, because that judgement is the whole
+content of the convention. A chapter carrying an empty ledger while induced holes accumulate passes
+the checker. That blind spot is this rule's ADR-0051 §6 disclosure, and it is stated here rather than
+left to be discovered.
+
 ## A convention here ships with a checker
 
 The stamp rule failed silently twice ([#72](https://github.com/ludo-lang/ludo/issues/72)) because
@@ -161,6 +177,11 @@ committing a spec chapter or an ADR that repairs one. It reads the `**Absorbed h
 `docs/spec/coverage/NN-*.md` and checks both directions — every ADR a chapter claims carries the §4
 stamp naming that chapter, and every stamp is claimed by the chapter it names. A chapter that lands
 without stamping its sources is the #120 failure, and this is what would have caught it.
+
+The third one exists: **`python3 tools/check-ledger.py`** (#127). Run it before committing a spec
+chapter. It checks that every coverage file from chapter 4 on carries an induced-hole section — the
+#127 failure, and what would have caught it. It is **structural only**, for the reason given above:
+an empty ledger and a correct one are the same to it.
 
 That line is **authored**, not scraped from the coverage prose, and the reason is worth keeping: the
 prose source lists name absorbed and merely *reached* ADRs in one breath, and they were written when
