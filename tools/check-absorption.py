@@ -45,7 +45,10 @@ FILE_NUM_RE = re.compile(r"^(\d{4})-")
 COVERAGE_NUM_RE = re.compile(r"^0?(\d+)-")
 ADR_REF_RE = re.compile(r"ADR-(\d{4})")
 # **Absorbed here:** ADR-0014, ADR-0021, ADR-0027, ADR-0054.
-DECLARED_RE = re.compile(r"^\*\*Absorbed here:?\*\*(.*?)(?:\n\n|\Z)", re.MULTILINE | re.DOTALL)
+# The declaration is exactly one line. Not a paragraph: the prose under it cites
+# ADR-0051 and ADR-0055 by name, and any rule that reads past the newline picks
+# those up as absorbed sources the moment a blank line goes missing.
+DECLARED_RE = re.compile(r"^\*\*Absorbed here:?\*\*[^\n]*", re.MULTILINE)
 # > **Absorbed by [spec ch3 §11](../spec/03-memory.md):**
 ABSORBED_RE = re.compile(
     r"^>\s*\*\*Absorbed by \[spec ch(\d+)[^\]]*\]\(([^)]+)\)", re.MULTILINE
@@ -66,7 +69,7 @@ def declared_absorptions(text):
     m = DECLARED_RE.search(text)
     if not m:
         return None
-    return {int(n) for n in ADR_REF_RE.findall(m.group(1))}
+    return {int(n) for n in ADR_REF_RE.findall(m.group(0))}
 
 
 def main():
@@ -86,11 +89,13 @@ def main():
 
     # Chapter -> the ADRs its coverage file says it absorbed.
     declared = {}
+    chapters_seen = set()
     for path in sorted(cov_dir.glob("*.md")):
         m = COVERAGE_NUM_RE.match(path.name)
         if not m:
             continue
         chapter = int(m.group(1))
+        chapters_seen.add(chapter)
         nums = declared_absorptions(path.read_text(encoding="utf-8"))
         if nums is None:
             findings.append(f"{path.name}: no '**Absorbed here:**' line (ADR-0055 §4)")
@@ -135,10 +140,12 @@ def main():
     # Direction 2 -- a stamp naming a chapter that does not claim it.
     for num, chapters in sorted(stamped.items()):
         for chapter in sorted(chapters):
-            if chapter not in declared:
+            if chapter not in chapters_seen:
                 findings.append(
                     f"{adrs[num].name}: stamped by ch{chapter}, which has no coverage file"
                 )
+            elif chapter not in declared:
+                continue  # its missing declaration is already one finding; do not repeat it per ADR
             elif num not in declared[chapter]:
                 findings.append(
                     f"coverage ch{chapter}: does not list ADR-{num:04d}, which is stamped by it"
