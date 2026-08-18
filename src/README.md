@@ -107,7 +107,57 @@ injection answers them with an ordinary call.
 - `zig cc` as the build tool — named by ADR-0020, not yet configured.
 - Whether the interpreter survives as a `ludo eval` surface, or is genuinely
   discarded (#49).
-- The frontend's actual API — [#130](https://github.com/ludo-lang/ludo/issues/130).
-  The seam above says where the boundary is, not what crosses it. #96 put one
-  floor under it and designed nothing: a sibling `interp/` consumes the AST, so
-  **the AST crosses**. Its exported shape is #130's to decide.
+- The **host interface's surface** — which entry points the header `interp/` declares
+  actually has, and at what granularity. #96 fixed its owner and designed nothing;
+  [#133](https://github.com/ludo-lang/ludo/issues/133).
+- **What the empty host returns**, and therefore whether a headless hole-finding run
+  is a real execution or a shape check.
+  [#134](https://github.com/ludo-lang/ludo/issues/134).
+
+## The frontend's API is a session, and the AST crosses as concrete structs
+
+Settled by [#130](https://github.com/ludo-lang/ludo/issues/130). The seam above says
+where the boundary is; this says what crosses it.
+
+`frontend/` is entered through a **session**: the caller creates one against a module
+mapping, adds source buffers, and checks it. Per-file parse and the lexer are exposed
+underneath, because a formatter is a per-file consumer — but a program is not a pile of
+files, and ch8 P6's incremental re-check needs something that can hold one. The session
+is **immutable in the prototype**, with `replace_source` reserved by shape rather than
+implemented: per-file arenas, and no cross-file pointers except through the name table.
+Memory is a **session-owned arena** holding nodes and spans; source text is never copied
+into it, because the caller owns the buffers.
+
+The **AST is public `struct`s and `interp/` includes them directly**, along with the
+type table and nothing else. This is deliberately right for the prototype and wrong for
+the keeper — opaque node ids behind accessors is what survives a representation change —
+so node access goes through a small accessor header, and the hedge is recorded here
+rather than rediscovered. **Types are a side table keyed by node index**, so the parse
+tree stays the single thing a formatter, an oracle and the interpreter all read, and a
+formatter never links the typechecker. A **failed parse returns explicit error nodes**:
+invisible recovery would hand `interp/` a tree it believes is well-formed, and P6 needs
+a recovered tree to answer from. **Trivia rides the token stream, never the AST.**
+
+A ch7 §6.1 location's `file` is a **session-minted id**, with the caller's name stored
+alongside for rendering — the library never holds, or interprets, a path. Diagnostics
+leave as ch7 values; one unit renders a message to a **caller-supplied buffer** as JSON,
+which is not ambient I/O and is where ch7 §8.1's obligation lands. The newline, the
+stream and the human form are `driver/`'s (ch7 §11.1, §1.2). **Diagnostics are the only
+channel for errors in the program under compilation**; status codes cover allocation
+failure and ch4 §7.4's duplicate root name, and nothing else.
+
+**`driver/` builds the module mapping.** ch4 §7.1 makes it a required input complete
+before compilation begins, §7.2 forbids the compiler to search, and §8.1 puts the
+`libs/` scan on the runner. This is what makes *no ambient I/O* concrete rather than
+aspirational: the library has nothing it could open.
+
+The **oracle** (ch4 §7.9, ch8 P6) is in scope here only as a constraint on the session's
+shape — stable spans, a tree surviving errors, a queryable name table. Its query surface
+is not designed, because no second consumer exists yet to shape it.
+
+**No globals, no thread-local state, no internal synchronization, and two sessions on
+two threads never interact** — ADR-0020's *no assumed threads* made checkable, and the
+`wasm32` shape it keeps while deferring the target. The public surface is one umbrella
+header per library, a `ludo_` prefix on everything exported, no varargs and no `errno`.
+The C11 subset, the coding standard and the sanitizer CI are
+[#131](https://github.com/ludo-lang/ludo/issues/131)'s, not this.
