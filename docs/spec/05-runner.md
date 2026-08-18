@@ -309,9 +309,10 @@ narrows what such a view's type is.)
 
 ### 4.6 Allocation failure in a `persist` initialiser
 
-**4.6.1** **Allocation failure in a `persist` initialiser is a §6 fault**, and
-the fault report names the declaration. It is not a `rescue`-able error at that
-position. (ADR-0048 §7.)
+**4.6.1** **Allocation failure in a `persist` initialiser is a §6 fault** of
+kind **allocation failure** (§6.5.1, item 7), and the fault report names the
+declaration — its name and its type. It is not a `rescue`-able error at that
+position. (ADR-0048 §7; [#113](https://github.com/ludo-lang/ludo/issues/113).)
 
 **4.6.2** The carve-out is **by position, not by call**: everywhere else, an
 allocating call is fallible and its failure is a value the call site handles.
@@ -393,7 +394,8 @@ and in release**. (#17 §8.)
 
 **6.1.1** A **fault is a detected bug, and nothing else**. The bug class is
 chapter 2's: out-of-bounds, a failed `$.assert` or `$.panic`, integer overflow,
-integer divide-by-zero, and `unsafe` use-after-free. (#18 §1; ch2 §8.6.)
+integer divide-by-zero, and `unsafe` use-after-free — but see §6.1.8, which is
+not reportable. (#18 §1; ch2 §8.3, the list; ch2 §8.6 routes what happens next.)
 
 **6.1.2** **An expected failure is never a fault.** Errors are values in the
 return type and must-use makes ignoring one a compile error, so no unhandled
@@ -410,10 +412,29 @@ infinity**, which are ordinary values. (#18 §1.)
 (ADR-0048 §7.)
 
 **6.1.6** §6.1.4 and §6.1.5 each add a kind to a list #18 §8 published as
-**closed**, and only the first says so. **This is a marked gap** — §13.1 — and
-until it closes, an implementation MUST report both, and MUST NOT report either
-under one of #18 §8's five original kinds. (#18 §8; ADR-0015 §4; ADR-0048 §7;
+**closed**, and only the first says so. **The enum is still closed, and its
+membership is now seven** — #18 §8's five, plus asset resolution failure and
+allocation failure. **§6.5.1 is the authoritative list**; #18 §8's five are a
+superseded prefix of it. An implementation MUST report each of the two added
+kinds as itself, and MUST NOT report either under one of #18 §8's five.
+(#18 §8; ADR-0015 §4; ADR-0048 §7;
 [#113](https://github.com/ludo-lang/ludo/issues/113).)
+
+**6.1.7 Closed means closed against this document, not against an issue.** A
+kind is added only by an edit to §6.5.1, and per
+[ADR-0051](https://github.com/ludo-lang/ludo/blob/main/docs/adr/0051-the-spec-is-the-only-normative-surface-and-an-absorbed-adr-is-stamped.md)
+§3 that edit is a spec change with an ADR behind it. This is what the two
+undeclared extensions cost: #18 §8's list lived on an **issue**, and an
+amendment whose target is an issue cannot be stamped, so the corpus recorded
+neither extension. Relocating the list here is the repair, not a weakening of
+the closure. ([#113](https://github.com/ludo-lang/ludo/issues/113).)
+
+**6.1.8 A use-after-free inside `unsafe` is not a fault kind.** Chapter 2 §8.3
+lists it in the bug class this section's first paragraph cites, but §6.2.5 voids
+every guarantee for it: it is a bug that is **not detected**, so no conforming
+report can name it and it is absent from §6.5.1 by construction. The enum is the
+list of **detected** bugs, and that is why it is exhaustively handleable.
+(#18 §3; ch2 §8.3; §6.2.5.)
 
 ### 6.2 What a fault does
 
@@ -495,8 +516,28 @@ harness may assert about the presentation of a dump. (#18 §7, which routes it.)
 
 - the **fault kind**, drawn from a **closed enum fixed by the spec** — closed so
   that an agent can handle it exhaustively and a new kind is a spec change
-  rather than a surprise. **Its membership is §13.1's gap**: #18 §8's five, plus
-  §6.1.4's and §6.1.5's two;
+  rather than a surprise. **The membership is this list, and it is seven**:
+
+  1. **out-of-bounds** — an index outside a container's bounds;
+  2. **assert** — a failed `$.assert` (ch2 §8.5);
+  3. **overflow** — a checked integer overflow (ch2 §8.3);
+  4. **divide-by-zero** — an integer divide by zero;
+  5. **explicit panic** — a `$.panic` (ch2 §8.5);
+  6. **asset resolution failure** — a declared asset that cannot be resolved or
+     decoded at startup, carrying **the declaration's location and the path it
+     tried** (§6.1.4, §8.4; ADR-0015 §4);
+  7. **allocation failure** — an allocating call in a `persist` initialiser
+     whose allocation fails, carrying **the name and type of the declaration**
+     (§6.1.5, §4.6.1; ADR-0048 §7). It is the **only** position that raises this
+     kind: everywhere else allocation failure is a value the call site handles,
+     never a fault (ch3 §11.10; ADR-0042 §3 as narrowed by ADR-0048 §7). A
+     report carrying it therefore always names a `persist` declaration of the
+     entry file, which is what lets an agent locate it without seeing the
+     runner;
+
+  The **concrete identifier strings** are no more this chapter's than the
+  diagnostic code strings are chapter 7's (ch7 §5.7); what is fixed here is the
+  membership and what each member carries;
 - the **source location** of the faulting operation;
 - **the concrete values that made it a fault** — index *and* length; both
   operands *and* the operation, for overflow; the asserted expression's source
@@ -825,22 +866,24 @@ having inherited a silence.
 
 ## 13. Marked gaps
 
-Per ADR-0044 §8, two gaps this chapter writes down rather than blocks on. Each is
+Per ADR-0044 §8, two gaps this chapter wrote down rather than blocked on. Each is
 filed as a ticket that owns the repair of this chapter's text, its `coverage/`
-rows and the reference program in one commit (ADR-0049).
+rows and the reference program in one commit (ADR-0049). **One of the two is now
+closed** and is kept, struck through, as the record of the repair.
 
-**13.1 The fault-kind enum is published as closed and has been extended twice.**
-#18 §8 fixes five kinds — out-of-bounds, assert, overflow, divide-by-zero,
-explicit panic — and closes the list on the ground that an agent can then handle
-it exhaustively. ADR-0015 §4 adds asset resolution failure **explicitly**;
-ADR-0048 §7 mandates a fault for allocation failure in a `persist` initialiser
-that maps onto **none of the six** and does not say it is adding one. So either
-a seventh variant exists or the closed-enum claim is false, and no ADR says
-which — an amendment whose target is an issue cannot be stamped, which is why
-nothing in the corpus recorded the second extension. §6.1.6 states the interim
-obligation. Filed as
-[#113](https://github.com/ludo-lang/ludo/issues/113), which owns the repair of
-§6.1.6, §6.5.1, this entry and the coverage rows in one commit.
+**13.1** ~~**The fault-kind enum is published as closed and has been extended
+twice.**~~ **Closed.** [#113](https://github.com/ludo-lang/ludo/issues/113)
+resolved: the enum keeps its closure and gains a **seventh** member, **allocation
+failure**, alongside ADR-0015 §4's **asset resolution failure**. §6.5.1 now
+carries the authoritative membership and what each member reports, §6.1.6–§6.1.7
+state that a kind is added only by editing §6.5.1 — which relocates the list off
+an issue, the thing that let two extensions go unrecorded — and §6.1.8 states
+that an `unsafe` use-after-free is a bug that is never a fault kind, because it
+is never detected. Mapping the `persist` fault onto an existing kind was
+rejected: no existing kind can carry a declaration's name and type, and folding
+it into **explicit panic** would report a bug the program never wrote, which
+§6.5.1's concrete-values rule forbids and which costs an agent the one field
+that locates the failure.
 
 **13.2 There is no spelling for a zero-filled fixed array.** §4.3.3's `= {}`
 works for `TextBuf[N]` because the mandated type declares defaults for both of

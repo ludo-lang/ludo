@@ -95,8 +95,9 @@ the convention**, not a repeat of chapters 5 and 6:
 - **#18** — listed in §1 as *authoritative, extended*, with the standing warning
   not to conflate it with ADR-0018. Heeded: this chapter cites **#18 §8 only for
   the fault payload's existence** (§2.3) and routes its contents to chapter 5.
-  The fault-kind enum's membership is chapter 5 §13.1's gap
-  ([#113](https://github.com/ludo-lang/ludo/issues/113)) and is untouched here.
+  The fault-kind enum's membership is chapter 5 §6.5.1's — seven members,
+  closed by [#113](https://github.com/ludo-lang/ludo/issues/113) — and is
+  untouched here.
 - **#19** — not in §1; its properties are chapter 8's. This chapter states the
   obligations P5, P9 and P12 test and numbers none of them (ch7 §14).
 - **#5** — not in §1. Criteria 4 and 5 are cited at ch7 §4.1, §5.5, §7.1 and
@@ -226,7 +227,7 @@ otherwise have to re-derive.
 | Subject | Owner |
 |---|---|
 | The fault report's **contents** — fault kind, concrete values, call chain, frame number, `persist` names and types | ch5 §6.5 (#18 §8). This chapter binds only the envelope they ride in |
-| The fault-kind enum's **membership**, and the two undeclared extensions | ch5 §13.1 / [#113](https://github.com/ludo-lang/ludo/issues/113) |
+| The fault-kind enum's **membership**, and the two undeclared extensions | ch5 §6.5.1 — closed at seven by [#113](https://github.com/ludo-lang/ludo/issues/113) |
 | The call chain's mode-independence and its price | ch5 §6.5.2 (#18 §9, as amended by ADR-0041 §4) |
 | What the paused runner offers, and the `persist` dump | ch5 §6.4 (#18 §6, §7) |
 | **P5**, **P9**, **P12** — wording, numbering, and what a harness asserts | ch8 (#19). ch7 §10.4 and §12.6 state the obligations; the properties are not restated |

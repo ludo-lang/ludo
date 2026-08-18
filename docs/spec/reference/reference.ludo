@@ -450,7 +450,7 @@ persist tick: u64 = 0
 -- mandated `TextBuf[N]` defaults both of its fields (ch2 §17.6) -- an author's
 -- written default, which is exactly what #9 permits and an implicit zero is not
 -- (ch2 §9.6). A user-declared type with a fixed-array field cannot yet write
--- that default itself; that is the gap at ch5 §13.1, issue #116.
+-- that default itself; that is the gap at ch5 §13.2, issue #116.
 persist name: TextBuf[32] = {}
 
 -- A `persist` declaration holds a plain value with no pointer in it, so it
@@ -463,9 +463,9 @@ persist field: !Field = {}
 -- failure is a fault rather than a value (ch3 §11.10): there is no `return` to
 -- `rescue` into, no signature to declare an error set on, and the fallback that
 -- would compile -- an empty list -- starts the program against an empty world.
--- What a conforming report *calls* that fault is the open question at ch5 §13.1
--- (issue #113): #18 §8 published the kind enum as closed, and this declaration's
--- failure maps onto none of its five.
+-- A conforming report calls that fault **allocation failure** -- the seventh
+-- member of the closed kind enum at ch5 §6.5.1 -- and it carries this
+-- declaration's name and type. It is the only position that raises the kind.
 -- `heap` is legal here and nowhere else (ch3 §1.6, §9.12), and the `List`
 -- implementation is runner-owned, which is what keeps this declaration clear of
 -- #17 §3's function-pointer check (ch3 §11.12).

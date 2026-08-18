@@ -347,8 +347,8 @@ having inherited a silence.
 - **The contents of a fault report** — the closed fault-kind enum, the concrete
   values, the call chain, the frame number, the `persist` names and types.
   Chapter 5 §6.5's, from #18 §8. This chapter carries only the envelope they
-  ride in (§2.3). The enum's membership is chapter 5 §13.1's marked gap
-  ([#113](https://github.com/ludo-lang/ludo/issues/113)).
+  ride in (§2.3). The enum's membership is chapter 5 §6.5.1's, seven members,
+  closed there ([#113](https://github.com/ludo-lang/ludo/issues/113), resolved).
 - **The experience contract's properties and their wording** — P5 (machine-
   readable diagnostics and the never-guess clause), P9 (no vendor syntax
   extensions) and P12 (no flag changes the accepted program set). Chapter 8's,
