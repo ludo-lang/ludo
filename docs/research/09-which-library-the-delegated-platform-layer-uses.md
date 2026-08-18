@@ -654,10 +654,19 @@ run over SDL's 2D render API on WebGL, and the desktop GPU path and the web path
 would be **different renderer components** rather than one model with two
 implementations — which is precisely what ADR-0002 hoped to avoid.
 
-**Could not verify:** the current merge status of any of those pull requests. I
-read the search result listing and the issue titles, not the PR state. Treat "not
-merged" as of this writing as an assertion needing a check before it is relied on.
-I also could not verify whether SDL's 2D render API has a WebGPU path.
+**Merge status, verified 2026-08-18** via the GitHub API, upgrading what this
+document first recorded as unverified: **none of the three is merged.** #12046 is
+**closed unmerged** (last activity 2025-03-16); #15722 is **closed unmerged**
+(2026-05-31); **#16020 is open and was updated on 2026-08-18**, the day of the
+check. Feature request #10768 remains open.
+
+That is a different picture from a flat "not merged": two attempts have been
+closed without landing and a third is **actively in progress**. The capability is
+in flight, not abandoned, so this section's consequence is **time-dependent** — it
+holds today and could stop holding on a timescale that matters to map #129. Re-run
+the check before relying on it rather than citing this paragraph.
+
+**Could not verify:** whether SDL's 2D render API has a WebGPU path.
 
 **raylib.** Reaches the browser via emscripten with GLFW3 and WebGL, per the
 project's own wiki (§4.4), at the cost of either an
@@ -899,9 +908,9 @@ Listed once, in full, because this project treats an uncited claim as a defect.
 
 1. Whether `SDL_AsyncIO` is implemented on the Emscripten target, and over what
    (§2.6).
-2. The merge status of the SDL_GPU WebGPU backend pull requests
-   (libsdl-org/SDL #12046, #16020, #15722, issue #10768); only their titles were
-   read (§8). Also unverified: whether SDL's 2D render API has any WebGPU path.
+2. ~~The merge status of the SDL_GPU WebGPU backend pull requests.~~
+   **Verified 2026-08-18** and recorded in §8: none merged, #16020 open and moving.
+   Still unverified: whether SDL's 2D render API has any WebGPU path.
 3. Whether any SDL3 symbol has a target-dependent signature, which would bite R4
    at the binding layer (§3).
 4. Whether SDL3 guarantees swapchain contents persist across frames without a
