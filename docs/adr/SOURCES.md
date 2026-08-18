@@ -25,6 +25,10 @@ Before transcribing a clause into a spec chapter, look its source up here.
 An issue not listed here either produced an ADR directly (see §3) or is cited
 too rarely to have caused a mistake yet. Absence is not a guarantee.
 
+**Since the spec landed, §2 answers the question first.** Per ADR-0051 §3 the
+spec is the only normative surface, so *where is this decided now* is always a
+spec section. Use §2 for the destination and §1 for why the reading moved.
+
 ---
 
 ## 1. Issues that are the sole authority, with no ADR
@@ -54,16 +58,68 @@ ticket — while being cited throughout the corpus.
 | [#29](https://github.com/ludo-lang/ludo/issues/29) | Specify the C ABI and FFI boundary | authoritative | ADR-0017 §4 **generalises** its callback restriction (top-level, named, non-capturing) into a whole-language rule. The ABI clauses are unchanged. |
 | [#60](https://github.com/ludo-lang/ludo/issues/60) | Decide whether the platform layer has a program-visible surface… | **authoritative, partly withdrawn** | Its **blanket ban on program-visible backend state is withdrawn** by ADR-0025 §8; ADR-0028 replaces it with an admission test. Check ADR-0028 before citing #60 on any query. |
 
-## 2. The rows this file does not carry
+## 2. The supersession index
 
-Per #73 and the grilling that scoped it, the **supersession** rows — one per
-resolved issue that an ADR narrowed, reversed or spelled — are a byproduct of
-chapter work, not a separate build. Each chapter's file in
-[`../spec/coverage/`](../spec/coverage/) records where its sources landed, and
-the index is assembled from those when chapter 8 closes.
+Assembled from the chapters' files in [`../spec/coverage/`](../spec/coverage/)
+when chapter 8 closed, per [#73](https://github.com/ludo-lang/ludo/issues/73).
 
-This file carries only the rows a chapter author **cannot** derive: the ones
-where the absence of an ADR is the fact.
+**Read this before §1.** The assembly changed the question it answers. §1 was
+written when an ADR was the thing that superseded an issue; since
+[ADR-0051](0051-the-spec-is-the-only-normative-surface-and-an-absorbed-adr-is-stamped.md)
+§3 the **spec is the only normative surface**, so the answer to *where is this
+decided now* is a spec section for every row below — never an issue, and never
+an ADR. §1's *what moved* column is still the reason a reading changed, and it is
+still worth having; but the destination column here outranks it.
+
+| Issue | Carried now by | Clause-by-clause detail |
+|---|---|---|
+| [#7](https://github.com/ludo-lang/ludo/issues/7) Three candidate syntaxes | spec ch1 §1.2, §7.1, §9.1, §9.8 | [`coverage/01-grammar.md`](../spec/coverage/01-grammar.md) §1 |
+| [#8](https://github.com/ludo-lang/ludo/issues/8) The memory model | spec ch3 — the whole chapter; §8's guarantee table gains four rows it never listed | [`coverage/03-memory.md`](../spec/coverage/03-memory.md) §1 |
+| [#9](https://github.com/ludo-lang/ludo/issues/9) The fate of nil | spec ch2 (the type half) and **ch5 §4.3** (the `persist` initialiser, which resolved the contradiction) | [`coverage/02-types.md`](../spec/coverage/02-types.md) §1, [`coverage/05-runner.md`](../spec/coverage/05-runner.md) §13 |
+| [#10](https://github.com/ludo-lang/ludo/issues/10) The error model | spec ch2 | [`coverage/02-types.md`](../spec/coverage/02-types.md) §1 |
+| [#11](https://github.com/ludo-lang/ludo/issues/11) Depth of the type system | **split**: spellings in spec ch1, semantics in spec ch2 | [`coverage/01-grammar.md`](../spec/coverage/01-grammar.md) §1, [`coverage/02-types.md`](../spec/coverage/02-types.md) §1 |
+| [#12](https://github.com/ludo-lang/ludo/issues/12) The standalone shape | spec ch5 §1–§3. **Its runner calls 2–4 originate no ADR**, so before the spec existed the issue was the only record | [`coverage/05-runner.md`](../spec/coverage/05-runner.md) §1 |
+| [#15](https://github.com/ludo-lang/ludo/issues/15) What replaces the one-table aggregate | spec ch3 | [`coverage/03-memory.md`](../spec/coverage/03-memory.md) §1 |
+| [#17](https://github.com/ludo-lang/ludo/issues/17) State-preserving reload | spec ch5 §3, §4.5.8–§4.5.9, §5.2, §5.9 | [`coverage/05-runner.md`](../spec/coverage/05-runner.md) §3 |
+| [#18](https://github.com/ludo-lang/ludo/issues/18) Error-as-pause | spec ch5 §6; **the fault-kind enum's membership is ch5 §6.5.1**, no longer §8's list | [`coverage/05-runner.md`](../spec/coverage/05-runner.md) §4, [`coverage/07-diagnostics.md`](../spec/coverage/07-diagnostics.md) §0.3 |
+| [#19](https://github.com/ludo-lang/ludo/issues/19) The experience contract | **spec ch8 §5 — P1–P17.** Never the issue's comment thread, which stops at P15 | [`coverage/08-conformance.md`](../spec/coverage/08-conformance.md) §1 |
+| [#24](https://github.com/ludo-lang/ludo/issues/24) The grammar budget | spec ch1 §13 (the rule), **spec ch8 §6** (the count, run against the finished spec) | [`coverage/01-grammar.md`](../spec/coverage/01-grammar.md) §1, [`coverage/08-conformance.md`](../spec/coverage/08-conformance.md) §6 |
+| [#25](https://github.com/ludo-lang/ludo/issues/25) Memory layout | spec ch3; **§9 reversed in full** — cite ch3 §7.6/§10.10 and ADR-0052, never #25 §9 | [`coverage/03-memory.md`](../spec/coverage/03-memory.md) §1, §0.1 |
+| [#26](https://github.com/ludo-lang/ludo/issues/26) Top-level code and frame order | spec ch4 §13.1–§13.5 (the narrowed pair) and spec ch5 §2, §4.3–§4.6 | [`coverage/04-modules.md`](../spec/coverage/04-modules.md) §5, [`coverage/05-runner.md`](../spec/coverage/05-runner.md) §2 |
+| [#54](https://github.com/ludo-lang/ludo/issues/54) The reviewer kit | spec ch8 §3.4. **§3 lists #54 → ADR-0019, and the ADR is deliberately not exhaustive** — it records two of four findings and says so; the ranked kit was issue-only until this chapter | [`coverage/08-conformance.md`](../spec/coverage/08-conformance.md) §0.3 |
+| [#101](https://github.com/ludo-lang/ludo/issues/101) The mutation mark on a sub-view | spec ch1 §7.10, spec ch3 | [`coverage/01-grammar.md`](../spec/coverage/01-grammar.md) §1, [`coverage/03-memory.md`](../spec/coverage/03-memory.md) §1 |
+
+### 2.1 Issues cited as grounds, which no clause rests on
+
+[#4](https://github.com/ludo-lang/ludo/issues/4),
+[#5](https://github.com/ludo-lang/ludo/issues/5),
+[#6](https://github.com/ludo-lang/ludo/issues/6),
+[#22](https://github.com/ludo-lang/ludo/issues/22),
+[#29](https://github.com/ludo-lang/ludo/issues/29) and
+[#60](https://github.com/ludo-lang/ludo/issues/60) are cited across the spec as
+**evidence, criteria or vetoes** rather than as the authority for a rule.
+Chapters 6 and 7 each checked this explicitly and edited nothing. One catch,
+recorded by chapter 7: where a later ADR restates a criterion, **the ADR's
+reading controls** — ADR-0023 §2 is what spec ch7 §12.4 transcribes, not #5's
+original wording of criterion 4.
+
+### 2.2 What the assembly established
+
+1. **Two chapters produced no rows, and that is the result, not a gap.** Chapters
+   6 and 7 found that no clause of theirs rests on an issue as sole authority —
+   every rule has an ADR behind it. The failure mode this file exists for is
+   concentrated in the **early** issues, before the ADR habit set in.
+2. **The rows a chapter could not derive were the ones that mattered.** Every
+   amendment made during the assembly came from an author reading the ADRs that
+   cite their own sources: ADR-0021 §3's narrowing of #26 (ch4), ADR-0047 §3's
+   narrowing of #8 and ADR-0052's reversal of #25 §9 (ch3), ADR-0048 §7's rule
+   about #26's call 4 (ch5), and the two properties that never reached #19's list
+   (ch8). **None of them could be stamped**, because the target is an issue —
+   which is the whole reason this file exists.
+3. **Building it up front would have been wrong.** The destination column did
+   not exist until the chapters did, and its authority moved out from under the
+   ADRs mid-flight (ADR-0051 §3). A table built in 2026-08 would have pointed at
+   ADRs and would now be a second stale record to maintain.
 
 ## 3. Issues that originate an ADR
 
