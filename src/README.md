@@ -62,27 +62,15 @@ Recorded so they are not mistaken for omissions. From #49's scope, which the
 move to one repository does not touch: **codegen of any kind, the platform
 layer, and the runner.** This directory is the prototype #49 describes.
 
-## An open conflict, flagged not settled
+## This directory holds the toolchain, and there is no second repository
 
-Tracked as [#95](https://github.com/ludo-lang/ludo/issues/95), which carries the
-repair of `docs/project-structure.md` with it. This section goes when that
-closes.
-
-Four prior decisions put artifacts in repositories of their own — ADR-0001,
-ADR-0004, ADR-0006 and #49 — and ADR-0046 §3 says `ludo-lang/ludo` *"holds
-everything"*. None has been reconciled, and this
-README does not reconcile them. The two that bear on this directory:
-
-- **ADR-0001**: *"The platform layer lives in its own repo… stops an
-  eighteen-backend conformance matrix from dominating a tracker that is still
-  designing a language."* Its first argument — preserving #1's completion test —
-  was replaced by ADR-0044 §4, but the tracker argument survives that.
-- **#49** excludes the **keeper** compiler from its own scope. ADR-0020 keeps
-  one host language for both so the prototype's frontend carries forward, which
-  says nothing about where the keeper is built.
-
-Until that is decided, what is in this directory is the prototype and nothing
-else — a statement about the work that exists, not a boundary anyone has drawn.
+Settled by [#95](https://github.com/ludo-lang/ludo/issues/95), which confirmed
+ADR-0046 §3's *holds everything* against the four own-repo promises that predate
+it. **The keeper compiler is built here**, not in a repo of its own — ADR-0020
+keeps one host language so this `frontend/` carries forward, and it reads
+`docs/spec/grammar.ebnf` by relative path, both of which break at a repository
+boundary. The platform layer is SDL3, a dependency rather than a repository
+(ADR-0056, ADR-0057). See `docs/project-structure.md`.
 
 ## Not yet decided
 

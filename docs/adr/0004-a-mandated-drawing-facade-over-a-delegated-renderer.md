@@ -47,6 +47,13 @@ status: accepted
 
 > **Absorbed by [spec ch6](../spec/06-stdlib.md):** the chapter is normative; this ADR
 > keeps the argument — the mandated drawing facade over a delegated, unmandated renderer is transcribed there, and the core/full split it names is restated as clauses at ch8 §2.2-§2.3.
+>
+> **Amended by [#95](https://github.com/ludo-lang/ludo/issues/95):** the renderer's *own
+> repo* clause is **withdrawn** — the tier stays delegated, but it is not a repository of
+> ours. ADR-0057 amended what the renderer is (SDL_GPU's ceiling, thin pass-through
+> withdrawn), leaving a facade over normative spec ch6 §4; the mandated/unmandated
+> distinction a separate repository once signalled is now carried by `docs/spec/` versus
+> `src/` inside one tree (ADR-0046 §3).
 
 # The spec mandates a thin drawing facade; the renderer and platform layer are delegated
 

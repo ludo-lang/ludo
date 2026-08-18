@@ -21,6 +21,13 @@ status: accepted
 
 > **Absorbed by [spec ch6 §10](../spec/06-stdlib.md):** the chapter is normative; this ADR
 > keeps the argument.
+>
+> **Noted by [#95](https://github.com/ludo-lang/ludo/issues/95):** the audio engine tier's
+> *own repository* promise is **preserved, not withdrawn** — it is the one blessed-but-
+> unmandated tier a repository boundary still meaningfully signals. It is **dormant**: no
+> first commit, out of scope on map #129, and under `docs/project-structure.md`'s
+> repo-exists-when-it-has-a-first-commit rule it costs nothing until someone starts it.
+> The three sibling own-repo clauses (ADR-0001, ADR-0004, #49) did not survive.
 
 # The forbidden and required shapes of the platform-layer API
 

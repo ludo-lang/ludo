@@ -8,6 +8,13 @@ status: accepted
 > unspecified; ADR-0055's audit found this ADR unabsorbable), and the #19 argument below
 > does not hold: the runner keeps the frame loop, so the half said to be lost is not lost.
 > ADR-0056 §4 lists what survives.
+>
+> **Amended by [#95](https://github.com/ludo-lang/ludo/issues/95):** the *own repo* clause
+> is **withdrawn**. Its first argument died with ADR-0044 §4's new completion test; its
+> second — keeping an eighteen-backend conformance matrix off the design tracker — died
+> with ADR-0056 and ADR-0057, which leave no matrix to keep off. Everything the platform
+> layer needs now lives in `ludo-lang/ludo` per ADR-0046 §3, and `docs/project-structure.md`
+> records the collapse.
 
 # The platform layer is ours, written against OS and GPU APIs — not bound from SDL
 
