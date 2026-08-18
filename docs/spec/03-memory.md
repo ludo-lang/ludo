@@ -607,7 +607,9 @@ columns**. A synthesised in-place `!Entity` lend that scattered writes back at
 scope exit is rejected: it is the invisible non-local control flow #8 deleted
 destructors for. **The difference between the two pools shows up as cost, never
 as semantics**, and the cost is stated: *a random-access read-modify-write loop
-over an SoA pool is slower than over an AoS pool*. Choosing the pool to match
+over an SoA pool is slower than over an AoS pool*. **This sentence is what
+decides §12.2.2**: the writable loop form is refused on *both* pool kinds, so
+that switching a pool from AoS to columnar stays a one-line change. Choosing the pool to match
 the access pattern is the decision the two pools exist to allow. (#25 §6.)
 
 **10.9 A columnar pool requires every field of its element type to be copyable
@@ -845,6 +847,60 @@ which an ascending cursor has not yet reached and therefore silently skips —
 the failure class chapter 1 §13.9.1 charges `>..` against. The
 order-preserving form packs survivors forward and cuts the tail with
 §11.13.5's `truncate`. (ADR-0050 §6, §7.)
+
+**12.2.2 `for x in xs!` requires the aggregate to hold its elements as places,
+and a pool does not — on either kind.** ([#114](https://github.com/ludo-lang/ludo/issues/114).)
+The writable form binds a view per element, and **a view derives from a place**
+— §7.1 defines a view's whole life in terms of the place it comes from, so
+where there is no place there is no view. An aggregate that **materialises an element on access rather than
+exposing one** has no such place, so `for x in xs!` over it is a **compile
+error**, naming the aggregate's kind and pointing at the form that does the job.
+**The pool is the only aggregate in this language that falls under the rule
+today**; it is stated over the property rather than over the pool so that a later
+aggregate with the same shape inherits it rather than reopening this question.
+
+**The read form is untouched.** `for x in rocks` is legal on both pools and
+remains the whole of what ADR-0052 §4 means by *`pool.each()` is `for x in pool`
+with more words*.
+
+**The rule binds the AoS pool too, and that is the decision rather than a
+side-effect.** On an AoS pool an `Entity` does exist in memory, so the form
+*could* be supported. It is refused because **§10.8 promises that the difference
+between the two pools shows up as cost, never as semantics** — and a form that
+compiles over one kind and not the other makes the pool kind a semantic choice.
+The pool kind is precisely what a program is meant to change when profiling says
+to; **that swap must never be a source edit beyond the declaration.** Allowing
+the form on AoS would buy one loop spelling and sell the property the two pools
+exist to provide.
+
+**The alternative was rejected on §10.8's own ground.** Binding a copy per
+element and requiring a `set` to write it back is the synthesised scatter-back
+§10.8 refuses, moved from the compiler into the loop, and it would make `!` mean
+*writable view* on a `List` and *copy you must remember to store* on a pool. A
+mark that means two things by receiver type is unreadable to a beginner and
+invisible to an agent, which is #5 criterion 4's veto.
+
+**12.2.3 The replacement is one idiom on both kinds, and it is already
+specified.** Read-modify-write over a pool is `get` / rebuild / `set`, over the
+handles the program itself holds — `[]Handle[Entity]` is the shape chapter 2
+§14.2 already writes:
+
+```ludo
+for h in live do                        -- live: []Handle[Entity]
+  if e := rocks.get(h) then             -- ?Entity, §10.2; chapter 2 §9.8
+    rocks!.set(h, damaged(e, dmg))      -- whole-value write, §10.8
+  end
+end
+```
+
+and the **columnar pool keeps its fast path through columns** (§10.10), which is
+the form §10.8 already calls *true in-place mutation*. **The cost §10.8 states
+survives this clause rather than being flattened by it**: the same source over an
+SoA pool touches every column and over an AoS pool touches one struct, which is
+the difference the two pools exist to express. Nothing above authors a pool
+surface — the pools are blessed, not mandated (§9.13), so `get`, `set` and how a
+program enumerates its handles belong to their own repository. What this chapter
+fixes is only that the writable loop form is **not** among them.
 
 **12.3** **Index iteration is `for i in 0..<n`**, and there is no inclusive
 range operator: with 0-based indexing `0..<xs.len` is the always-correct shape
@@ -1093,6 +1149,7 @@ one of them by silence.
 | bit fields | #25 §4 |
 | niche optimisation of a sum type | #25 §10 |
 | a synthesised in-place lend on a columnar pool | #25 §6 |
+| `for x in pool!` — the writable loop form over a pool, either kind | §12.2.2 |
 
 ---
 
@@ -1172,10 +1229,11 @@ having inherited a silence.
   every-binding-initialises rule makes the exception a decision, and it reaches
   §5.7, §5.9 and chapter 5 §4.3.1.
   [#118](https://github.com/ludo-lang/ludo/issues/118).
-- **Whether `for x in rocks!` is legal on a columnar pool.** §12.2 gives a
-  writable view per element; §10.8 rejects the synthesised in-place `!Entity`
-  lend and confines in-place mutation to columns. Nothing states which wins.
-  [#114](https://github.com/ludo-lang/ludo/issues/114).
+- ~~**Whether `for x in rocks!` is legal on a columnar pool.**~~ **Closed.**
+  §12.2.2, §12.2.3. [#114](https://github.com/ludo-lang/ludo/issues/114)
+  resolved: it is a compile error, **on both pool kinds**, because §10.8's
+  *cost, never semantics* is what a pool-kind swap rests on. Struck rather than
+  deleted, per §16.5.
 - **Which types are must-use resource types.** §15.5. #8 §5 names files, sockets
   and GPU handles as examples; the language declares none of them, and the
   storage surface (ADR-0026) is chapter 5's. No source fixes the set.

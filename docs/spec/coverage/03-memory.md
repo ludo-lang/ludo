@@ -712,3 +712,36 @@ re-derived as one:
   the first the consolidation has hit. Both clauses exist and are clear, and
   they disagree. It is filed rather than repaired because the repair is a
   reversal either way.
+
+---
+
+## 5. Repairs made after this chapter closed
+
+**5.1 `for x in rocks!` on a pool — §12.2.2, §12.2.3**
+([#114](https://github.com/ludo-lang/ludo/issues/114)). A **contradiction**, the
+second this chapter produced after §3.2's, and like it the two clauses were both
+clear and both landed: §12.2 gave a writable view per element over every
+aggregate, §10.8 refused the synthesised in-place `!Entity` lend a columnar pool
+would need to supply one.
+
+**Repaired in place, no ADR, zero #24 delta** — `grammar.ebnf` is untouched, the
+form was always parseable and the question was only what it means.
+
+Three things the repair fixed that the ticket did not ask for:
+
+1. **The answer is *both* pool kinds, not the columnar one.** The ticket framed
+   this as columnar-only, on the ground that an AoS pool has an `Entity` in
+   memory and a writable view of it is ordinary. That framing loses §10.8's own
+   sentence — *the difference between the two pools shows up as cost, never as
+   semantics* — which is what makes the pool kind a swappable performance knob.
+   A form legal on one kind and rejected on the other converts that swap into a
+   source edit.
+2. **The rule is stated over the property, not over the pool.** An aggregate
+   that materialises elements on access rather than exposing them as places has
+   no place for a view to derive from (§7.1), so the writable loop is refused
+   over it. The pool is the only such aggregate today; stating it this way costs
+   nothing now and means the next one inherits the answer.
+3. **The premise held.** ADR-0052 §4 says *an `each()` of that kind is
+   `for x in pool` with more words*, which presumes the **read** form is legal
+   over a pool. It is, and §12.2.2 says so explicitly, so the repair does not
+   quietly make pools uniterable while answering a question about `!`.
