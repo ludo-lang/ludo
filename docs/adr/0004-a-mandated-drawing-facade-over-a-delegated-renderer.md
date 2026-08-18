@@ -45,6 +45,11 @@ status: accepted
 > neither WebGPU nor WebGL, so the facade's browser-implementability stops resting on a
 > vendor's shipping schedule.
 
+> **Absorbed by [spec ch6](../spec/06-stdlib.md):** the chapter is normative; this ADR
+> keeps the argument — the mandated drawing facade over a delegated, unmandated renderer is transcribed there.
+> **Absorbed by [spec ch8 §2.2, §2.3](../spec/08-conformance.md):** the chapter is normative; this ADR
+> keeps the argument — the core/full split is chapter 8's.
+
 # The spec mandates a thin drawing facade; the renderer and platform layer are delegated
 
 ADR-0001 committed us to writing the platform layer ourselves and recorded that

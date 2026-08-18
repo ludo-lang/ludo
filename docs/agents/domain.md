@@ -101,7 +101,7 @@ repair chapter N's clause, coverage rows and gap list.* The one thing that may s
 work is a large **reference-program** extension, and only with the split recorded on the map; the
 clause repair never splits.
 
-## The spec is where you read the rule; `STATUS.md` says whether an ADR still is
+## The spec is where you read the rule, and an absorbed ADR says so
 
 [ADR-0051](../adr/0051-the-spec-is-the-only-normative-surface-and-an-absorbed-adr-is-stamped.md)
 makes a landed spec chapter the **only normative surface**. An ADR a chapter has absorbed keeps
@@ -113,18 +113,20 @@ as amendment, in the chapter's commit, owed **whether or not the chapter changed
 > keeps the argument.
 ```
 
-Until chapters 4–8 land, **[`docs/adr/STATUS.md`](../adr/STATUS.md)** is the bridge: one row per
-ADR, `ADR-NNNN | status | one-clause gist | declared edges | suspected unstamped targets`. Check a
-source against it before citing the source, the way you already check
-[`SOURCES.md`](../adr/SOURCES.md) before transcribing an issue.
+All eight chapters have landed, so **the stamp is the whole answer**: open the ADR you are about to
+cite, and if it carries an absorption stamp, read the chapter instead. The `STATUS.md` bridge that
+covered the interim is **deleted**
+([ADR-0055](../adr/0055-absorption-has-a-complement-and-status-md-is-deleted.md) §3); do not
+reinstate an index of ADR status, which is the spec's job by construction.
 
-Two properties are load-bearing and easy to erode:
+**Absorption has a complement.** Nine ADRs are absorbed by no chapter and never will be — ADR-0001,
+ADR-0002 and ADR-0003 decide an unmandated surface the spec deliberately does not reach, and
+ADR-0020, ADR-0033, ADR-0044, ADR-0046, ADR-0049 and ADR-0051 are process rules whose home is this
+directory. An unstamped ADR in that list is not a missing stamp. Any *other* unstamped ADR whose
+content a chapter transcribes is a defect (ADR-0055 §2).
 
-- It is **derived**. Every row restates an edge the tree already carries — a stamp, a supersession
-  line, a `coverage/` entry. Never write a row that is true only in `STATUS.md`; fix the tree and
-  let the row follow.
-- It is **temporary**. Each landing chapter converts rows to `absorbed-by-ch-N`. When the last
-  chapter lands the file is deleted. Do not grow it into a reference; that is the spec's job.
+Issue-keyed lookups are unaffected: check [`SOURCES.md`](../adr/SOURCES.md) before transcribing an
+issue, as before.
 
 ## Record an induced hole in the chapter that opened it
 
@@ -162,7 +164,7 @@ bullet's target, which is now the rule the script applies.
 
 This replaces, rather than adds to, the standing-audit instinct. There are **no recurring corpus
 sweeps**: re-reading fifty ADRs on a cadence to usually find nothing is the re-derivation cost paid
-on a timer. The corpus gets one bootstrap sweep for `STATUS.md` and no more.
+on a timer. The corpus got one bootstrap sweep, and no more.
 
 ## Flag ADR conflicts
 

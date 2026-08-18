@@ -7,6 +7,9 @@ status: accepted
 > takes the core total to +30.9% of Lua 5.4, the first recorded overrule. §4's charge and every
 > clause of §1–§5 are unaffected.
 
+> **Absorbed by [spec ch4](../spec/04-modules.md):** the chapter is normative; this ADR
+> keeps the argument — `const`, the folded expression set and the no-calls, no-loops fence are transcribed there.
+
 # Const evaluation folds an expression and never runs a program
 
 Issue #55 asked whether the language ships compile-time execution at all, and

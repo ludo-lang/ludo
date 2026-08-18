@@ -2,6 +2,9 @@
 status: accepted
 ---
 
+> **Absorbed by [spec ch3](../spec/03-memory.md):** the chapter is normative; this ADR
+> keeps the argument — the returned-view derivation rule and the mutation-kills-the-view rule are transcribed there.
+
 # A returned view is derived from its receiver, and mutation kills it
 
 [#83](https://github.com/adamico/ludo/issues/83), split out of

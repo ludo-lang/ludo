@@ -2,6 +2,9 @@
 status: accepted
 ---
 
+> **Absorbed by [spec ch4](../spec/04-modules.md):** the chapter is normative; this ADR
+> keeps the argument — the supplied name-to-location mapping, the no-search rule and the runner's default one-level scan are transcribed there.
+
 # The compiler is handed a name-to-location mapping and never searches
 
 Issue #63 asked whether the spec discharges ADR-0014 §12's four obligations with

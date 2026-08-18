@@ -15,6 +15,9 @@ status: accepted
 > fault, because none of #10's three exits exists in that position; every other position is
 > unchanged. §9's blessed-but-unmandated list gains a ring buffer.
 
+> **Absorbed by [spec ch3](../spec/03-memory.md):** the chapter is normative; this ADR
+> keeps the argument — the allocator struct, the `Allocator`/`Scratch` split and the runner-owned implementations are transcribed there; the clauses binding the entry and `persist` are chapter 5's.
+
 # An allocator is a struct of function pointers, and the runner owns the ones that ship
 
 Issue #80 was filed on the observation that the word `allocator` appears in a mandated

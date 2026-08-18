@@ -2,6 +2,11 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0055](0055-absorption-has-a-complement-and-status-md-is-deleted.md):**
+> §5's operative state — *every row converted* — is unreachable, because nine ADRs carry no
+> normative clause any chapter could absorb. `STATUS.md` is deleted on §5's stated condition
+> instead, and §6's owed checker for the absorption stamp is specified and ticketed.
+
 # The spec is the only normative surface and an absorbed ADR is stamped
 
 Raised in a grilling session about docs maintenance. The observation was about the **process**,

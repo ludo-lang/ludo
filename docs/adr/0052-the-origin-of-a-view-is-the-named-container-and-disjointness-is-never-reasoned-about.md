@@ -2,6 +2,9 @@
 status: accepted
 ---
 
+> **Absorbed by [spec ch3](../spec/03-memory.md):** the chapter is normative; this ADR
+> keeps the argument — the origin of a view, the absence of disjointness reasoning and the deletion of `pool.each()` are transcribed there.
+
 # The origin of a view is the named container, and disjointness is never reasoned about
 
 [#103](https://github.com/ludo-lang/ludo/issues/103), found while transcribing spec chapter 3

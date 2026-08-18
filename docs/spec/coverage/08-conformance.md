@@ -277,22 +277,30 @@ Per ADR-0051 §4, this chapter's commit stamps the ADRs it absorbs:
 | ADR-0037 | absorbed by ch8 §2–§3 |
 | ADR-0016 | a **second** absorption line — §6's two conformance halves are ch8 §7's; the rest was already absorbed by ch6 |
 
-**`STATUS.md` is not deleted by this commit, and the reason is a finding.**
+**`STATUS.md` was not deleted by this commit, and the reason was a finding.**
 ADR-0051 §5 says the file dies when the last chapter lands. Chapter 8 is the last
-chapter, but the file's rows are **not** all converted: ADRs absorbed by chapters
+chapter, but the file's rows were **not** all converted: ADRs absorbed by chapters
 1–4 were never stamped or converted when those chapters landed — ADR-0014,
 ADR-0017, ADR-0021, ADR-0027, ADR-0029, ADR-0042, ADR-0043, ADR-0045, ADR-0047,
 ADR-0048, ADR-0050, ADR-0052 and ADR-0053 all still read `live` or `amended`
-while their content is normative in a landed chapter — and that enumeration is a
-floor, not a total: ADR-0001, ADR-0002 and ADR-0004 are arguably chapter 6's on
-the same test. Deleting the bridge while
-it is the only place that backlog is visible would lose the backlog, not
-discharge it.
+while their content was normative in a landed chapter — and that enumeration was a
+floor, not a total: ADR-0001, ADR-0002 and ADR-0004 were arguably chapter 6's on
+the same test. Deleting the bridge while it was the only place that backlog was
+visible would have lost the backlog, not discharged it.
 
-The backfill is **not chapter 8's**: it is a pass over four chapters' sources,
+The backfill was **not chapter 8's**: it is a pass over four chapters' sources,
 and it is the same shape as #73's index assembly, which is already a ticket and
-already fed by the `coverage/` files. Recorded here so the next reader of
-ADR-0051 §5 does not read the surviving file as an oversight.
+already fed by the `coverage/` files.
+
+**Discharged by [#120](https://github.com/ludo-lang/ludo/issues/120) /
+[ADR-0055](../../adr/0055-absorption-has-a-complement-and-status-md-is-deleted.md).**
+Fifteen ADRs carry an absorption stamp — the thirteen above, plus ADR-0004 (ch6
+and ch8 §2.2–§2.3, the arguable case decided *absorbed*) and ADR-0054, which
+landed after this file was written and repaired chapter 4 without stamping
+itself. ADR-0001 and ADR-0002 are decided **not absorbed**: they decide an
+unmandated surface no chapter transcribes. `STATUS.md` is deleted on ADR-0051
+§5's stated condition, its operative state having been unreachable — nine ADRs
+carry no clause any chapter could absorb (ADR-0055 §2).
 
 ---
 

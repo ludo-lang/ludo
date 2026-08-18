@@ -2,6 +2,9 @@
 status: accepted
 ---
 
+> **Absorbed by [spec ch2](../spec/02-types.md):** the chapter is normative; this ADR
+> keeps the argument — the function-pointer type, the interface-bounded generic ceiling and the rejection of closures, function literals and UFCS on function values are transcribed there.
+
 # The ceiling is a named function pointer, and closures are a non-goal
 
 Issue #52 asked whether anything exists above a bare non-capturing function

@@ -7,6 +7,9 @@ status: accepted
 > the #9 contradiction §1 and §8 left by requiring one at every `persist` declaration. The
 > integer parameter, its annotation and the three restrictions are untouched.
 
+> **Absorbed by [spec ch1](../spec/01-grammar.md):** the chapter is normative; this ADR
+> keeps the argument — the integer generic parameter and its array-length fence are transcribed there; the `persist` rendering is chapter 5's.
+
 # A generic parameter may be an integer, and it may only be a length
 
 [#84](https://github.com/adamico/ludo/issues/84), split out of

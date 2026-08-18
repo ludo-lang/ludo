@@ -2,6 +2,9 @@
 status: accepted
 ---
 
+> **Absorbed by [spec ch3](../spec/03-memory.md):** the chapter is normative; this ADR
+> keeps the argument — the removal set, `Map.remove`'s tombstone and the `>..` operator are transcribed there.
+
 # Removal names its cost at the call site, and descending iteration earns an operator
 
 Resolves [#105](https://github.com/ludo-lang/ludo/issues/105), chapter 3's marked gap at §11.13.

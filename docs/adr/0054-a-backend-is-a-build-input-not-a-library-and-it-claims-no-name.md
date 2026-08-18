@@ -2,6 +2,9 @@
 status: accepted
 ---
 
+> **Absorbed by [spec ch4](../spec/04-modules.md):** the chapter is normative; this ADR
+> keeps the argument — a backend as a build input, claiming no root name and keyed in no mapping, is transcribed there.
+
 # A backend is a build input, not a library, and it claims no name
 
 [#112](https://github.com/ludo-lang/ludo/issues/112), found by a reader's question against spec

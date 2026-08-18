@@ -10,6 +10,9 @@ status: accepted
 > for**: the withheld `capacity()` is what makes `Map` tombstones unobservable, and so is what
 > licenses removal keeping #15 Q12's insertion order.
 
+> **Absorbed by [spec ch3](../spec/03-memory.md):** the chapter is normative; this ADR
+> keeps the argument — fallible allocating calls and the mandated container set are transcribed there; the `persist` initialiser fault is chapter 5's.
+
 # Every allocating call is fallible, and a `persist` initialiser faults instead
 
 [#82](https://github.com/ludo-lang/ludo/issues/82), the container-set gap that spec chapter 3

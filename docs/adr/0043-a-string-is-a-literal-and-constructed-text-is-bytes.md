@@ -14,6 +14,9 @@ status: accepted
 > [#101](https://github.com/ludo-lang/ludo/issues/101) (`name![a..<b]`). (Stamp added
 > retroactively while transcribing spec chapter 3, per #72.)
 
+> **Absorbed by [spec ch2](../spec/02-types.md):** the chapter is normative; this ADR
+> keeps the argument — the string literal view, the constant blob and constructed text as bytes are transcribed there.
+
 # A string is a literal, and constructed text is bytes
 
 Issue #81 was re-scoped after [#80](https://github.com/adamico/ludo/issues/80) / ADR-0042 on

@@ -25,6 +25,9 @@ status: accepted
 > conformance obligation is stated on one claimant rather than on a pair. The seam §9 describes
 > is unaffected.
 
+> **Absorbed by [spec ch4](../spec/04-modules.md):** the chapter is normative; this ADR
+> keeps the argument — the library declaration, the `use` form and the file-scoped, non-transitive reference rule are transcribed there.
+
 # A library is a directory that claims a name
 
 ADR-0012 §5 permitted third-party wrapper packages explicitly and declined to

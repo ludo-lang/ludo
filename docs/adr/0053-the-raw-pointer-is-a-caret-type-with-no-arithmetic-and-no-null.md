@@ -2,6 +2,9 @@
 status: accepted
 ---
 
+> **Absorbed by [spec ch1](../spec/01-grammar.md):** the chapter is normative; this ADR
+> keeps the argument — `^T`, `p^` and `&x` are spelled there, and their safety rules are chapter 3's §16.
+
 # The raw pointer is a caret type with no arithmetic and no null
 
 [#104](https://github.com/ludo-lang/ludo/issues/104), found while transcribing spec chapter 3
