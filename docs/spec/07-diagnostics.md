@@ -144,14 +144,47 @@ thing on the syntax side.)
 
 **5.6** A consumer MUST be able to tell a spec-owned code from a vendor code
 **by the code's shape alone**, with no lookup table it would have to keep
-current. (ADR-0023 §6.)
+current. (ADR-0023 §6.) §5.6.1–§5.6.5 fix the shape that discharges it, and
+assign no code.
+([#117](https://github.com/ludo-lang/ludo/issues/117).)
+
+**5.6.1 Every code is owner-qualified.** A code is `<owner>:<local>`. The
+**owner** is the text before the first `:`; the **local part** is everything
+after it. A string carrying no `:` is **not a code** of either space — it is
+malformed, and a consumer MUST NOT classify it as spec-owned. (#117.)
+
+**5.6.2 The owner `ludo` is reserved to this spec.** A code whose owner is
+`ludo` is **spec-owned**. A code with any other owner is **vendor-owned**.
+Classification is therefore one comparison against one constant, which is what
+§5.6 requires and what no rule about *distinct* namespaces alone could give.
+(#117; ADR-0018 §5.)
+
+**5.6.3 The shape of each part.** An owner is a non-empty sequence of ASCII
+lowercase letters, digits and `-`, beginning with a letter. A local part is
+non-empty and contains no `:`. The local part is otherwise unconstrained, and
+its contents are §5.7's. (#117.)
+
+**5.6.4 A vendor MUST NOT emit a code whose owner is `ludo`**, and MUST NOT
+emit a malformed code. Both are producer-side conformance failures. A consumer
+that meets either MAY reject the message, and MUST NOT treat it as spec-owned.
+(#117; §5.4.)
+
+**5.6.5 The rule binds both spaces positively.** Neither space is defined as
+the complement of the other, so a vendor cannot enter the spec's space by
+omission: a missing owner yields a malformed code under §5.6.1, not a
+collision. §13.1's interim rule — that an implementation choosing a vendor
+namespace SHOULD assume the spec's codes will claim a reserved prefix — was
+correct, and an implementation that followed it needs no change beyond
+spelling the separator. (#117.)
 
 **5.7 The concrete code strings are not this spec's.** The spec fixes the rules
 of §5.1–§5.6; **assigning the codes** — the namespace's contents, and the string
 each mandated diagnostic carries — is the follow-on toolchain effort's
 deliverable, which inherits §5.3's tombstoning rule and §8.2's additive-only
-rule with it. (ADR-0018 §14; #19 §E.) The **shape** that §5.6 requires is
-§13.1's marked gap.
+rule with it. (ADR-0018 §14; #19 §E.) The **shape** §5.6 requires is fixed at
+§5.6.1–§5.6.5; what the follow-on effort assigns is the **local part** of each
+spec code, under the reserved owner `ludo`.
+([#117](https://github.com/ludo-lang/ludo/issues/117).)
 
 **5.8** Where a chapter mints a mandated diagnostic it states the **count and
 the severity**, and this chapter states the rules those codes obey. Chapter 1
@@ -319,23 +352,28 @@ position §12.1 found has no occupant. (ADR-0029 §6; ADR-0023 §1; ch1 §11.6.)
 
 ## 13. Marked gaps
 
-Per ADR-0044 §8, one gap this chapter writes down rather than blocks on. It is
+Per ADR-0044 §8, one gap this chapter wrote down rather than blocked on. It is
 filed as a ticket that owns the repair of this chapter's text and its
-`coverage/` rows in one commit (ADR-0049).
+`coverage/` rows in one commit (ADR-0049). **It is now closed** and is kept,
+struck through, as the record of the repair.
 
-**13.1 The code space has no stated shape, so §5.6's test cannot be applied.**
-ADR-0023 §6 requires a consumer to separate spec-owned from vendor-owned codes
-**by the code's shape alone**, and grounds the requirement on ADR-0018 §5
-*already* granting it. ADR-0018 §5 requires a *distinct vendor-namespaced code
-space* and fixes no shape for either space, and a namespace that is distinct by
-assertion is not distinguishable by inspection: with no shape rule, the only way
-to classify a code is the lookup table §5.6 exists to avoid. The requirement is
-therefore transcribed at §5.6 as the obligation it is, and the shape that
-discharges it is unwritten. Filed as
-[#117](https://github.com/ludo-lang/ludo/issues/117), which owns the repair of
-§5.6, §5.7, this entry and the coverage rows in one commit. Until it closes, an
-implementation choosing a vendor namespace SHOULD assume the spec's own codes
-will claim a reserved prefix and choose accordingly.
+**13.1** ~~**The code space has no stated shape, so §5.6's test cannot be
+applied.**~~ **Closed.**
+[#117](https://github.com/ludo-lang/ludo/issues/117) resolved: a code is
+**owner-qualified**, `<owner>:<local>`, and the owner **`ludo`** is reserved to
+this spec. §5.6.1–§5.6.5 carry the rule. ADR-0023 §6's by-shape test is now
+applicable — a consumer compares the owner against one constant and stops — and
+ADR-0018 §5's *distinct vendor-namespaced code space*, which promised
+distinctness of the **sets** and never distinguishability of the **strings**, is
+made testable rather than contradicted. Two alternatives were rejected: a fixed
+spec-only shape with the vendor space as its complement, and a vendor-only
+separator with bare codes reading as spec-owned. Both define one space
+negatively, so a vendor that omits its marker produces a code a consumer reads
+as spec-owned; §5.6.5 states the property that rejects them. **Zero #24 delta**
+— a diagnostic code is toolchain output and not surface syntax, so no operator
+or keyword is minted and chapter 1 §13.9.1's register is untouched. §5.7 is
+unchanged in substance: the spec fixes the shape, the follow-on toolchain effort
+assigns the local parts.
 
 ---
 

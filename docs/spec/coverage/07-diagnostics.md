@@ -292,6 +292,17 @@ phantoms, where the citation was deleted:
 No citation is deleted: ADR-0023 §6's reasoning is wrong about what ADR-0018 §5
 grants, but its rule stands on its own.
 
+**Resolved by [#117](https://github.com/ludo-lang/ludo/issues/117).** The third
+bullet above is superseded on its own terms. Fixing a shape was read as *the
+same act as assigning the codes*, and it is not: a code is
+`<owner>:<local>`, the owner **`ludo`** is reserved to this spec, and any other
+owner is a vendor's — which binds both spaces while assigning no code and
+naming no vendor. The local parts remain ADR-0018 §14's, unchanged. ch7
+§5.6.1–§5.6.5 carry the rule, §5.7 now points at it instead of at a gap, and
+§13.1 is struck through as the record. The precondition ADR-0023 §6 assumed is
+therefore supplied by *this spec* rather than found in ADR-0018 §5, which is
+what a phantom of this kind costs: the missing half is authored, not deleted.
+
 ### 9.2 Explicitly dropped, by class
 
 - **Arguments for a rule that is itself transcribed** — ADR-0018 §2's
@@ -314,9 +325,13 @@ grants, but its rule stands on its own.
 
 ## 10. Marked gaps
 
-| Gap | Where | Ticket |
-|---|---|---|
-| The code space has no stated shape, so ch7 §5.6's by-shape test cannot be applied | ch7 §13.1, §5.6, §5.7 | [#117](https://github.com/ludo-lang/ludo/issues/117) |
+| Gap | Where | Ticket | State |
+|---|---|---|---|
+| The code space has no stated shape, so ch7 §5.6's by-shape test cannot be applied | ch7 §13.1, §5.6.1–§5.6.5, §5.7 | [#117](https://github.com/ludo-lang/ludo/issues/117) | **Closed** — codes are owner-qualified, `ludo` reserved |
+
+**No gap of this chapter's remains open.** The reference program is unaffected
+(§11): the rule binds toolchain output, and no line of a ludo program is written
+or not written on the strength of a code's shape.
 
 ## 11. The reference program
 

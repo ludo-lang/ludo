@@ -921,9 +921,10 @@ silence here as an inheritance.
 - **The diagnostic envelope, codes and severity** that P5 is failed on. Chapter
   7's (ADR-0018; ADR-0023).
 - **The concrete diagnostic-code strings**, including §2.8's shader-rung error.
-  Chapter 7 §5.7's; the shape that separates a spec code from a vendor one is
-  chapter 7 §13.1's marked gap
-  ([#117](https://github.com/ludo-lang/ludo/issues/117)).
+  Chapter 7 §5.7's. The **shape** that separates a spec code from a vendor one
+  is chapter 7 §5.6.1–§5.6.5's — a code is `<owner>:<local>` and the owner
+  `ludo` is reserved to the spec
+  ([#117](https://github.com/ludo-lang/ludo/issues/117), resolved).
 - **Which graphics APIs exist or are supported.** §3.5 makes that a category
   error: there is no set (ADR-0037 §1).
 - **Whether a given implementation conforms.** This chapter states the

@@ -611,9 +611,10 @@ and they are one repair because either answer constrains the other.
 - **The diagnostic envelope and the rules the four `#explicit` codes obey.**
   ADR-0018; chapter 7 §5. Their **strings** are neither chapter's: chapter 7
   §5.7 records that assigning codes is the follow-on toolchain effort's
-  (ADR-0018 §14), and the shape that separates a spec code from a vendor one is
-  chapter 7 §13.1's marked gap
-  ([#117](https://github.com/ludo-lang/ludo/issues/117)).
+  (ADR-0018 §14). The **shape** that separates a spec code from a vendor one is
+  chapter 7 §5.6.1–§5.6.5's — a code is `<owner>:<local>` and the owner `ludo`
+  is reserved to the spec
+  ([#117](https://github.com/ludo-lang/ludo/issues/117), resolved).
 - **What a claimant must do to conform**, including the reviewer-facing order.
   ADR-0019; chapter 8.
 - **Acquisition, registries, versioning and lockfiles.** §14.1; permanently out
