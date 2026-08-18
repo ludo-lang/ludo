@@ -217,6 +217,42 @@ library, not a binary's internals"*; `src/` therefore separates frontend from dr
 the first commit**, because ADR-0020 already records that retrofitting that seam is a frontend
 rewrite.
 
+**Amended by [#96](https://github.com/ludo-lang/ludo/issues/96): the tree is four directories, and
+the platform layer is injected.** `frontend/` and `driver/` alone had no place for the
+tree-walking interpreter [#49](https://github.com/ludo-lang/ludo/issues/49) scopes in, and this
+map's destination — a *played* reference program — made the omission load-bearing rather than
+tidy: `reference.ludo` reaches all five facades, so the interpreter that reaches the destination
+does I/O. The tree becomes **`frontend/`, `interp/`, `platform/`, `driver/`**, with `core/` still
+reserved.
+
+- `interp/` — the tree-walking interpreter, a **library with no ambient I/O**, on the same rule as
+  `frontend/`. It never links SDL3.
+- `platform/` — the SDL3 host ([ADR-0057](0057-the-delegated-platform-layer-is-sdl3.md)), the tier
+  `CONTEXT.md` calls the platform layer.
+- `driver/` — unchanged: the CLI, one consumer among several, which wires the three together.
+
+**The facades are reached through an injected host interface, not through ambient calls.** The
+caller hands `interp/` a table of function pointers; `interp/` calls the platform layer only
+through it. ADR-0020's rule survives in the form that fits a program with real I/O in it — *no
+I/O the caller did not supply*, rather than *no I/O*. **`interp/` declares the interface** and
+`platform/` implements someone else's header, so the dependency arrow points at the pure
+component and a stub host is a few lines in a test file. That is what makes one evaluator serve
+two consumers: the hole-finder passes an empty host and needs no window; the runner passes the
+SDL3 host.
+
+**An effect-list design was considered and rejected on the reference program's own call sites.**
+Five drawing calls on the draw target return nothing and could have been deferred, but ten or
+more — `$.graphics.measure_text`, `$.input.button_pressed`, `$.audio.play`'s voice handle,
+`$.audio.cursor`, `$.video.render_scale`, `$.time.now`, `save1.write` — must answer mid-expression
+with a value the program branches on. Deferring those needs a suspend-and-resume evaluator, which
+is a large machine bought for a prototype. Injection answers them with an ordinary call.
+
+**This is an amendment, not a reversal**, so it carries no ADR of its own
+([ADR-0044](0044-the-map-ends-at-an-artifact-and-the-corpus-is-consolidated-into-a-spec.md) §6):
+the seam stands, the no-ambient-I/O rule stands, and the injected host is what lets both stand.
+What crosses the `frontend/` seam is still open — this fixes only that the AST must cross, and
+leaves its shape to [#130](https://github.com/ludo-lang/ludo/issues/130).
+
 Map #1's Notes exempt documentation from review — *"Docs and research commit straight to
 `main`… the repo is spec-only, so a review cycle for a Markdown file adds a review surface
 with nothing to review against"* — and close with **"Revisit once the repo contains code."**
