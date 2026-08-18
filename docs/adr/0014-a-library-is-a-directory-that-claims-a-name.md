@@ -2,6 +2,15 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0054](0054-a-backend-is-a-build-input-not-a-library-and-it-claims-no-name.md):**
+> §9's first clause is **reversed** — a backend is **not** a library, claims **no** root name, and
+> is **not** a key in the mapping; it is a build input the toolchain supplies, and exclusivity is
+> carried by ADR-0027 §1's duplicate-key rejection rather than by the claim. The rest of §9 stands:
+> a backend satisfies a declared nominal interface, two backends are never in one program, and the
+> compile-time seam does not replace the runtime seam. This ADR's Consequences claim that the
+> companion count is **otherwise unaffected** is *confirmed* — no root name is reserved, and the
+> #24 delta is zero.
+
 > **Amended by [ADR-0027](0027-the-compiler-is-handed-a-name-to-location-mapping-and-never-searches.md):**
 > §7's *the compiler is given a mapping* becomes a normative obligation — the mapping is a
 > required input, complete before compilation, and no search of any kind is permitted; §4 gains

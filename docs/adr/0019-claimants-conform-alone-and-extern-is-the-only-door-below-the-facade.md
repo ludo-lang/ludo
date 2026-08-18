@@ -5,6 +5,13 @@ status: accepted
 > **Absorbed by [spec ch8 §3](../spec/08-conformance.md):** the chapter is normative; this ADR
 > keeps the argument.
 
+> **Amended by [ADR-0054](0054-a-backend-is-a-build-input-not-a-library-and-it-claims-no-name.md):**
+> §1's phrase *a claimant of a **spec-defined root*** is **closed as loose wording**. The
+> platform-layer API is not specified (spec ch6 §10.1) and a backend claims no root name, so no
+> spec-side declaration was ever there to point at. The obligation itself is unchanged and rests on
+> spec ch8 §3.4's three artifacts. §2 (`extern` is the only door below `$.`) and §4 (mutually
+> exclusive claimants stay legal and unblessed) are untouched.
+
 # Claimants conform alone, and `extern` is the only door below `$.`
 
 ADR-0014 §9 made a backend a library claiming a root name, satisfying a nominal

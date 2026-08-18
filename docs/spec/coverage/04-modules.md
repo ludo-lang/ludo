@@ -124,8 +124,8 @@ and §13.3 (declaration is not execution) together.
 | §8 `use` is file-scoped; every file that uses a library says so | §4.1 |
 | §8 Non-transitive: a program cannot name a dependency's dependencies | §4.2 |
 | §8 The named cost: every file repeats its `use` lines | Consequence of §4.1, no separate rule. **Explicitly dropped**, see §7 |
-| §9 A backend is a library claiming a root name; target selection is the module set | §10.2 |
-| §9 Two backends claiming one name are never in one program | §10.3 |
+| §9 A backend is a library claiming a root name; target selection is the module set | §10.2, **reversed by ADR-0054** — a backend claims no name and is not a library; target selection stays the build-time module set |
+| §9 Two backends claiming one name are never in one program | §10.3, restated on §7.4 rather than the claim (ADR-0054 §2) |
 | §9 A backend satisfies a declared nominal interface; ADR-0006 R4 becomes a type error | §10.4, narrowed by §10.5 |
 | §9 The compile-time seam does not replace ADR-0006 R2's runtime struct | §10.8 |
 | §10 A library has no identity beyond its name: no version, no hash, no origin | §2.2 |
@@ -272,14 +272,17 @@ ADR-0014 §1 makes a directory a namespace node and §3 puts the `library` line
 argues the marker entirely across that edge. Both are **filed as
 [#111](https://github.com/ludo-lang/ludo/issues/111)**, not authored.
 
-**A third, found after the chapter shipped, is filed as
+**A third, found after the chapter shipped, was filed as
 [#112](https://github.com/ludo-lang/ludo/issues/112)**: ADR-0014 §9 makes a
 backend a library claiming a root name and **never says which name**, nor
 whether it is reserved the way `$` is (ADR-0027 §2). ADR-0019 §1's phrase *a
 claimant of a spec-defined root* presupposes a definition no artifact supplies.
-Not authored, for the #24 reason above: reserving a second root name would be an
-exception to ADR-0014's own Consequences claim that the companion count is
-otherwise unaffected, and that is a budget decision rather than a spelling.
+**Resolved by
+[ADR-0054](../../adr/0054-a-backend-is-a-build-input-not-a-library-and-it-claims-no-name.md)**,
+which removes the question rather than answering it: no source names the backend
+(ch8 §3.2), exclusivity is §7.4's, and the backend leaves the mapping entirely.
+Nothing is reserved and **the #24 delta is zero**, so the budget decision this
+paragraph declined to make never came due.
 
 This is the opposite call from §6's, and the difference is the test the chapter
 applies: §6's path form was a **spelling for a rule the corpus already fixed**,

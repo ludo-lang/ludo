@@ -127,11 +127,13 @@ Each claimant conforms to the spec **alone**. Agreement between two claimants is
 a *consequence* of both conforming and is never a thing anyone checks. (ADR-0019
 §1.)
 
-**3.2** The rule holds because the pair exists nowhere: two claimants of one
-root name never coexist in one program (ch4, ADR-0014 §6), and target selection
-is a build-time module set, so **the source never names the backend** (ADR-0006
+**3.2** The rule holds because the pair exists nowhere: the toolchain supplies
+exactly one backend and a mapping carrying two entries for one root name is
+rejected where it is supplied (ch4 §7.4, §10.2, §10.3), and target selection is
+a build-time module set, so **the source never names the backend** (ADR-0006
 R3). Any obligation naming a pair describes a comparison no artifact can
-perform. (ADR-0019 §1.)
+perform. (ADR-0019 §1; the first leg re-cited by ADR-0054 §2, which removes the
+backend's root-name claim without touching this rule.)
 
 **3.3 This is a shape rule for every future obligation in this spec**, not a
 fact about backends. Where a decision is tempted to say *all implementations of

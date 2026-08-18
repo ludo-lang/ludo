@@ -15,7 +15,7 @@ under chapter 7's envelope (ADR-0018).
 **0.3** This chapter owns **the unit of code and how one unit reaches another**:
 the module, the library, visibility, `use` and its scope, name resolution and
 the mapping the compiler is handed, the `libs/` default, the standard-library
-root, backends as libraries, the `#explicit` module marker, and const
+root, backends, the `#explicit` module marker, and const
 evaluation. [Chapter 1](01-grammar.md) owns the spelling of every form named
 here, and [`grammar.ebnf`](grammar.ebnf) remains the authority on syntax.
 
@@ -320,6 +320,11 @@ behaviour, not language semantics. (ADR-0027 §3.)
 the runner MUST NOT also scan `libs/`. A merge would require a precedence rule,
 and a precedence rule is order-dependence. (ADR-0027 §6.)
 
+**8.9** **`libs/` never supplies a backend.** §8.2 keys on a subdirectory's
+`library` claim, and a backend makes none (§10.2). A backend is a separate build
+input the compiler is handed alongside the mapping, so dropping one in `libs/`
+resolves nothing. (ADR-0054 §4.)
+
 ---
 
 ## 9. The standard library root `$.`
@@ -349,7 +354,7 @@ facades it carries are chapter 6's.
 
 ---
 
-## 10. Backends are libraries
+## 10. Backends
 
 **10.1 What "backend" means here.** A **backend** is **one platform's
 implementation of the platform layer** — the Win32/D3D12/WASAPI set, or the
@@ -357,25 +362,42 @@ Cocoa/Metal/CoreAudio set — and it is a **triple**: window and input, renderer
 audio device. This section uses that sense throughout. Where a source says
 **renderer component**, it means the graphics third alone (D3D12, Metal,
 Vulkan, WebGPU, a WebGL2 context, a CPU rasteriser), which is a different
-quantity and is not what claims a root name. (`CONTEXT.md` §Backend, which
+quantity and is not what the toolchain supplies as a backend (§10.2.1). (`CONTEXT.md` §Backend, which
 holds; ADR-0037's stamp on ADR-0002, which records that ADR-0002 and ADR-0022
 §1 use "backend" for the component alone and that #74 found this collision to
 be half the term's ambiguity.)
 
-**10.2** A **backend is a library claiming a root name**, and target selection
-is **which of the mutually exclusive libraries claiming that name is in the
-build**. (ADR-0014 §9; ADR-0006 R3.)
+**10.2** A **backend is a build input, not a library**. It claims no root name,
+no source names it (ch8 §3.2; ADR-0006 R3), and it is **not a key in §7's
+mapping** — it is a separate input the compiler is handed alongside the mapping.
+A backend is defined by the interface it satisfies (§10.4) and by being supplied
+by the toolchain. (ADR-0054 §1, §4, §5, reversing ADR-0014 §9's root-name
+clause; ADR-0006 R3.)
 
-**10.3** A desktop and a web backend both claim the name and are **never in one
-program**, by §6.1. (ADR-0014 §9.)
+**10.2.1** A backend is supplied and selected **whole** — the §10.1 triple, never
+a key per component. A CPU rasteriser that must be selectable is a **distinct
+backend**, not a component swap. (ADR-0054 §3.)
+
+**10.2.2** The spec fixes **no file format, no CLI flag and no naming scheme**
+for this input, exactly as §7.10 fixes none for the mapping. (ADR-0054 §10.)
+
+**10.3** A desktop and a web backend are **never in one program**. Target
+selection is a build-time module set (ADR-0006 R3), and the toolchain supplies
+exactly one backend. §7.4's loud rejection of a duplicate key is what carries
+exclusivity for libraries; the backend needs no claim to be exclusive.
+(ADR-0054 §2.)
 
 **10.4** A backend **satisfies a declared nominal interface**, so a divergent
 signature is a **type error** rather than reviewer discipline. (ADR-0014 §9,
 amending ADR-0006 R4; #11's explicit nominal satisfaction.)
 
-**10.5** **The nominal interface is necessary and insufficient.** A claimant of
-a spec-defined root owes the spec's *behaviour*, not merely its signature; the
-type error of §10.4 is not the end of the obligation. (ADR-0019 §1.)
+**10.5** **The nominal interface is necessary and insufficient.** A claimant
+owes the spec's *behaviour*, not merely its signature; the type error of §10.4 is
+not the end of the obligation, which rests on ch8 §3.4's three artifacts — the
+interface catches shape, ADR-0006 R1-R8 catch architecture, and §5's properties
+are the gate. ADR-0019 §1's *spec-defined root* is **closed as loose wording**:
+the platform-layer API is not specified (ch6 §10.1), so no spec-side declaration
+was ever there to point at. (ADR-0019 §1, as amended by ADR-0054 §6.)
 
 **10.6** A conformance obligation is stated **on one claimant, never on a
 pair**. Agreement between two claimants is a consequence of both conforming and
@@ -585,15 +607,16 @@ and they are one repair because either answer constrains the other.
 
 ## 16. What this chapter does not decide
 
-- **Which root name a backend claims, and whether it is reserved.** ADR-0014
-  §9 makes a backend a library claiming a root name and never says which;
-  ADR-0019 §1 speaks of a claimant of a *spec-defined root* without any
-  artifact defining one. On the rules as written the name is ordinary, so a
-  third-party library may claim it and §6.2's hard error is how that surfaces.
-  Filed as [#112](https://github.com/ludo-lang/ludo/issues/112), which must
-  report a #24 delta because a second reserved root would be an exception to
-  ADR-0014's Consequences claim that the companion count is otherwise
-  unaffected. §10 is unaffected by the answer except for the name itself.
+- ~~**Which root name a backend claims, and whether it is reserved.**~~
+  **Closed by [#112](https://github.com/ludo-lang/ludo/issues/112) /
+  [ADR-0054](../adr/0054-a-backend-is-a-build-input-not-a-library-and-it-claims-no-name.md)**,
+  by removing the question: a backend claims **no** name, is **not** a library,
+  and is **not** a key in §7's mapping (§10.2). Exclusivity was §7.4's all
+  along, so nothing is reserved and the **#24 delta is zero** — ADR-0014's
+  Consequences claim is confirmed rather than excepted. ADR-0014 §9's root-name
+  clause is reversed; ADR-0019 §1's *spec-defined root* is closed as loose
+  wording (§10.5). Struck rather than deleted, so a reader arriving from
+  ADR-0014 §9 finds where it moved.
 - ~~**What a consumer reaches when it writes `<library>.<name>`, and which
   boundary `pub` gates.**~~ **Closed by
   [#111](https://github.com/ludo-lang/ludo/issues/111)**: the surface is the

@@ -1518,7 +1518,9 @@ closure — is chapter 2 §7. (ADR-0017.)
 
 **10.5 R3 — There is no conditional compilation; a backend is a module.** Target
 selection happens **at build**, by which modules the build includes, never inside a
-function body. (ADR-0006 R3.) The module-set consequence is chapter 4 §10.
+function body. (ADR-0006 R3.) The module-set consequence is chapter 4 §10, where the
+backend is a **build input the toolchain supplies**, claiming no name and keyed in no
+mapping (ch4 §10.2; ADR-0054).
 
 **10.6 R4 — The unavailable-backend error has the same signature on every
 target.** A signature that differs by target is forbidden; a build whose path never
