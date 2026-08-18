@@ -101,10 +101,6 @@ injection answers them with an ordinary call.
 
 ## Not yet decided
 
-- The C11 subset and coding standard, and the ASan/UBSan and parser-fuzzer CI
-  ADR-0020 wants running from the first commit. ADR-0046 §10 leaves CI
-  unspecified until there is code to run it against.
-- `zig cc` as the build tool — named by ADR-0020, not yet configured.
 - Whether the interpreter survives as a `ludo eval` surface, or is genuinely
   discarded (#49).
 - The **host interface's surface** — which entry points the header `interp/` declares
@@ -161,3 +157,48 @@ two threads never interact** — ADR-0020's *no assumed threads* made checkable,
 header per library, a `ludo_` prefix on everything exported, no varargs and no `errno`.
 The C11 subset, the coding standard and the sanitizer CI are
 [#131](https://github.com/ludo-lang/ludo/issues/131)'s, not this.
+
+## The subset is a ban list, and the compiler enforces it
+
+Settled by [#131](https://github.com/ludo-lang/ludo/issues/131), which supplies the three
+things [ADR-0020](../docs/adr/0020-the-bootstrap-compiler-is-written-in-c.md) committed to
+and left unspecified. No ADR: nothing is reversed.
+
+**The build is a plain POSIX `Makefile` with `CC ?= zig cc`.** `build.zig` would drag back
+the pre-1.0 Zig churn ADR-0020 declined to pay, and CMake reintroduces an install; the `?=`
+is what keeps `zig cc` the *swappable build-time dependency* ADR-0020 calls it. The `zig`
+version is **pinned** — `zig cc` is clang, clang's warnings drift between releases, and
+`-Werror` on a drifting set stops CI on code nobody touched.
+
+**The subset is a ban list, because a whitelist is unenforceable prose.** The warning
+configuration is the primary artifact — `-std=c11 -Wall -Wextra -Werror -Wswitch-enum
+-Wconversion -Wshadow -Wvla -Wstrict-prototypes` — and the written bans cover only what a
+flag cannot see: VLAs, `alloca`, varargs, `errno`, file-scope mutable globals, TLS,
+`threads.h`, atomics, `_Generic`, `malloc` outside the arena, unions for type-punning,
+`goto` except single-exit cleanup, and function-like macros where an `inline` works.
+**`default:` is banned in a switch over a tag enum, and that ban is ADR-0020's "canonical
+switch helper"**: a `default:` case is precisely what silences `-Wswitch-enum`, so the ban
+does the work and no macro is added. Formatting is `clang-format`, from the same pinned
+toolchain.
+
+**CI is Linux-only and path-filtered to `src/**`**: ASan+UBSan over the whole suite per
+push, Valgrind and a long fuzz run nightly. **MSan is not adopted** — with a session-owned
+arena and no `malloc` ([#130](https://github.com/ludo-lang/ludo/issues/130)) it finds
+little ASan does not — **TSan never**, since it contradicts the no-assumed-threads rule
+rather than checking it, and **AFL++ is deferred** because libFuzzer ships with the
+toolchain already chosen. macOS and Windows are **compile-only cross checks**; without them
+ADR-0020's single-binary cross-compilation claim is untested. Development is on macOS and
+**CI decides** — `make check` reproduces the everyday signal locally, and Valgrind is
+CI-only because it is dead on Apple Silicon.
+
+***From the first commit* means not retrofitted.** The libFuzzer target lands with the
+lexer, and its **corpus is committed as the permanent regression suite** — a CI cache is
+evictable, and the value of fuzzing a parser is that findings never come back. Tests are
+hand-rolled: one assert header, one binary per library, `make test`'s exit code is the
+verdict.
+
+The files themselves — `docs/agents/c-standard.md` and its checker
+([ADR-0051](../docs/adr/0051-the-spec-is-the-only-normative-surface-and-an-absorbed-adr-is-stamped.md) §6), the
+`Makefile`, `.clang-format`, `build.yml` and `nightly.yml` — are the build's first commit,
+not a wayfinder session's output. `platform/` stays out of CI until it has code, which
+leaves **how CI acquires SDL3** open; it waits on *which OS first*.
