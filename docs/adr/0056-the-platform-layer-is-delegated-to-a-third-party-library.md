@@ -2,6 +2,12 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0057](0057-the-delegated-platform-layer-is-sdl3.md):** §8's owed
+> library decision is discharged — the library is **SDL3**, and a fallback to SDL2 for the
+> browser is rejected (SDL_GPU is SDL3-only, so it lands on the same 2D tier SDL3 already
+> supplies, and two ABIs is the `#if` R3 forbids). §4's list of what survives the ADR-0001
+> reversal is unchanged.
+
 # The platform layer is delegated to a third-party library, reversing ADR-0001
 
 [ADR-0001](0001-own-the-platform-layer.md) decided that we bind the OS and GPU

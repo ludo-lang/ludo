@@ -2,6 +2,12 @@
 status: accepted
 ---
 
+> **Amended by [ADR-0057](0057-the-delegated-platform-layer-is-sdl3.md):** the model is
+> adopted **in part**. Resource, pipeline object and command encoder/pass survive as
+> SDL_GPU's shape; the **bind-group shape does not** — SDL_GPU binds per stage per slot and
+> pushes uniforms. The ceiling becomes **SDL_GPU's**, not WebGPU's, and the *thin
+> pass-through* payoff for the web backend is withdrawn while SDL_GPU has no browser backend.
+
 > **Amended by [ADR-0056](0056-the-platform-layer-is-delegated-to-a-third-party-library.md):**
 > the *implemented over native backends* premise is withdrawn with ADR-0001. Whether the
 > renderer API still adopts the WebGPU **model** depends on what the delegated library
