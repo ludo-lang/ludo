@@ -1,0 +1,64 @@
+name: build
+
+# Path-filtered on purpose (#131): this repository produces docs-only commits
+# constantly, and none of them should pay for a sanitizer build.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "Makefile"
+      - ".clang-format"
+      - "tools/check-c-standard.py"
+      - ".github/workflows/build.yml"
+  pull_request:
+    paths:
+      - "src/**"
+      - "Makefile"
+      - ".clang-format"
+      - "tools/check-c-standard.py"
+      - ".github/workflows/build.yml"
+
+env:
+  # Pinned: zig cc is clang, and clang's warning set drifts between releases.
+  ZIG_VERSION: "0.15.1"
+  CLANG_FORMAT_VERSION: "18.1.8"
+
+jobs:
+  # Linux builds and runs; CI decides (docs/agents/c-standard.md).
+  sanitizers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: ${{ env.ZIG_VERSION }}
+      - name: ASan + UBSan over the suite
+        run: make check
+
+  # macOS and Windows are compile-only cross checks: without them ADR-0020's
+  # single-binary cross-compilation claim is untested.
+  cross:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: ${{ env.ZIG_VERSION }}
+      - name: Cross-compile macOS and Windows
+        run: make cross
+
+  conventions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned clang-format
+        run: pip install "clang-format==${{ env.CLANG_FORMAT_VERSION }}"
+      - name: Formatting
+        run: make format-check
+      # ADR-0051 §6: a convention in docs/agents/ ships with a checker.
+      - name: C standard (#131)
+        run: make standard
