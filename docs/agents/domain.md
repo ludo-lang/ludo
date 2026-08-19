@@ -75,6 +75,12 @@ The check is two-directional, and both directions have produced findings:
 
 An amendment whose target is an **issue** cannot be stamped. That is what the next section is for.
 
+Neither can its **source** be one: a stamp names the later ADR (or spec chapter) that moved the
+text, never the ticket that did the bookkeeping. When a ticket withdraws a clause because an ADR
+made it untenable, the stamp names **that ADR** and the ticket goes in the stamp's prose
+([#137](https://github.com/ludo-lang/ludo/issues/137)); a ticket that is genuinely the sole
+authority for something belongs in `SOURCES.md` instead.
+
 ## An issue citation may not be the whole truth
 
 The corpus cites issues and ADRs interchangeably, and [ADR-0033](../adr/0033-a-stamp-can-go-stale-and-the-companion-count-is-reconciled.md) §1 found this to be the common cause of every Tier-1 finding in the corpus audit: *a claim is checked against the issue that produced it rather than against the ADR that superseded it.* The citations are true but not always complete.
