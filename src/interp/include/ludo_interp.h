@@ -21,11 +21,14 @@
  *      interpreter value exists; the evaluator marshals at the boundary.
  *   5. Handles are uint32_t, minted by the host, and 0 is never valid.
  *
- * What is deliberately absent: any target other than the screen, the five
- * mandated drawing calls reference.ludo does not make (ch6 4.4.1 mandates ten),
- * clips, push/free_space, the pointer and keyboard escape hatches, fullscreen,
- * and storage read. Each is an additive change to this header; none of them is
- * on the way to running reference.ludo, which is what this map is for.
+ * What is deliberately absent, named so that an omission is never mistaken for
+ * an oversight: any target other than the screen; the five mandated drawing
+ * calls reference.ludo does not make (ch6 4.4.1 mandates ten); ch6 5.2.1's
+ * stop_all, get and underruns, and ch6 5.4.4's Clip with its loop region and
+ * direction; push and free_space (ch6 5.5); the pointer, keyboard and scroll
+ * escape hatches (ch6 6.4.10 to 6.4.12); fullscreen (ch6 7); and storage read
+ * (ch6 8.4). Each is an additive change to this header; none of them is on the
+ * way to running reference.ludo, which is what this map is for.
  */
 #ifndef LUDO_INTERP_H
 #define LUDO_INTERP_H
@@ -153,6 +156,12 @@ typedef struct {
     ludo_rect bounds;
 } ludo_text_metrics;
 
+/* ch6 4.2.2: a closed pair carried as ONE token, not two independent fields.
+   crisp is no anti-aliasing and nearest sampling at every scale (4.2.3); smooth
+   is anti-aliasing and linear sampling. crisp is the default, and is first here
+   so that the default is the zero value. */
+typedef enum { LUDO_STYLE_CRISP, LUDO_STYLE_SMOOTH } ludo_style;
+
 /* ch6 5.4.3: closed. */
 typedef enum {
     LUDO_WAVEFORM_SINE,
@@ -162,11 +171,35 @@ typedef enum {
     LUDO_WAVEFORM_NOISE
 } ludo_waveform;
 
+/* ch6 5.4.1: the amplitude envelope is ADSR -- attack time, decay time, sustain
+   level, release time. ch6 5.3.7 makes the release the note-off, which is why a
+   voice with one runs it rather than stop's ramp. */
+typedef struct {
+    float attack;  /* seconds */
+    float decay;   /* seconds */
+    float sustain; /* level, 0..1 */
+    float release; /* seconds */
+} ludo_adsr;
+
+/* ch6 5.4.2: a decay-to-target, explicitly NOT a second ADSR. The clause calls
+   it "a three-number decay-to-target -- start offset, time, linear curve" and
+   only two of those three are numbers; the curve is mandated linear rather than
+   chosen, so it is not a field. Recorded as a hole to repair in ch6 5.4.2
+   rather than resolved by inventing a third parameter here. */
+typedef struct {
+    float start_offset; /* Hz, added to frequency at note-on */
+    float time;         /* seconds to reach the target */
+} ludo_pitch_envelope;
+
+/* ch6 5.4.3: a voice carries frequency, amplitude, an amplitude envelope, a
+   pitch envelope, and one-shot or loop. */
 typedef struct {
     ludo_waveform waveform;
     float frequency;
     float amplitude;
     float pan;
+    ludo_adsr amplitude_envelope;
+    ludo_pitch_envelope pitch_envelope;
     bool looping;
 } ludo_voice_desc;
 
@@ -188,12 +221,17 @@ typedef struct {
 /* Host failures only. Program errors are diagnostics, on frontend/'s channel
    (#130), and this header has no errno (#131). Every entry point that cannot
    fail returns void or its value directly, so a call site never checks
-   something the spec says cannot happen. */
+   something the spec says cannot happen.
+
+   There is deliberately no device-unavailable status. ch6 8.11: IO failure --
+   disk full, quota denied, storage evicted -- happens after the call returns
+   and the program never learns of it, so there is no status channel for it to
+   arrive on. An enumerator no entry point can return would pre-authorise a
+   second failure mode the spec refuses. */
 typedef enum {
     LUDO_HOST_OK,
-    LUDO_HOST_ERR_OVERSIZE,    /* ch6 8.10: the one storage failure a program sees */
-    LUDO_HOST_ERR_UNAVAILABLE, /* the device or slot is gone */
-    LUDO_HOST_ERR_INCOMPLETE   /* ludo_host_check: a vtable member is NULL */
+    LUDO_HOST_ERR_OVERSIZE,  /* ch6 8.10: the one storage failure a program sees */
+    LUDO_HOST_ERR_INCOMPLETE /* a vtable member or a constant is missing */
 } ludo_host_status;
 
 /* ---------------------------------------------------------------------- */
@@ -220,6 +258,14 @@ typedef struct {
 
 typedef struct {
     ludo_vec2 canvas_size;
+
+    /* $.graphics.set_canvas(<style>). ch5 9.3 makes it a top-level statement
+       and 9.4 makes it immutable for the process's life -- a second call is
+       rejected -- so it is negotiated once and never an entry point. ch6 7.15
+       makes it the host's business: crisp stays nearest and smooth stays linear
+       for how draws sample their textures, at whatever rate. */
+    ludo_style style;
+
     ludo_font_id default_font;
     ludo_image_id debug_image;
     ludo_target_id screen;
@@ -320,7 +366,7 @@ typedef struct ludo_host {
     /* ch6 5.2.6: SampleFrames, and converting it takes the device rate as an
        argument so a stale-rate division is unspellable. The second query the
        latch could not remove: it advances within a frame. */
-    uint64_t (*cursor)(void *context);
+    uint64_t (*audio_cursor)(void *context);
 
     /* $.video. The getter is in ludo_frame_input; only the write is here. */
     void (*set_render_scale)(void *context, float scale);
@@ -336,9 +382,48 @@ typedef struct ludo_host {
    caller runs this once, at wiring. */
 ludo_host_status ludo_host_check(const ludo_host *host);
 
-/* The stub host: fully populated, explicitly named, and reached on purpose.
-   #134 decides what its members return and defines it; declaring it here is
-   what keeps that a live decision rather than a side effect of a NULL member. */
-void ludo_null_host(ludo_host *out);
+/* ludo_host_check re-lists every member by hand, and so does any test that
+   wires a complete host, so adding an entry point means edits the compiler
+   cannot demand. This assertion is that demand: the struct is one context
+   pointer plus this many function pointers, so a new member breaks the build
+   here and the author is sent to the places that mirror the list. */
+#define LUDO_HOST_ENTRY_POINT_COUNT 12
+_Static_assert(sizeof(ludo_host) ==
+                   sizeof(void *) + LUDO_HOST_ENTRY_POINT_COUNT * sizeof(void (*)(void)),
+               "a ludo_host member was added or removed: update "
+               "LUDO_HOST_ENTRY_POINT_COUNT, ludo_host_check, and any test host");
+
+/* #134 decides what an empty host returns, and defines it. Nothing is declared
+   for it here: a declaration with no definition is a link error waiting for its
+   first caller, and ludo_host_check already forbids the NULL-means-no-op host
+   that would decide #134 by omission. */
+
+/* ---------------------------------------------------------------------- */
+/* Reading the negotiated constants and the latch                          */
+/* ---------------------------------------------------------------------- */
+
+/* LUDO_HOST_ERR_INCOMPLETE if the screen or the default font is LUDO_HANDLE_NONE,
+   if sample_rate is not positive, or if a binding count has no array. Run once,
+   at wiring, beside ludo_host_check. */
+ludo_host_status ludo_constants_check(const ludo_host_constants *constants);
+
+/* LUDO_HANDLE_NONE when no binding carries that name, which is how a lookup
+   reports absence without a status: ch5 8.4 already faulted at top level for a
+   missing asset, so by here the name either resolves or the program never ran. */
+ludo_image_id ludo_image_by_name(const ludo_host_constants *constants, const char *name);
+ludo_storage_id ludo_storage_by_name(const ludo_host_constants *constants, const char *name);
+
+/* The latch, read. These are what $.input.direction and the three button
+   queries evaluate to; they take the snapshot rather than the host because ch6
+   6.8.1 latched it before the frame entry ran.
+
+   ch6 6.4.4 fixes four slots and 6.4.5 makes an absent device present and idle,
+   so an out-of-range player reads as idle rather than faulting -- a slot that
+   does not exist and a pad nobody plugged in are the same observation. */
+ludo_vec2 ludo_input_direction_left(const ludo_frame_input *input, int player);
+ludo_vec2 ludo_input_direction_right(const ludo_frame_input *input, int player);
+bool ludo_input_button_down(const ludo_frame_input *input, ludo_button button, int player);
+bool ludo_input_button_pressed(const ludo_frame_input *input, ludo_button button, int player);
+bool ludo_input_button_released(const ludo_frame_input *input, ludo_button button, int player);
 
 #endif /* LUDO_INTERP_H */
