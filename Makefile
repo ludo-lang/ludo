@@ -1,10 +1,15 @@
 # The C bootstrap's build (#131).
 #
-# CC ?= zig cc is load-bearing: ADR-0020 calls zig cc a build-time dependency
-# that can be swapped, not a codebase we are married to, and ?= keeps the swap
-# a one-variable change (make CC=clang).
+# ADR-0020 calls zig cc a build-time dependency that can be swapped, not a
+# codebase we are married to, so CC must stay a one-variable change. `CC ?=`
+# does not achieve that: make defines CC=cc as a built-in, so ?= never fires
+# and the toolchain silently becomes the host cc. Overriding only the built-in
+# keeps `make CC=clang` (and CC from the environment) working while making
+# zig cc the actual default.
+ifeq ($(origin CC),default)
+CC = zig cc
+endif
 
-CC ?= zig cc
 BUILD ?= build
 
 STD = -std=c11
