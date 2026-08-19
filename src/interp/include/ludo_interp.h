@@ -181,11 +181,11 @@ typedef struct {
     float release; /* seconds */
 } ludo_adsr;
 
-/* ch6 5.4.2: a decay-to-target, explicitly NOT a second ADSR. The clause calls
-   it "a three-number decay-to-target -- start offset, time, linear curve" and
-   only two of those three are numbers; the curve is mandated linear rather than
-   chosen, so it is not a field. Recorded as a hole to repair in ch6 5.4.2
-   rather than resolved by inventing a third parameter here. */
+/* ch6 5.4.2: a two-number decay-to-target, explicitly NOT a second ADSR. The
+   clause used to say three and list "start offset, time, linear curve", which
+   is two numbers and a mandated shape; transcribing it here is what found that,
+   and the clause was repaired rather than this struct grown (4b7f216). The
+   curve is linear by mandate, so it is not a field. */
 typedef struct {
     float start_offset; /* Hz, added to frequency at note-on */
     float time;         /* seconds to reach the target */
