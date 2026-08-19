@@ -777,9 +777,14 @@ the interrupt*.)
 **5.4.1** The **amplitude envelope is ADSR** — attack time, decay time, sustain
 level, release time. (ADR-0007, *envelopes*.)
 
-**5.4.2** The **pitch envelope is a three-number decay-to-target** — start
-offset, time, linear curve — and is **not** a second ADSR. (ADR-0007,
-*envelopes*.)
+**5.4.2** The **pitch envelope is a two-number decay-to-target** — a start
+offset in Hz, added to `frequency` at note-on, and a time in seconds over which
+it decays to zero — and is **not** a second ADSR. **The curve is linear by
+mandate and is not a parameter**: there is no shape field, no exponent and no
+curve enum. (ADR-0007, *envelopes*, whose *"three-number … start offset, time,
+linear curve"* counted the mandated shape as though it were a third number;
+corrected here, in the normative text, rather than by adding a parameter nothing
+asked for — #133.)
 
 **5.4.3** The **waveform enum is closed**: `sine`, `square`, `triangle`, `saw`,
 `noise`. A voice carries frequency, amplitude, an amplitude envelope, a pitch

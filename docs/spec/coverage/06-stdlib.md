@@ -246,7 +246,7 @@ chapter's commit, owed whether or not the chapter changed the rule. Their
 | The handle goes gone immediately; the slot frees a frame later | §5.3.6 |
 | A release segment runs instead | §5.3.7 |
 | Amplitude envelope is ADSR | §5.4.1 |
-| Pitch envelope is a three-number decay-to-target | §5.4.2 |
+| Pitch envelope is a two-number decay-to-target, curve linear by mandate | §5.4.2 |
 | A clip is caller-owned `[]f32` + channels + rate, never a path | §5.4.4 |
 | One loop region in sample frames | §5.4.5 |
 | Direction forward or reverse | §5.4.6 |
