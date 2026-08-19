@@ -54,8 +54,13 @@ test: $(TESTS)
 	@for t in $(TESTS); do echo "run $$t"; $$t || exit 1; done
 
 # The everyday signal, identical on the macOS dev host and in Linux CI.
+#
+# It builds into its own directory. Sharing $(BUILD) with `test` would make the
+# sanitized and unsanitized binaries the same targets: after a plain `make
+# test` they are newer than their sources, make skips the rebuild, and `check`
+# silently re-runs the unsanitized binaries and reports green.
 check:
-	$(MAKE) EXTRA="$(SAN) $(EXTRA)" test
+	$(MAKE) BUILD="$(BUILD)/san" EXTRA="$(SAN) $(EXTRA)" test
 
 # Compile-only cross checks. ADR-0020's single-binary cross-compilation claim
 # is untested without them. zig cc only; a swapped CC will not have --target.
@@ -64,10 +69,10 @@ cross:
 	$(MAKE) cross-each TARGET=x86_64-windows-gnu
 
 .PHONY: cross-each
-cross-each: | $(BUILD)
+cross-each:
 	@echo "cross $(TARGET)"
 	@for f in $(DRIVER_SRC) $(LIB_SRC); do \
-	  $(CC) $(STD) $(WARNINGS) $(INCLUDES) --target=$(TARGET) -c $$f -o $(BUILD)/cross.o || exit 1; \
+	  $(CC) $(STD) $(WARNINGS) $(INCLUDES) --target=$(TARGET) -c $$f -o /dev/null || exit 1; \
 	done
 
 # clang-format is not shipped by zig; CI pins it as a package (see

@@ -1,2 +1,0 @@
-# Frontend: lexer, parser, typechecker, diagnostics.
-# A library with no ambient I/O (ADR-0020). See ../README.md.

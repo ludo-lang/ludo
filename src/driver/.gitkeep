@@ -1,2 +1,0 @@
-# Driver: the CLI. Owns the filesystem, terminal and process.
-# One consumer of frontend/ (ADR-0020). See ../README.md.

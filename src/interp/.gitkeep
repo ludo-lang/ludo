@@ -1,2 +1,0 @@
-# Interp: the tree-walking interpreter. A library on the same
-# no-ambient-I/O rule; the host interface is injected (#96). See ../README.md.
