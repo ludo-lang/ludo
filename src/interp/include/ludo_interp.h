@@ -393,10 +393,106 @@ _Static_assert(sizeof(ludo_host) ==
                "a ludo_host member was added or removed: update "
                "LUDO_HOST_ENTRY_POINT_COUNT, ludo_host_check, and any test host");
 
-/* #134 decides what an empty host returns, and defines it. Nothing is declared
-   for it here: a declaration with no definition is a link error waiting for its
-   first caller, and ludo_host_check already forbids the NULL-means-no-op host
-   that would decide #134 by omission. */
+/* ---------------------------------------------------------------------- */
+/* The stub host (#134)                                                    */
+/* ---------------------------------------------------------------------- */
+
+/* #96 bought one evaluator, two consumers: #49's hole-finder passes a host with
+   no window, the runner passes platform/'s SDL3 one. #134 decides what that
+   first host answers, because reference.ludo branches on what it says.
+
+   It is called a STUB host and not a null one. Null names the behaviour #134
+   rejected -- returning nothing, or refusing -- and it turned out that the
+   reference program has exactly three host-answer branch points:
+   $.input.button_pressed(.one) gating spawn, $.video.render_scale() > 0.5
+   gating set_render_scale, and save1.write's oversize rescue tail. A scripted
+   input trace is authoring machinery for three of them; refusing forfeits #49's
+   "executed at least once" for most of ch6. So the answers are a plain table of
+   constants, and the headless run varies the table.
+
+   The tables are committed, hand-written and few, for the reason #131's fuzz
+   corpus is committed: a table generated at run time is a thing nobody can read
+   in a diff. Their union is the coverage -- no single run reaches every
+   construct, and the oversize run deliberately reaches less than the others,
+   because its rescue tail returns before the frame ends. */
+typedef struct {
+    const char *name; /* what a coverage report calls this run */
+
+    /* What driver/ latches before the frame entry. set_render_scale writes back
+       into this copy, so a second frame reads what the first one applied --
+       which is what makes ch6 7.11's "reports the applied value, never the
+       argument" observable rather than asserted. */
+    ludo_frame_input frame;
+
+    /* ch6 4.8.1: pure, and the program positions two sprites off its advance.
+       Zero is a legal answer and a degenerate one, so a table that wants the
+       drawing calls to differ says so. */
+    ludo_text_metrics text_metrics;
+
+    /* The cursor advances within a frame in a real host; here it advances by a
+       fixed step per frame, which is enough for ch6 5.2.6's conversion to be
+       exercised without modelling an audio engine -- the tier #32 ruled out,
+       and it does not get back in through the test double. */
+    uint64_t audio_cursor_start;
+    uint64_t audio_cursor_step;
+
+    /* ch6 8.10's oversize is the only failure the program can see, so it is a
+       branch point like the other two rather than a special case. */
+    ludo_host_status storage_write_status;
+} ludo_stub_answers;
+
+/* Everything zero: no button held, render_scale 0.0, degenerate metrics, writes
+   succeed. Deterministic, and both conditional branches are dead -- which is
+   exactly the reading #134 refused to adopt on its own. */
+extern const ludo_stub_answers ludo_stub_answers_quiet;
+
+/* The same program with every branch live: button one pressed, render_scale
+   above the threshold, real metrics, a cursor that moves. */
+extern const ludo_stub_answers ludo_stub_answers_active;
+
+/* Active, except that storage_write reports oversize, so the rescue tail runs
+   and everything after it does not. */
+extern const ludo_stub_answers ludo_stub_answers_oversize;
+
+#define LUDO_STUB_TABLE_COUNT 3
+extern const ludo_stub_answers *const ludo_stub_tables[LUDO_STUB_TABLE_COUNT];
+
+/* The stub's own state. Stateless answers, with the two counters a spec clause
+   forces: handles are host-minted and 0 is never valid (so something must
+   mint), and the cursor advances per frame (so something must count). Not a
+   registry of live voices -- stop and set_voice are recorded and discarded. */
+typedef struct {
+    ludo_stub_answers answers;
+    uint64_t frame; /* frames advanced since wiring */
+    uint64_t calls; /* every vtable entry point, counted once */
+    uint32_t next_handle;
+} ludo_stub_state;
+
+/* Wires state and host together from a table. The host's context is the state,
+   so the two have the same lifetime and the caller keeps both.
+
+   A no-op on a NULL state or host: nothing here can fail in a way the caller
+   could act on, and this header has no errno (#131). */
+void ludo_stub_host(ludo_stub_state *state, ludo_host *host, const ludo_stub_answers *answers);
+
+/* The stub's creation-time configuration, which is NOT part of the varying
+   table: a canvas size and a font id have no branch to flip, so putting them in
+   the coverage matrix would enumerate combinations that do nothing.
+
+   Bindings are left empty because they come from the program, not from the
+   stub: ch5 8.3 has driver/ resolve every declared asset before top level, and
+   only driver/ knows what was declared. The caller fills them in and runs
+   ludo_constants_check. */
+void ludo_stub_constants(ludo_host_constants *constants);
+
+/* The latch driver/ hands the evaluator for the current frame. */
+const ludo_frame_input *ludo_stub_frame(const ludo_stub_state *state);
+
+/* Ends the frame. #49's headless run is a for loop around the evaluator (#133),
+   and it needs more than one turn: one frame cannot tell a persist that
+   survives from one that is re-initialised, and reference.ludo declares
+   persist tick. */
+void ludo_stub_next_frame(ludo_stub_state *state);
 
 /* ---------------------------------------------------------------------- */
 /* Reading the negotiated constants and the latch                          */

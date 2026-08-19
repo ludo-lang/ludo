@@ -108,9 +108,39 @@ injection answers them with an ordinary call.
 - The **host interface's surface** — which entry points the header `interp/` declares
   actually has, and at what granularity. #96 fixed its owner and designed nothing;
   [#133](https://github.com/ludo-lang/ludo/issues/133).
-- **What the empty host returns**, and therefore whether a headless hole-finding run
-  is a real execution or a shape check.
-  [#134](https://github.com/ludo-lang/ludo/issues/134).
+
+## The headless host is a stub with a table, not an empty one
+
+Settled by [#134](https://github.com/ludo-lang/ludo/issues/134), and implemented in
+`interp/stub_host.c`.
+
+The reference program has **three** host-answer branch points, not the ten the ticket
+feared: `$.input.button_pressed(.one)` gating `spawn`, `$.video.render_scale() > 0.5`
+gating `set_render_scale`, and `save1.write`'s oversize `rescue` tail. `$.time.now`
+never appears in it outside a comment. At that size a scripted input trace is
+authoring machinery with no customer, and a refusing host forfeits #49's *executed at
+least once* across most of ch6 — so the answers are **a table of constants, and the
+headless run varies the table**.
+
+Three committed tables — `quiet`, `active`, `oversize` — and **their union is the
+coverage**, never any single run: `oversize` deliberately reaches less than the others,
+because its `rescue` tail returns before the frame ends. They are hand-written and
+committed for the reason #131's fuzz corpus is: a table generated at run time is a
+thing nobody can read in a diff.
+
+Two things it is careful not to be. It is **not stateful** beyond what a clause forces
+— a minted handle counter (ch6 §5.1.3) and a per-frame cursor step (ch6 §5.2.6) — so
+the audio tier #32 ruled out does not return as a test double. And its **creation-time
+configuration is not part of the varying table**: a canvas size has no branch to flip,
+so putting it in the coverage matrix would enumerate combinations that do nothing.
+
+A headless run is therefore **a real execution**, and it runs **more than one frame** —
+one frame cannot tell a `persist` that survives from one that is re-initialised, and
+`reference.ludo` declares `persist tick`.
+
+What is *not* here: the **execution bit per AST node** that turns "was every construct
+reached" into a report a human reads. It needs an AST, a node index and an evaluator,
+none of which exist — [#139](https://github.com/ludo-lang/ludo/issues/139).
 
 ## The frontend's API is a session, and the AST crosses as concrete structs
 
