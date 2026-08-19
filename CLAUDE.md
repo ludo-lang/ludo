@@ -16,6 +16,11 @@ The five canonical triage roles, each label string equal to its role name. See `
 
 Single-context: `CONTEXT.md` and `docs/adr/` at your worktree's root. See `docs/agents/domain.md`.
 
+### The C standard
+
+The C11 subset, the warning configuration, the build and the sanitizer CI for `src/`.
+See `docs/agents/c-standard.md`; `make check` is the everyday signal.
+
 ### Worktrees
 
 This clone is a bare repo with sibling worktrees — one directory per branch. Read your own

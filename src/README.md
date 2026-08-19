@@ -8,9 +8,11 @@ rather than in a repository of its own per
 §7, which puts the bootstrap in `src/` and reserves `core/` for the standard
 library when it exists.
 
-**Nothing is built yet.** This directory is a skeleton: it fixes the one seam
-ADR-0020 says cannot be retrofitted, and nothing else. No parser, no
-typechecker, no build.
+**Almost nothing is built yet.** This directory fixes the one seam ADR-0020
+says cannot be retrofitted, and it has a build, a coding standard and CI —
+which exist *before* the code they check (#135). There is no lexer, no parser,
+no typechecker and no interpreter: each library is a smoke target that proves
+the gate works.
 
 ## What this is for
 
@@ -197,8 +199,30 @@ evictable, and the value of fuzzing a parser is that findings never come back. T
 hand-rolled: one assert header, one binary per library, `make test`'s exit code is the
 verdict.
 
-The files themselves — `docs/agents/c-standard.md` and its checker
-([ADR-0051](../docs/adr/0051-the-spec-is-the-only-normative-surface-and-an-absorbed-adr-is-stamped.md) §6), the
-`Makefile`, `.clang-format`, `build.yml` and `nightly.yml` — are the build's first commit,
-not a wayfinder session's output. `platform/` stays out of CI until it has code, which
-leaves **how CI acquires SDL3** open; it waits on *which OS first*.
+The files themselves — [`docs/agents/c-standard.md`](../docs/agents/c-standard.md) and its
+checker `tools/check-c-standard.py`
+([ADR-0051](../docs/adr/0051-the-spec-is-the-only-normative-surface-and-an-absorbed-adr-is-stamped.md) §6),
+the root `Makefile`, `.clang-format`, `build.yml` and `nightly.yml` — landed under
+[#135](https://github.com/ludo-lang/ludo/issues/135), which is where the map began carrying
+execution. They are the **first code this map produced**, and they landed **before** the code
+they check: a coding standard adopted after the code exists is a migration, not a standard.
+`src/platform/` stays out of the build and out of CI until it has code, which leaves **how CI
+acquires SDL3** open; it waits on *which OS first*.
+
+## Building it
+
+```sh
+make            # build/ludo
+make test       # one binary per library; the exit code is the verdict
+make check      # the same suite under ASan + UBSan -- the everyday signal
+make cross      # compile-only macOS and Windows checks (zig cc only)
+make format     # apply .clang-format
+make standard   # the ban list a grep can see
+```
+
+**`zig` 0.15.1 or newer** on a development host, and CI pins that exact version — `zig cc` is
+clang, and `-Werror` on a drifting warning set stops CI on code nobody touched. `CC` is
+overridable (`make CC=clang check`), which is what keeps `zig cc` the swappable build-time
+dependency ADR-0020 calls it; `make cross` is the one target that needs `zig` specifically.
+**`clang-format` is a separate pinned package** — `zig` exposes `zig cc` and `zig ar`, not
+`clang-format`.

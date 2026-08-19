@@ -1,0 +1,4 @@
+# Formatting is mechanical (#131): LLVM base, 4-space indent, 100 columns.
+BasedOnStyle: LLVM
+IndentWidth: 4
+ColumnLimit: 100

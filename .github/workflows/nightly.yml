@@ -1,0 +1,41 @@
+name: nightly
+
+# Valgrind is CI-only because it is effectively dead on Apple Silicon, and it is
+# a backstop for ASan here rather than a primary (#131).
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+env:
+  ZIG_VERSION: "0.15.1"
+
+jobs:
+  valgrind:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: ${{ env.ZIG_VERSION }}
+      - name: Install Valgrind
+        run: sudo apt-get update && sudo apt-get install -y valgrind
+      # No sanitizers: Valgrind and ASan do not coexist.
+      - name: Build the suite unsanitized
+        run: make test
+      - name: Valgrind over the suite
+        run: |
+          set -e
+          for t in build/test_*; do
+            echo "valgrind $t"
+            valgrind --error-exitcode=1 --leak-check=full --errors-for-leak-kinds=definite "$t"
+          done
+
+  # The long fuzz run. The libFuzzer target lands with the lexer (#131), and its
+  # committed corpus under src/frontend/tests/corpus/ is the regression suite.
+  fuzz:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: No fuzz target yet
+        run: echo "The libFuzzer target lands with the lexer (#131). Nothing to run."

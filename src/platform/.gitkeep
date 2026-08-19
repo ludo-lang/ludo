@@ -1,0 +1,2 @@
+# Platform: the SDL3 host (ADR-0057). No code yet, and not wired into the
+# build or CI until it has some (#131). See ../README.md.
