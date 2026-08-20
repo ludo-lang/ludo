@@ -68,6 +68,28 @@ ludo_storage_id ludo_storage_by_name(const ludo_host_constants *constants, const
     return LUDO_HANDLE_NONE;
 }
 
+/* ch6 7.11 and 7.12, and ch8 P15's vector. Clamp first, then round: the grid is
+   defined inside the range, so rounding an out-of-range argument first would ask
+   what the nearest sixteenth to -1.0 is, which the clause does not answer.
+
+   0.5f then truncating is the round-half-away-from-zero the vector wants, and
+   the value is non-negative by the time it is reached, so no sign case. */
+float ludo_quantise_render_scale(float scale) {
+    float steps;
+
+    if (!(scale >= LUDO_RENDER_SCALE_MIN)) {
+        /* Written as a negated >= so that a NaN argument lands here rather than
+           travelling on: ch6 7.12 says clamp, never fault. */
+        return LUDO_RENDER_SCALE_MIN;
+    }
+    if (scale >= LUDO_RENDER_SCALE_MAX) {
+        return LUDO_RENDER_SCALE_MAX;
+    }
+
+    steps = (float)(int)(scale * (float)LUDO_RENDER_SCALE_STEPS + 0.5f);
+    return steps / (float)LUDO_RENDER_SCALE_STEPS;
+}
+
 /* ch6 6.4.5: an absent device is present and idle. A player index outside the
    four slots is the same observation, so it reads idle rather than faulting. */
 static const ludo_player_input *slot(const ludo_frame_input *input, int player) {

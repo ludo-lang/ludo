@@ -303,6 +303,11 @@ typedef enum {
 /* ch6 6.4.4: slots, not devices, fixed at four. */
 #define LUDO_PLAYER_COUNT 4
 
+/* ch6 7.11's grid: sixteenths, floor 0.25, ceiling 1.0 -- thirteen values. */
+#define LUDO_RENDER_SCALE_STEPS 16
+#define LUDO_RENDER_SCALE_MIN 0.25f
+#define LUDO_RENDER_SCALE_MAX 1.0f
+
 /* ch6 6.4.5, 6.4.6: an absent device is present and idle, so every slot is
    always readable and unplugging does not renumber. */
 typedef struct {
@@ -324,7 +329,8 @@ typedef struct {
     ludo_player_input players[LUDO_PLAYER_COUNT];
 
     /* ch6 7.11: the quantised grid value the host actually applied, never the
-       argument a previous frame passed to set_render_scale. */
+       argument a previous frame passed to set_render_scale. Thirteen legal
+       values; ludo_quantise_render_scale is what produces them. */
     float render_scale;
 
     /* $.time.now, as Seconds. Carried at double width because the host measures a
@@ -418,10 +424,13 @@ _Static_assert(sizeof(ludo_host) ==
 typedef struct {
     const char *name; /* what a coverage report calls this run */
 
-    /* What driver/ latches before the frame entry. set_render_scale writes back
-       into this copy, so a second frame reads what the first one applied --
-       which is what makes ch6 7.11's "reports the applied value, never the
-       argument" observable rather than asserted. */
+    /* What driver/ latches before the frame entry. set_render_scale quantises
+       to ch6 7.11's grid and writes back into this copy, so a second frame
+       reads what the first one applied -- which is what makes "the getter
+       returns the quantised value, never the argument" observable rather than
+       asserted. Every render_scale a table carries is a legal grid value; 0.0
+       is not one, and a host that reported it would be answering with a number
+       ch6 7.11 does not permit. */
     ludo_frame_input frame;
 
     /* ch6 4.8.1: pure, and the program positions two sprites off its advance.
@@ -430,10 +439,14 @@ typedef struct {
     ludo_text_metrics text_metrics;
 
     /* The cursor advances within a frame in a real host; here it advances by a
-       fixed step per frame, which is enough for ch6 5.2.6's conversion to be
+       fixed step per frame, which is enough for ch6 5.2.7's conversion to be
        exercised without modelling an audio engine -- the tier #32 ruled out,
-       and it does not get back in through the test double. */
-    uint64_t audio_cursor_start;
+       and it does not get back in through the test double.
+
+       A start offset was tried and removed: it was zero in every table and had
+       no branch to flip, which is the argument that keeps the canvas size out
+       of this struct, and it does not stop applying to a field just because the
+       field is small. */
     uint64_t audio_cursor_step;
 
     /* ch6 8.10's oversize is the only failure the program can see, so it is a
@@ -441,9 +454,11 @@ typedef struct {
     ludo_host_status storage_write_status;
 } ludo_stub_answers;
 
-/* Everything zero: no button held, render_scale 0.0, degenerate metrics, writes
-   succeed. Deterministic, and both conditional branches are dead -- which is
-   exactly the reading #134 refused to adopt on its own. */
+/* No button held, render_scale at ch6 7.11's 0.25 floor, degenerate metrics,
+   writes succeed. Deterministic, and both conditional branches are dead --
+   which is exactly the reading #134 refused to adopt on its own. Zero would
+   read as "everything zero" and be a cleaner story, but it is below the grid's
+   floor and no conforming host can report it. */
 extern const ludo_stub_answers ludo_stub_answers_quiet;
 
 /* The same program with every branch live: button one pressed, render_scale
@@ -451,20 +466,26 @@ extern const ludo_stub_answers ludo_stub_answers_quiet;
 extern const ludo_stub_answers ludo_stub_answers_active;
 
 /* Active, except that storage_write reports oversize, so the rescue tail runs
-   and everything after it does not. */
+   and everything after it does not. It shares active's input state literally,
+   through LUDO_STUB_ACTIVE_INPUT in stub_host.c, because the point is the
+   rescue tail and not a fourth input state. */
 extern const ludo_stub_answers ludo_stub_answers_oversize;
 
 #define LUDO_STUB_TABLE_COUNT 3
 extern const ludo_stub_answers *const ludo_stub_tables[LUDO_STUB_TABLE_COUNT];
 
 /* The stub's own state. Stateless answers, with the two counters a spec clause
-   forces: handles are host-minted and 0 is never valid (so something must
-   mint), and the cursor advances per frame (so something must count). Not a
-   registry of live voices -- stop and set_voice are recorded and discarded. */
+   forces: ch6 5.1's play returns a Voice and ch6 5.1.3 leaves no cap to exhaust,
+   so something must mint; and the cursor advances (ch6 5.2.6, 5.2.7), so
+   something must count frames. Not a registry of live voices -- stop and
+   set_voice are discarded.
+
+   A count of vtable calls was tried and removed. It was a third piece of state
+   no clause forces, which is the rule two lines up, and it was reaching for
+   what #139's execution bits actually measure. */
 typedef struct {
     ludo_stub_answers answers;
     uint64_t frame; /* frames advanced since wiring */
-    uint64_t calls; /* every vtable entry point, counted once */
     uint32_t next_handle;
 } ludo_stub_state;
 
@@ -508,6 +529,16 @@ ludo_host_status ludo_constants_check(const ludo_host_constants *constants);
    missing asset, so by here the name either resolves or the program never ran. */
 ludo_image_id ludo_image_by_name(const ludo_host_constants *constants, const char *name);
 ludo_storage_id ludo_storage_by_name(const ludo_host_constants *constants, const char *name);
+
+/* ch6 7.11: quantise to the nearest sixteenth in [0.25, 1.0] -- thirteen legal
+   values -- and ch6 7.12: clamp out-of-range input silently, never fault.
+   ch8 P15 fixes the vector: 1.0, 0.3, 0.25, 0.0, -1.0 and 4.0 return 1.0,
+   0.3125, 0.25, 0.25, 0.25 and 1.0.
+
+   It lives here rather than in a host because every host owes the same grid,
+   and a clause each implementation re-derives is a clause each implementation
+   gets subtly wrong. platform/'s SDL3 host and the stub call this one. */
+float ludo_quantise_render_scale(float scale);
 
 /* The latch, read. These are what $.input.direction and the three button
    queries evaluate to; they take the snapshot rather than the host because ch6

@@ -3,12 +3,6 @@
 
 #include <string.h>
 
-/* The library ships a complete host now (#134), so a test that hand-rolls
-   twelve no-op function pointers would be testing its own copy of it. */
-static void populate_host(ludo_host *host, ludo_stub_state *state) {
-    ludo_stub_host(state, host, &ludo_stub_answers_active);
-}
-
 static void check_constants(void) {
     static const ludo_image_binding images[] = {{"rock", 7u}};
     static const ludo_storage_binding slots[] = {{"save1", 3u}};
@@ -67,6 +61,34 @@ static void check_latch(void) {
     LUDO_CHECK(!ludo_input_button_down(NULL, LUDO_BUTTON_ONE, 0));
 }
 
+/* ch8 P15's vector, verbatim: set_render_scale(x) then render_scale() returns,
+   for x in 1.0, 0.3, 0.25, 0.0, -1.0 and 4.0, respectively 1.0, 0.3125, 0.25,
+   0.25, 0.25 and 1.0 -- no fault for any input, every result a multiple of 1/16
+   in [0.25, 1.0]. The property is a runner's, so it is checked on the shared
+   quantiser rather than on any one host. */
+static void check_render_scale_grid(void) {
+    static const float argument[] = {1.0f, 0.3f, 0.25f, 0.0f, -1.0f, 4.0f};
+    static const float expected[] = {1.0f, 0.3125f, 0.25f, 0.25f, 0.25f, 1.0f};
+    size_t i;
+
+    for (i = 0; i < sizeof(argument) / sizeof(argument[0]); i++) {
+        float got = ludo_quantise_render_scale(argument[i]);
+        LUDO_CHECK(got == expected[i]);
+        LUDO_CHECK(got >= LUDO_RENDER_SCALE_MIN && got <= LUDO_RENDER_SCALE_MAX);
+        LUDO_CHECK(got * (float)LUDO_RENDER_SCALE_STEPS ==
+                   (float)(int)(got * (float)LUDO_RENDER_SCALE_STEPS));
+    }
+
+    /* Thirteen legal values, and every one of them survives a round trip: a
+       quantiser that collapsed the grid would still pass the vector above. */
+    for (i = 0; i < 13u; i++) {
+        float legal = LUDO_RENDER_SCALE_MIN + (float)i / (float)LUDO_RENDER_SCALE_STEPS;
+        LUDO_CHECK(ludo_quantise_render_scale(legal) == legal);
+    }
+    LUDO_CHECK(LUDO_RENDER_SCALE_MIN + 12.0f / (float)LUDO_RENDER_SCALE_STEPS ==
+               LUDO_RENDER_SCALE_MAX);
+}
+
 /* #134: what the stub answers, and the union of the tables being the coverage
    rather than any single run. */
 static void check_stub_tables(void) {
@@ -80,7 +102,10 @@ static void check_stub_tables(void) {
     ludo_stub_host(&state, &host, &ludo_stub_answers_quiet);
     LUDO_CHECK(ludo_host_check(&host) == LUDO_HOST_OK);
     LUDO_CHECK(!ludo_input_button_pressed(ludo_stub_frame(&state), LUDO_BUTTON_ONE, 0));
-    LUDO_CHECK(ludo_stub_frame(&state)->render_scale <= 0.5f);
+    /* ch6 7.11's floor. Not 0.0: below the grid is a value no conforming host
+       can report, and the dead branch does not need an illegal answer. */
+    LUDO_CHECK(ludo_stub_frame(&state)->render_scale == LUDO_RENDER_SCALE_MIN);
+    LUDO_CHECK(!(ludo_stub_frame(&state)->render_scale > 0.5f));
     LUDO_CHECK(host.storage_write(host.context, 1u, NULL, 0u) == LUDO_HOST_OK);
 
     /* active: every branch reference.ludo takes on a host answer is live. */
@@ -91,10 +116,11 @@ static void check_stub_tables(void) {
     LUDO_CHECK(host.measure_text(host.context, NULL).advance > 0.0f);
     LUDO_CHECK(host.storage_write(host.context, 1u, NULL, 0u) == LUDO_HOST_OK);
 
-    /* ch6 7.11: the getter reports what the host applied, never the argument a
-       previous frame passed. A one-frame run cannot see the difference. */
-    host.set_render_scale(host.context, 0.5f);
-    LUDO_CHECK(ludo_stub_frame(&state)->render_scale == 0.5f);
+    /* ch6 7.11: the getter reports the QUANTISED value, never the argument. A
+       one-frame run cannot see the difference, and an argument already on the
+       grid cannot either -- so this passes one that is not. */
+    host.set_render_scale(host.context, 0.3f);
+    LUDO_CHECK(ludo_stub_frame(&state)->render_scale == 0.3125f);
     LUDO_CHECK(!(ludo_stub_frame(&state)->render_scale > 0.5f));
 
     /* oversize: the one failure ch6 8.10 lets a program see, which is a branch
@@ -132,12 +158,9 @@ static void check_stub_state(void) {
     ludo_stub_next_frame(&state);
     LUDO_CHECK(host.audio_cursor(host.context) > at_zero);
 
-    /* Not coverage -- #134 puts that on an execution bit per AST node -- but
-       the cheap proof that the vtable is reached at all. */
-    LUDO_CHECK(state.calls > 0u);
-
     /* A NULL state reads idle rather than faulting, the same way an unplugged
-       slot does. */
+       slot does. Zero here is the absence of an answer, not a render scale a
+       host reported, which is why it is not on ch6 7.11's grid. */
     LUDO_CHECK(ludo_stub_frame(NULL)->render_scale == 0.0f);
     ludo_stub_next_frame(NULL);
     ludo_stub_host(NULL, &host, &ludo_stub_answers_quiet);
@@ -153,7 +176,7 @@ LUDO_TEST_MAIN({
 
     /* A complete vtable passes; a partial one is rejected at wiring, not
        mid-frame, and NULL never means no-op. */
-    populate_host(&host, &state);
+    ludo_stub_host(&state, &host, &ludo_stub_answers_active);
     LUDO_CHECK(ludo_host_check(&host) == LUDO_HOST_OK);
     host.measure_text = NULL;
     LUDO_CHECK(ludo_host_check(&host) == LUDO_HOST_ERR_INCOMPLETE);
@@ -161,11 +184,12 @@ LUDO_TEST_MAIN({
     LUDO_CHECK(ludo_host_check(NULL) == LUDO_HOST_ERR_INCOMPLETE);
 
     /* A host mints handles, and LUDO_HANDLE_NONE is never one it mints. */
-    populate_host(&host, &state);
+    ludo_stub_host(&state, &host, &ludo_stub_answers_active);
     LUDO_CHECK(host.play(host.context, NULL) != LUDO_HANDLE_NONE);
 
     check_constants();
     check_latch();
+    check_render_scale_grid();
     check_stub_tables();
     check_stub_state();
 })
