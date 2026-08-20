@@ -3,95 +3,16 @@
 
 #include <string.h>
 
-static void stub_fill_rect(void *c, ludo_target_id t, const ludo_rect_desc *d) {
-    (void)c;
-    (void)t;
-    (void)d;
-}
-static void stub_fill_ellipse(void *c, ludo_target_id t, const ludo_ellipse_desc *d) {
-    (void)c;
-    (void)t;
-    (void)d;
-}
-static void stub_stroke_rect(void *c, ludo_target_id t, const ludo_rect_stroke_desc *d) {
-    (void)c;
-    (void)t;
-    (void)d;
-}
-static void stub_fill_text(void *c, ludo_target_id t, const ludo_text_desc *d) {
-    (void)c;
-    (void)t;
-    (void)d;
-}
-static void stub_fill_sprite(void *c, ludo_target_id t, const ludo_sprite_desc *d) {
-    (void)c;
-    (void)t;
-    (void)d;
-}
-static ludo_text_metrics stub_measure_text(void *c, const ludo_text_desc *d) {
-    ludo_text_metrics m = {0};
-    (void)c;
-    (void)d;
-    return m;
-}
-static ludo_voice_id stub_play(void *c, const ludo_voice_desc *d) {
-    (void)c;
-    (void)d;
-    return 1u;
-}
-static void stub_stop(void *c, ludo_voice_id v) {
-    (void)c;
-    (void)v;
-}
-static void stub_set_voice(void *c, ludo_voice_id v, const ludo_voice_patch *p) {
-    (void)c;
-    (void)v;
-    (void)p;
-}
-static uint64_t stub_cursor(void *c) {
-    (void)c;
-    return 0u;
-}
-static void stub_set_render_scale(void *c, float s) {
-    (void)c;
-    (void)s;
-}
-static ludo_host_status stub_storage_write(void *c, ludo_storage_id s, const uint8_t *b, size_t n) {
-    (void)c;
-    (void)s;
-    (void)b;
-    return n > 64u ? LUDO_HOST_ERR_OVERSIZE : LUDO_HOST_OK;
-}
-
-static void populate_host(ludo_host *host) {
-    host->context = NULL;
-    host->fill_rect = stub_fill_rect;
-    host->fill_ellipse = stub_fill_ellipse;
-    host->stroke_rect = stub_stroke_rect;
-    host->fill_text = stub_fill_text;
-    host->fill_sprite = stub_fill_sprite;
-    host->measure_text = stub_measure_text;
-    host->play = stub_play;
-    host->stop = stub_stop;
-    host->set_voice = stub_set_voice;
-    host->audio_cursor = stub_cursor;
-    host->set_render_scale = stub_set_render_scale;
-    host->storage_write = stub_storage_write;
-}
-
 static void check_constants(void) {
     static const ludo_image_binding images[] = {{"rock", 7u}};
     static const ludo_storage_binding slots[] = {{"save1", 3u}};
     ludo_host_constants constants = {0};
     ludo_host_constants empty = {0};
 
-    constants.canvas_size.x = 1280.0f;
-    constants.canvas_size.y = 720.0f;
-    constants.style = LUDO_STYLE_CRISP;
-    constants.default_font = 1u;
-    constants.debug_image = 2u;
-    constants.screen = 1u;
-    constants.sample_rate = 48000;
+    /* The stub's configuration is complete except for the bindings, which are
+       the program's and which the caller supplies (#134). */
+    ludo_stub_constants(&constants);
+    LUDO_CHECK(ludo_constants_check(&constants) == LUDO_HOST_OK);
     constants.images = images;
     constants.image_count = 1u;
     constants.storage_slots = slots;
@@ -140,15 +61,122 @@ static void check_latch(void) {
     LUDO_CHECK(!ludo_input_button_down(NULL, LUDO_BUTTON_ONE, 0));
 }
 
+/* ch8 P15's vector, verbatim: set_render_scale(x) then render_scale() returns,
+   for x in 1.0, 0.3, 0.25, 0.0, -1.0 and 4.0, respectively 1.0, 0.3125, 0.25,
+   0.25, 0.25 and 1.0 -- no fault for any input, every result a multiple of 1/16
+   in [0.25, 1.0]. The property is a runner's, so it is checked on the shared
+   quantiser rather than on any one host. */
+static void check_render_scale_grid(void) {
+    static const float argument[] = {1.0f, 0.3f, 0.25f, 0.0f, -1.0f, 4.0f};
+    static const float expected[] = {1.0f, 0.3125f, 0.25f, 0.25f, 0.25f, 1.0f};
+    size_t i;
+
+    for (i = 0; i < sizeof(argument) / sizeof(argument[0]); i++) {
+        float got = ludo_quantise_render_scale(argument[i]);
+        LUDO_CHECK(got == expected[i]);
+        LUDO_CHECK(got >= LUDO_RENDER_SCALE_MIN && got <= LUDO_RENDER_SCALE_MAX);
+        LUDO_CHECK(got * (float)LUDO_RENDER_SCALE_STEPS ==
+                   (float)(int)(got * (float)LUDO_RENDER_SCALE_STEPS));
+    }
+
+    /* Thirteen legal values, and every one of them survives a round trip: a
+       quantiser that collapsed the grid would still pass the vector above. */
+    for (i = 0; i < 13u; i++) {
+        float legal = LUDO_RENDER_SCALE_MIN + (float)i / (float)LUDO_RENDER_SCALE_STEPS;
+        LUDO_CHECK(ludo_quantise_render_scale(legal) == legal);
+    }
+    LUDO_CHECK(LUDO_RENDER_SCALE_MIN + 12.0f / (float)LUDO_RENDER_SCALE_STEPS ==
+               LUDO_RENDER_SCALE_MAX);
+}
+
+/* #134: what the stub answers, and the union of the tables being the coverage
+   rather than any single run. */
+static void check_stub_tables(void) {
+    ludo_stub_state state;
+    ludo_host host;
+    size_t i;
+
+    /* quiet: deterministic, and both conditional branches dead. That is the
+       reading #134 refused to adopt on its own, so it is asserted rather than
+       assumed. */
+    ludo_stub_host(&state, &host, &ludo_stub_answers_quiet);
+    LUDO_CHECK(ludo_host_check(&host) == LUDO_HOST_OK);
+    LUDO_CHECK(!ludo_input_button_pressed(ludo_stub_frame(&state), LUDO_BUTTON_ONE, 0));
+    /* ch6 7.11's floor. Not 0.0: below the grid is a value no conforming host
+       can report, and the dead branch does not need an illegal answer. */
+    LUDO_CHECK(ludo_stub_frame(&state)->render_scale == LUDO_RENDER_SCALE_MIN);
+    LUDO_CHECK(!(ludo_stub_frame(&state)->render_scale > 0.5f));
+    LUDO_CHECK(host.storage_write(host.context, 1u, NULL, 0u) == LUDO_HOST_OK);
+
+    /* active: every branch reference.ludo takes on a host answer is live. */
+    ludo_stub_host(&state, &host, &ludo_stub_answers_active);
+    LUDO_CHECK(ludo_input_button_pressed(ludo_stub_frame(&state), LUDO_BUTTON_ONE, 0));
+    LUDO_CHECK(ludo_input_direction_left(ludo_stub_frame(&state), 0).x == 1.0f);
+    LUDO_CHECK(ludo_stub_frame(&state)->render_scale > 0.5f);
+    LUDO_CHECK(host.measure_text(host.context, NULL).advance > 0.0f);
+    LUDO_CHECK(host.storage_write(host.context, 1u, NULL, 0u) == LUDO_HOST_OK);
+
+    /* ch6 7.11: the getter reports the QUANTISED value, never the argument. A
+       one-frame run cannot see the difference, and an argument already on the
+       grid cannot either -- so this passes one that is not. */
+    host.set_render_scale(host.context, 0.3f);
+    LUDO_CHECK(ludo_stub_frame(&state)->render_scale == 0.3125f);
+    LUDO_CHECK(!(ludo_stub_frame(&state)->render_scale > 0.5f));
+
+    /* oversize: the one failure ch6 8.10 lets a program see, which is a branch
+       point and not a special case. */
+    ludo_stub_host(&state, &host, &ludo_stub_answers_oversize);
+    LUDO_CHECK(host.storage_write(host.context, 1u, NULL, 0u) == LUDO_HOST_ERR_OVERSIZE);
+
+    /* Every table wires a complete host and names itself, because a coverage
+       report that says "run 2" is a report nobody reads. */
+    for (i = 0; i < (size_t)LUDO_STUB_TABLE_COUNT; i++) {
+        ludo_stub_host(&state, &host, ludo_stub_tables[i]);
+        LUDO_CHECK(ludo_host_check(&host) == LUDO_HOST_OK);
+        LUDO_CHECK(ludo_stub_tables[i]->name != NULL);
+    }
+}
+
+/* The two counters a spec clause forces, and nothing more: minted handles, and
+   a cursor that advances per frame. */
+static void check_stub_state(void) {
+    ludo_stub_state state;
+    ludo_host host;
+    ludo_voice_id first;
+    ludo_voice_id second;
+    uint64_t at_zero;
+
+    ludo_stub_host(&state, &host, &ludo_stub_answers_active);
+
+    first = host.play(host.context, NULL);
+    second = host.play(host.context, NULL);
+    LUDO_CHECK(first != LUDO_HANDLE_NONE);
+    LUDO_CHECK(second != LUDO_HANDLE_NONE);
+    LUDO_CHECK(first != second);
+
+    at_zero = host.audio_cursor(host.context);
+    ludo_stub_next_frame(&state);
+    LUDO_CHECK(host.audio_cursor(host.context) > at_zero);
+
+    /* A NULL state reads idle rather than faulting, the same way an unplugged
+       slot does. Zero here is the absence of an answer, not a render scale a
+       host reported, which is why it is not on ch6 7.11's grid. */
+    LUDO_CHECK(ludo_stub_frame(NULL)->render_scale == 0.0f);
+    ludo_stub_next_frame(NULL);
+    ludo_stub_host(NULL, &host, &ludo_stub_answers_quiet);
+    ludo_stub_constants(NULL);
+}
+
 LUDO_TEST_MAIN({
     ludo_host host;
     ludo_host zeroed = {0};
+    ludo_stub_state state;
 
     LUDO_CHECK(strcmp(ludo_interp_version(), "") != 0);
 
     /* A complete vtable passes; a partial one is rejected at wiring, not
        mid-frame, and NULL never means no-op. */
-    populate_host(&host);
+    ludo_stub_host(&state, &host, &ludo_stub_answers_active);
     LUDO_CHECK(ludo_host_check(&host) == LUDO_HOST_OK);
     host.measure_text = NULL;
     LUDO_CHECK(ludo_host_check(&host) == LUDO_HOST_ERR_INCOMPLETE);
@@ -156,9 +184,12 @@ LUDO_TEST_MAIN({
     LUDO_CHECK(ludo_host_check(NULL) == LUDO_HOST_ERR_INCOMPLETE);
 
     /* A host mints handles, and LUDO_HANDLE_NONE is never one it mints. */
-    populate_host(&host);
-    LUDO_CHECK(host.play(NULL, NULL) != LUDO_HANDLE_NONE);
+    ludo_stub_host(&state, &host, &ludo_stub_answers_active);
+    LUDO_CHECK(host.play(host.context, NULL) != LUDO_HANDLE_NONE);
 
     check_constants();
     check_latch();
+    check_render_scale_grid();
+    check_stub_tables();
+    check_stub_state();
 })

@@ -26,7 +26,7 @@ ALL_CFLAGS = $(STD) $(WARNINGS) $(OPT) $(INCLUDES) $(EXTRA) $(CFLAGS)
 # platform/ is the SDL3 host and has no code; it is deliberately not wired
 # into the build or CI until it does (#131).
 FRONTEND_SRC = src/frontend/frontend.c
-INTERP_SRC = src/interp/interp.c
+INTERP_SRC = src/interp/interp.c src/interp/stub_host.c
 DRIVER_SRC = src/driver/main.c
 
 LIB_SRC = $(FRONTEND_SRC) $(INTERP_SRC)

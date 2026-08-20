@@ -108,9 +108,29 @@ injection answers them with an ordinary call.
 - The **host interface's surface** — which entry points the header `interp/` declares
   actually has, and at what granularity. #96 fixed its owner and designed nothing;
   [#133](https://github.com/ludo-lang/ludo/issues/133).
-- **What the empty host returns**, and therefore whether a headless hole-finding run
-  is a real execution or a shape check.
-  [#134](https://github.com/ludo-lang/ludo/issues/134).
+
+## The headless host is a stub with a table, not an empty one
+
+Settled by [#134](https://github.com/ludo-lang/ludo/issues/134), implemented in
+`interp/stub_host.c`, and **argued in full in `interp/include/ludo_interp.h`** — the
+header is the single surface for it, and this section points rather than restates.
+
+The shape, and only the shape: `reference.ludo` has **three** host-answer branch
+points, not the ten the ticket feared, so the answers are **a table of constants and
+the headless run varies the table** — three committed tables whose **union is the
+coverage**, never any single run. The stub is **not stateful beyond what a clause
+forces**, and its **creation-time configuration is not part of the varying table**.
+
+`ludo_quantise_render_scale` lives in `interp/`, not in a host: ch6 §7.11's sixteenth
+grid and §7.12's silent clamp are owed by **every** host, and a clause each
+implementation re-derives is one each implementation gets subtly wrong. ch8 P15's
+vector is a test.
+
+Two things are **not** here. The **execution bit per AST node** that turns *was every
+construct reached* into a report needs an AST, a node index and an evaluator —
+[#139](https://github.com/ludo-lang/ludo/issues/139). And **`driver/` has no headless
+run yet**: the stub is a library with no consumer outside the test binary, and wiring
+the loop is #139's too, since a run with nothing to execute reports nothing.
 
 ## The frontend's API is a session, and the AST crosses as concrete structs
 
