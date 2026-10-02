@@ -10,6 +10,8 @@ on:
       - "Makefile"
       - ".clang-format"
       - "tools/check-c-standard.py"
+      # The committed token dump diffs against it (#141).
+      - "docs/spec/reference/**"
       - ".github/workflows/build.yml"
   pull_request:
     paths:
@@ -17,6 +19,8 @@ on:
       - "Makefile"
       - ".clang-format"
       - "tools/check-c-standard.py"
+      # The committed token dump diffs against it (#141).
+      - "docs/spec/reference/**"
       - ".github/workflows/build.yml"
 
 env:

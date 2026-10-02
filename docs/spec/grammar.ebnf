@@ -462,12 +462,12 @@ HexDigit        ::= [0-9a-fA-F]
 
 Keyword         ::= "and" | "as" | "break" | "const" | "continue" | "defer"
                   | "do" | "else" | "elseif" | "end" | "extern" | "false"
-                  | "fn" | "for" | "frame" | "if" | "in" | "library" | "match"
-                  | "not" | "or" | "persist" | "pub" | "rescue" | "return"
-                  | "then" | "true" | "type" | "unless" | "unsafe" | "use"
-                  | "while"
+                  | "fn" | "for" | "frame" | "if" | "impl" | "in" | "library"
+                  | "match" | "not" | "or" | "persist" | "pub" | "rescue"
+                  | "return" | "then" | "true" | "type" | "unless" | "unsafe"
+                  | "use" | "while"
 
-TypeKeyword     ::= "distinct" | "enum" | "numeric" | "struct"
+TypeKeyword     ::= "distinct" | "enum" | "interface" | "numeric" | "struct"
 
 (* TypeKeywords are reserved in every position, and are listed apart because
    they are counted against the type sublanguage's budget (issue #24 call 3). *)
@@ -493,6 +493,12 @@ FloatLiteral    ::= Digit ( Digit | "_" )* "." Digit ( Digit | "_" )* Exponent?
                   | Digit ( Digit | "_" )* Exponent
 
 Exponent        ::= ( "e" | "E" ) ( "+" | "-" )? Digit+
+
+(* A numeric literal MUST NOT be immediately followed by a Letter, Digit or
+   "_" it cannot absorb: `0x`, `0b12`, `1e` and `2x` are each one malformed
+   literal, never a literal and an identifier. Without this, longest match
+   would read `2x` as `2` then `x`, and with no statement separator (01-grammar.md
+   §1.3) that pair can parse. (#141.) *)
 
 StringLiteral   ::= '"' ( StringChar | Escape )* '"'
 

@@ -96,8 +96,19 @@ pinned `clang-format` package instead. The config is `.clang-format` at the root
 `make check` (ASan+UBSan over the suite, `-fno-sanitize-recover=all`), `make format-check`,
 `make standard`, and `make cross` for the macOS and Windows compile-only checks.
 
-`nightly.yml`, on `schedule:`: Valgrind over the suite, and the long fuzz run once the
-libFuzzer target lands with the lexer.
+`nightly.yml`, on `schedule:`: Valgrind over the suite, and the long fuzz run.
+
+## Fuzzing
+
+The lexer's libFuzzer target is `src/frontend/tests/fuzz_lexer.c` (#141), and its committed
+corpus is `src/frontend/tests/corpus/lexer/` — the permanent regression suite #131 asked
+for. **Every `make check` replays it**: `fuzz_replay` drives the same entry point over each
+corpus file and the reference program under any `CC`, sanitizers on, so a finding never
+comes back. `make fuzz` is the search, and it builds with `FUZZ_CC` (default `clang`)
+rather than `CC`, because libFuzzer's runtime comes with an LLVM clang install, not with
+`zig cc` — #131 read *libFuzzer ships with the toolchain already chosen*, which holds for
+clang and not for the pinned `zig`. A finding worth keeping is minimised and committed to
+the corpus by hand; the nightly job's own new inputs are not.
 
 **Development is on macOS and CI decides.** `make check` reproduces the everyday signal
 locally; Valgrind is CI-only, because it is effectively dead on Apple Silicon and is a
