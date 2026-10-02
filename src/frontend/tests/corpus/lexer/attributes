@@ -1,0 +1,6 @@
+#explicit
+#align(16)
+type T = struct
+  x: f32
+end
+#vertex fn v() end

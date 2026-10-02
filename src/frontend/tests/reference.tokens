@@ -1,0 +1,2494 @@
+comment -- The ludo reference program.
+comment --
+comment -- Grown one chapter at a time (ADR-0044 §7). Chapter 1 seeds it with the
+comment -- lexical and grammatical surface and nothing else: every construct below is
+comment -- spelled by docs/spec/01-grammar.md and parses against docs/spec/grammar.ebnf.
+comment -- Chapter 2 adds the constructs whose *meaning* it fixes — absence, failure,
+comment -- the bug line, generics, function types, and text. Chapter 3 adds memory —
+comment -- layout, the two aggregates and their literal, views and the rules that keep
+comment -- them from dangling, moves, and multiple returns.
+comment --
+comment -- The dynamic container set is now fixed at `List` + `Map` (ch3 §11.3), so this
+comment -- program exercises it: a fallible `push`, a `reserve` before a batch, and a
+comment -- `persist` container. What it still does not name is a pool.
+comment --
+comment -- Container *removal* is specified by ch3 §11.13-§11.13.9, with the descending
+comment -- range operator `>..` that its cull needs (ch1 §7.7.1), and this program now
+comment -- exercises it in four shapes: the pool's hand-written swap-down (`despawn`),
+comment -- the descending `swap_remove` cull (`cull`), the order-preserving pack-forward
+comment -- (`compact`), and `truncate(0)` per-frame reuse of a `persist` buffer
+comment -- (`marks`). The extension landed as #109 under ADR-0049 §4, which lets a large
+comment -- reference-program extension become its own work while the clause repair never
+comment -- splits.
+comment --
+comment -- `trail` is **bounded** and no longer the leak it was, at the cost the spec
+comment -- states rather than hides: the cap keeps the oldest entries, which is the
+comment -- wrong end for a trail and the stated absence at ch3 §11.13.9 (issue #108).
+comment --
+comment -- Until a frontend exists this file is checked by hand. It is written fresh:
+comment -- prototypes/07-syntax/b-lua-flavoured.ludo is not a starting point, and breaks
+comment -- six ways against the current corpus (ADR-0044 §7).
+comment -- The reserved root is enumerated by ch6 §12, and this program now writes the
+comment -- three surfaces that enumeration authored: `$.assert` in `despawn`, `$.panic`
+comment -- in `spawn`, and `$.ivec2` in `cell_of`. Until #119 none of the three had a
+comment -- spelling, so the language's own bug-declaring call was unwritable here.
+comment --
+comment -- Chapter 6 replaces the hand-rolled `Vec2` with the blessed `$.vec2`, and adds
+comment -- the facades: the program now draws, plays a voice, reads input, reads a video
+comment -- preference and writes a storage slot.
+comment --
+comment -- Chapter 5 adds the runner: what runs when, and what survives. Top level was
+comment -- already here and unexplained; now it is the entry file's top level, running
+comment -- once before any frame (ch5 §2.2, §2.4). The canvas is declared at that top
+comment -- level and is immutable for the process's life (ch5 §9.3, §9.4); a sprite is
+comment -- a declaration the runner resolves before top level runs, not a call (ch5
+comment -- §8.1, §8.3); the per-frame arena is finally used (ch5 §3.10); and the one
+comment -- decision this chapter had to make -- every `persist` declaration carries an
+comment -- initialiser (ch5 §4.3.1) -- is shown at `name` below, which is the line
+comment -- ADR-0045 §8 wrote without one.
+comment -- Chapter 4 makes this file the **entry file of a program with three modules**,
+comment -- which is the whole of what it adds. `libs/vec-utils/` is a library because it
+comment -- claims a name; `hud.ludo` is this program's own file and is reached by path;
+comment -- the boundary between the two forms is the chapter's subject (ch4 §3.1).
+comment --
+comment -- A library is named, never located: nothing below says where `vec-utils` is,
+comment -- and moving it -- to a cache, to a vendor directory -- changes no line here
+comment -- (ch4 §3.3). The runner finds it by scanning `libs/` because no build tool
+comment -- supplied a mapping (ch4 §8.1).
+comment -- Chapter 6 makes this a program that **draws, plays, reads input and saves**.
+comment -- Everything it adds is a name under `$.`: the blessed math set replaces the
+comment -- hand-rolled `Vec2`, `$.graphics` draws against the `Target` the runner hands
+comment -- the frame entry, `$.input` is read as an ambient per-frame constant,
+comment -- `$.audio` plays one voice, `$.video` reports a preference the program does
+comment -- not own, and `$.storage` writes a slot declared like an asset.
+use
+string "vec-utils"
+comment -- A path reference names one file, extension written, relative to this file's
+comment -- directory, and binds the file's stem (ch4 §3.4). This spelling is authored by
+comment -- chapter 4 §15.1: ADR-0014 §7 fixed the rule and never wrote the form.
+use
+string "./hud.ludo"
+const
+ident MAX_ROCKS
+=
+int 64
+comment -- A storage slot is declared, never opened: `extern` is reused and `storage`
+comment -- occupies the kind-noun slot, so the core grammar gains nothing and there is
+comment -- no path, no directory and no runtime key anywhere in this program
+comment -- (ch6 §8.1, §8.2).
+extern
+ident storage
+ident save1
+comment -- An asset is *declared*, never loaded: the name is fixed at compile time, so a
+comment -- typo is a compile error rather than a path that fails at 3am, and there is no
+comment -- load call to put a string inside (ch5 §8.1). The path is relative to this
+comment -- file and may not cross a library boundary (ch5 §8.2).
+comment --
+comment -- The runner resolves and decodes it *before* top level runs, so this program
+comment -- can never observe a loading state -- there is no `?Image`, no readiness poll
+comment -- and no progress value (ch5 §8.3). A missing file is a fault at top level and
+comment -- the simulation never starts (ch5 §8.4); editing the file while the program
+comment -- runs swaps the bytes at the next frame boundary, with `persist` untouched
+comment -- (ch5 §8.6).
+extern
+ident image
+ident rock
+=
+string "art/rock.png"
+comment -- Chapter 6 deletes this program's hand-rolled `Vec2`. The blessed math set is
+comment -- `$.`-rooted and concrete: `$.vec2` holds two `f32` fields, ships with a
+comment -- positional constructor because struct literals are named-field only, and is
+comment -- the type every drawing descriptor names (ch6 §3.1, §3.2, §3.5). Declaring a
+comment -- second one was the #4 failure the blessed set exists to prevent.
+type
+ident Rock
+=
+struct
+ident pos
+:
+$
+.
+ident vec2
+ident vel
+:
+$
+.
+ident vec2
+ident radius
+:
+ident f32
+=
+float 4.0
+end
+type
+ident Shape
+=
+enum
+ident point
+ident circle
+(
+ident f32
+)
+ident box
+(
+$
+.
+ident vec2
+,
+$
+.
+ident vec2
+)
+end
+type
+ident RockId
+=
+distinct
+ident u32
+comment -- `Seconds` is likewise blessed and is no longer declared here: it is one of
+comment -- the three shipped quantities, and it ships because `$.time.now` returns it
+comment -- (ch6 §3.7).
+comment -- One error set, declared in this file, so `rescue` with no set named elides to
+comment -- it (spec ch2 §10.6).
+type
+ident FieldError
+=
+enum
+ident empty
+ident too_many
+(
+ident usize
+)
+end
+comment -- `add` and `scale` are gone with the local `Vec2`. Arithmetic operators are admitted on
+comment -- the blessed math types and on no user type; the rule is chapter 2's typing
+comment -- rule and chapter 6 only names it (ch6 §3.6, ch2 §16.1). `a + b` and `v * k`
+comment -- below are that exception, and they are why shader code and CPU code read the
+comment -- same.
+pub
+fn
+ident overlaps
+(
+ident a
+:
+ident Rock
+,
+ident b
+:
+ident Rock
+)
+->
+ident bool
+ident dx
+:=
+ident a
+.
+ident pos
+.
+ident x
+-
+ident b
+.
+ident pos
+.
+ident x
+ident dy
+:=
+ident a
+.
+ident pos
+.
+ident y
+-
+ident b
+.
+ident pos
+.
+ident y
+ident r
+:=
+ident a
+.
+ident radius
++
+ident b
+.
+ident radius
+ident dx
+*
+ident dx
++
+ident dy
+*
+ident dy
+<
+ident r
+*
+ident r
+comment -- implicit tail return: an expression
+end
+pub
+fn
+ident advance
+(
+ident r
+:
+!
+ident Rock
+)
+ident r
+!
+.
+ident pos
+=
+ident r
+.
+ident pos
++
+ident r
+.
+ident vel
+comment -- the blessed-type operator; the mark on the place
+end
+comment -- `match` is a statement, so it has no tail position: each arm returns.
+comment -- This is §6.7's rule as a worked case, not an oversight.
+pub
+fn
+ident extent
+(
+ident s
+:
+ident Shape
+)
+->
+ident f32
+match
+ident s
+do
+ident point
+then
+return
+float 0.0
+end
+ident circle
+(
+ident radius
+)
+then
+return
+ident radius
+end
+ident box
+(
+ident lo
+,
+ident hi
+)
+then
+return
+ident hi
+.
+ident x
+-
+ident lo
+.
+ident x
+end
+end
+end
+comment -- Absence is `?T`, and it is the only absence concept (ch2 §9.1). A generic
+comment -- function, with its type parameter unconstrained (ch1 §10.2). `return x`
+comment -- injects a present value; `none` is the prelude's nullary constructor
+comment -- (ch2 §9.11, §9.2).
+pub
+fn
+ident first
+[
+ident T
+]
+(
+ident xs
+:
+[
+]
+ident T
+)
+->
+?
+ident T
+for
+ident x
+in
+ident xs
+do
+return
+ident x
+end
+return
+ident none
+end
+comment -- `?T` is an ordinary sum type, so `match` handles it with the prelude
+comment -- constructors and no wildcard arm (ch2 §9.2, §4.5).
+pub
+fn
+ident radius_of
+(
+ident xs
+:
+[
+]
+ident Rock
+)
+->
+ident f32
+match
+ident first
+(
+ident xs
+)
+do
+ident none
+then
+return
+float 0.0
+end
+ident some
+(
+ident r
+)
+then
+return
+ident r
+.
+ident radius
+end
+end
+end
+comment -- `?.` short-circuits and yields `?f32` for the chain; `or` unwraps it.
+comment -- The two words are not interchangeable: `or` handles absence, `rescue`
+comment -- handles failure (ch2 §10.13).
+pub
+fn
+ident lead_radius
+(
+ident xs
+:
+[
+]
+ident Rock
+)
+->
+ident f32
+ident first
+(
+ident xs
+)
+?.
+ident radius
+or
+float 0.0
+end
+comment -- A function value is a non-capturing `fn` pointer, and it is passed by name
+comment -- because every function is top-level and named (ch2 §7.1, §7.3). UFCS never
+comment -- applies to it: this body writes `keep(x)`, never `x.keep()` (ch2 §7.5).
+pub
+fn
+ident is_big
+(
+ident r
+:
+ident Rock
+)
+->
+ident bool
+ident r
+.
+ident radius
+>
+float 8.0
+end
+pub
+fn
+ident count_where
+(
+ident xs
+:
+[
+]
+ident Rock
+,
+ident keep
+:
+fn
+(
+ident Rock
+)
+->
+ident bool
+)
+->
+ident usize
+ident n
+:
+ident usize
+=
+int 0
+for
+ident x
+in
+ident xs
+do
+ident n
++=
+int 1
+if
+ident keep
+(
+ident x
+)
+end
+ident n
+end
+comment -- An interface is a fifth type body and is declared by the one `type` shape
+comment -- (ch2 §6.7.1). Members are `fn` headers with no body, and there is no receiver
+comment -- and no `Self`: the interface names the type it constrains through its own
+comment -- generic parameter, so `T` appears in the signature (ch2 §6.7.2).
+pub
+type
+ident Ranked
+[
+ident T
+]
+=
+interface
+fn
+ident rank
+(
+ident v
+:
+ident T
+)
+->
+ident f32
+end
+comment -- Satisfaction is declared explicitly, never structural (ch2 §6.2). The `impl`
+comment -- carries no body and no `pub`, its generic argument is written out, and it
+comment -- lives in `Rock`'s declaring module (ch2 §6.7.3, §6.7.3.1, §6.7.5, §6.7.6).
+comment -- `rank` below is an ordinary module-level function; nothing about it is
+comment -- marked, and it is what discharges the assertion.
+impl
+ident Rock
+:
+ident Ranked
+[
+ident Rock
+]
+pub
+fn
+ident rank
+(
+ident v
+:
+ident Rock
+)
+->
+ident f32
+ident v
+.
+ident radius
+end
+comment -- The constraint is the interface, in the one position an interface may appear
+comment -- (ch2 §6.4). Dispatch is static: this monomorphises per `T` and no boxed
+comment -- existential exists (ch2 §6.3).
+pub
+fn
+ident best
+[
+ident T
+:
+ident Ranked
+[
+ident T
+]
+]
+(
+ident xs
+:
+[
+]
+ident T
+)
+->
+?
+ident T
+ident top
+:
+?
+ident T
+=
+ident none
+ident best_rank
+:
+ident f32
+=
+float 0.0
+for
+ident x
+in
+ident xs
+do
+ident r
+:=
+ident rank
+(
+ident x
+)
+match
+ident top
+do
+ident none
+then
+ident top
+=
+ident x
+ident best_rank
+=
+ident r
+end
+ident some
+(
+_
+)
+then
+if
+ident r
+>
+ident best_rank
+then
+ident top
+=
+ident x
+ident best_rank
+=
+ident r
+end
+end
+end
+end
+return
+ident top
+end
+comment -- Failure is a value in the return type, and the set is elided to this file's
+comment -- one declared error enum (ch2 §10.1, §10.6). A failure is returned by
+comment -- returning a value of the error set, qualified (ch2 §10.6.1, §4.6.1).
+pub
+fn
+ident checked_count
+(
+ident xs
+:
+[
+]
+ident Rock
+)
+->
+ident usize
+rescue
+return
+ident FieldError
+.
+ident empty
+if
+ident xs
+.
+ident len
+==
+int 0
+return
+ident FieldError
+.
+ident too_many
+(
+ident xs
+.
+ident len
+)
+if
+ident xs
+.
+ident len
+>
+ident MAX_ROCKS
+ident xs
+.
+ident len
+end
+comment -- The three `rescue` tails, in order: a default, a bound handler, and a
+comment -- diverging tail (ch2 §10.8).
+pub
+fn
+ident report
+(
+ident xs
+:
+[
+]
+ident Rock
+)
+->
+ident usize
+ident lenient
+:=
+ident checked_count
+(
+ident xs
+)
+rescue
+int 0
+ident strict
+:=
+ident checked_count
+(
+ident xs
+)
+rescue
+ident err
+then
+match
+ident err
+do
+ident empty
+then
+return
+int 0
+end
+ident too_many
+(
+ident n
+)
+then
+return
+ident n
+end
+end
+end
+_
+=
+ident lenient
+comment -- must-use is discharged by one token
+ident strict
+end
+pub
+fn
+ident total
+(
+ident xs
+:
+[
+]
+ident Rock
+)
+->
+ident usize
+rescue
+ident n
+:=
+ident checked_count
+(
+ident xs
+)
+rescue
+return
+ident n
+end
+comment -- ---------------------------------------------------------------------------
+comment -- Chapter 3 adds memory: layout, the two aggregates and their literal, views
+comment -- and the rules that keep them from dangling, moves, and multiple returns.
+comment -- ---------------------------------------------------------------------------
+comment -- `#align(n)` is the one layout attribute, and it is type-level (ch3 §8.3).
+comment -- Field order is guaranteed and padding is C-compatible, so this struct's bytes
+comment -- are exactly what is written here, with no reordering (ch3 §8.2).
+#
+ident align
+(
+int 16
+)
+type
+ident Bounds
+=
+struct
+ident lo
+:
+$
+.
+ident vec2
+ident hi
+:
+$
+.
+ident vec2
+end
+comment -- The two core aggregates are `struct` and `[N]T`; everything else is a library
+comment -- generic (ch3 §4.1). This is an SoA field by hand: two columns, one length.
+comment -- The two array fields are the program's exhibit of the fill arm (ch3 §5.10.1).
+comment -- `= {}` is what these lines said before #116, and it was never legal: a
+comment -- fixed-array literal supplies exactly `N` items (ch3 §5.10), and the empty one
+comment -- asked the language to invent `MAX_ROCKS` zeroes -- the implicit zero #9 bans.
+comment -- `[_] = v` writes the value once and the compiler repeats it, which is a
+comment -- written default one container deeper (ch3 §5.10.6).
+type
+ident Field
+=
+struct
+ident pos
+:
+[
+ident MAX_ROCKS
+]
+$
+.
+ident vec2
+=
+{
+[
+_
+]
+=
+$
+.
+ident vec2
+(
+float 0.0
+,
+float 0.0
+)
+}
+ident vel
+:
+[
+ident MAX_ROCKS
+]
+$
+.
+ident vec2
+=
+{
+[
+_
+]
+=
+$
+.
+ident vec2
+(
+float 0.0
+,
+float 0.0
+)
+}
+ident live
+:
+ident usize
+=
+int 0
+end
+comment -- `Handle[T]` is copyable plain data, so it lives in a struct field (ch3 §10.3),
+comment -- and a handle to a released object reads as absence, never as a bug (ch3
+comment -- §10.2). That is why the field is `?Handle[Rock]` and not a pointer.
+type
+ident Tracker
+=
+struct
+ident quarry
+:
+?
+ident Handle
+[
+ident Rock
+]
+end
+comment -- A `{...}` literal is a fixed-size value and allocates nothing, so this
+comment -- function names no allocator (ch3 §5.4). The target type decides what the
+comment -- literal means (ch3 §5.1), literals nest (ch3 §5.9), and struct literals are
+comment -- named-field only (ch3 §5.6).
+pub
+fn
+ident unit_bounds
+(
+)
+->
+ident Bounds
+{
+ident lo
+=
+$
+.
+ident vec2
+(
+float 0.0
+,
+float 0.0
+)
+,
+ident hi
+=
+$
+.
+ident vec2
+(
+float 1.0
+,
+float 1.0
+)
+}
+end
+comment -- The integer vector set, and the only place this program leaves `f32` for a
+comment -- coordinate (ch6 §12.3). A cell index is a count of cells, not a distance, and
+comment -- `$.ivec2` says so in the return type; the `as i32` casts are explicit because
+comment -- no conversion is implicit (ch2 §2.9).
+pub
+fn
+ident cell_of
+(
+ident p
+:
+$
+.
+ident vec2
+,
+ident cell
+:
+ident f32
+)
+->
+$
+.
+ident ivec2
+$
+.
+ident ivec2
+(
+(
+ident p
+.
+ident x
+/
+ident cell
+)
+as
+ident i32
+,
+(
+ident p
+.
+ident y
+/
+ident cell
+)
+as
+ident i32
+)
+end
+comment -- `[]T` is the universal boundary: this one function accepts a `[N]$.vec2`, a
+comment -- `List[$.vec2]` and an SoA pool's `pos` column alike, and mentions none of them
+comment -- (ch3 §6.1). The writable view is marked at the parameter, and the mutation
+comment -- mark rides the root binding at the use site (ch1 §7.10).
+pub
+fn
+ident integrate
+(
+ident pos
+:
+!
+[
+]
+$
+.
+ident vec2
+,
+ident vel
+:
+[
+]
+$
+.
+ident vec2
+,
+ident dt
+:
+ident f32
+)
+for
+ident i
+in
+int 0
+..<
+ident pos
+.
+ident len
+do
+ident pos
+!
+[
+ident i
+]
+=
+ident pos
+[
+ident i
+]
++
+ident vel
+[
+ident i
+]
+*
+ident dt
+end
+end
+comment -- The columnar batch call, and the first line in this program to take a
+comment -- **writable sub-view** rather than a whole place (#101). The mark sits after
+comment -- the root binding and the slice suffix follows: `pos![0..<live]`, never
+comment -- `pos[0..<live]!`, which parses and is an error (ch3 §6.12).
+comment --
+comment -- `pos` and `vel` are two views live at once, which is legal: there is no
+comment -- exclusivity rule between views (ch3 §7.4).
+pub
+fn
+ident integrate_live
+(
+ident pos
+:
+!
+[
+]
+$
+.
+ident vec2
+,
+ident vel
+:
+[
+]
+$
+.
+ident vec2
+,
+ident live
+:
+ident usize
+,
+ident dt
+:
+ident f32
+)
+ident integrate
+(
+ident pos
+!
+[
+int 0
+..<
+ident live
+]
+,
+ident vel
+[
+int 0
+..<
+ident live
+]
+,
+ident dt
+)
+end
+comment -- A function may return a view only where the view derives from its receiver
+comment -- (ch3 §6.5) — here, the receiver's own array. A function with no receiver to
+comment -- derive from could not write this signature at all.
+pub
+fn
+ident positions
+(
+ident f
+:
+ident Field
+)
+->
+[
+]
+$
+.
+ident vec2
+ident f
+.
+ident pos
+[
+int 0
+..<
+ident f
+.
+ident live
+]
+end
+comment -- Invalidation, written as the re-take the rule requires (ch3 §7.1). A view
+comment -- dies when the place it derives from is next used with `!`, and the kill is
+comment -- flow-insensitive, so it does not matter which branch the mark sits in.
+comment --
+comment --   v := positions(f)
+comment --   f!.live += 1                    -- the mark kills v
+comment --   $.print(v.len)                  -- error: v was invalidated by `f!` above
+comment --
+comment -- The fix needs no annotation: take the view again after the mutation.
+pub
+fn
+ident spawn
+(
+ident f
+:
+!
+ident Field
+,
+ident at
+:
+$
+.
+ident vec2
+)
+->
+ident usize
+comment -- The first `$.panic` in this program (ch6 §12.2.6). `Field` is a fixed
+comment -- `[MAX_ROCKS]` SoA, so a spawn into a full field would write past `live`'s
+comment -- last legal slot; the container the program wrote itself has no fallible
+comment -- `push` to return an error from, so the bug is declared instead of returned.
+comment -- `$.panic` diverges -- it is the only call in the language that does, and
+comment -- there is no `never` type -- so the modifier form carries it with nothing to
+comment -- return on the taken path (ch1 §6.13, §6.14).
+$
+.
+ident panic
+(
+string "spawn into a full field"
+)
+if
+ident f
+.
+ident live
+>=
+ident MAX_ROCKS
+ident f
+!
+.
+ident pos
+[
+ident f
+.
+ident live
+]
+=
+ident at
+ident f
+!
+.
+ident vel
+[
+ident f
+.
+ident live
+]
+=
+$
+.
+ident vec2
+(
+float 0.0
+,
+float 0.0
+)
+ident f
+!
+.
+ident live
++=
+int 1
+ident v
+:=
+ident positions
+(
+ident f
+)
+ident v
+.
+ident len
+end
+comment -- `spawn`'s opposite, and it is deliberately *not* a container call. `Field` is
+comment -- a fixed `[MAX_ROCKS]` SoA with a `live` count, so removing element `i` is the
+comment -- swap-down the program writes by hand: copy the last live element over the
+comment -- hole, then shorten. There is no `swap_remove` here because there is no `List`
+comment -- here -- the two columns and the count are the whole data structure.
+comment --
+comment -- The shape is `swap_remove`'s and so is the consequence: this reorders, and an
+comment -- index held across the call names a different rock afterwards (ch3 §11.13.7).
+comment -- The difference is that a `List` names the cost in the method name, while an
+comment -- SoA pool names it in the code the program wrote itself.
+pub
+fn
+ident despawn
+(
+ident f
+:
+!
+ident Field
+,
+ident i
+:
+ident usize
+)
+comment -- The first `$.assert` in this program (ch6 §12.2). The precondition is the
+comment -- caller's to keep and cannot be expressed in the signature: `i` is a `usize`
+comment -- and every `usize` type-checks here. A failed assert is a bug, not an error
+comment -- (ch2 §8.3), so there is no `rescue` on this call and no value to discard.
+comment -- The message is required (ch6 §12.2.4) and the fault report carries it
+comment -- alongside the source text of the condition (ch5 §6.5.1).
+$
+.
+ident assert
+(
+ident i
+<
+ident f
+.
+ident live
+,
+string "despawn index is not live"
+)
+ident last
+:=
+ident f
+.
+ident live
+-
+int 1
+ident f
+!
+.
+ident pos
+[
+ident i
+]
+=
+ident f
+.
+ident pos
+[
+ident last
+]
+ident f
+!
+.
+ident vel
+[
+ident i
+]
+=
+ident f
+.
+ident vel
+[
+ident last
+]
+ident f
+!
+.
+ident live
+-=
+int 1
+end
+comment -- The sanctioned cull, and the first `>..` in this program (ch1 §7.7.1).
+comment --
+comment -- **The direction is the correctness condition, not a style.** `swap_remove(i)`
+comment -- moves the last element into slot `i`; an *ascending* cursor has already
+comment -- passed that slot and never looks at the moved element again, so a rock that
+comment -- should have died survives -- silently, with no fault and no diagnostic. That
+comment -- is the failure class ch1 §13.9.1 charges the operator's budget overrule
+comment -- against: `>..` exists because `for i in 0..<rocks.len` is the shape a program
+comment -- reaches for and the shape that is wrong.
+comment --
+comment -- `rocks.len>..0` yields `len-1` down to `0`, and the length is the excluded
+comment -- bound in both directions, which is what makes it the always-correct
+comment -- descending shape (ch1 §7.7.1). The loop's subject is a `RevRange`, so **no
+comment -- lend on `rocks` exists** and §12.2's ban on structural mutation during
+comment -- iteration has nothing to fire on (ch3 §12.2.1) -- which is the entire reason
+comment -- the cull iterates a range rather than the container.
+comment --
+comment -- The returned element is discarded with the one greppable token: removal
+comment -- returns what it removed (ch3 §11.13.2), and must-use is discharged, not
+comment -- ignored.
+pub
+fn
+ident cull
+(
+ident rocks
+:
+!
+ident List
+[
+ident Rock
+]
+)
+for
+ident i
+in
+ident rocks
+.
+ident len
+>..
+int 0
+do
+_
+=
+ident rocks
+!
+.
+ident swap_remove
+(
+ident i
+)
+if
+ident rocks
+[
+ident i
+]
+.
+ident radius
+<=
+float 0.0
+end
+end
+comment -- The order-preserving cull, for a list something else indexes into. Survivors
+comment -- pack forward and the tail is cut once (ADR-0050 §7).
+comment --
+comment -- **No `swap(i, j)` is needed and none exists** (ch3 §11.13.8): `Rock` is plain
+comment -- data, so `rocks![w] = rocks[i]` is an ordinary copying assignment. A
+comment -- container-valued element would move rather than copy (#15), which is why the
+comment -- clause states the precondition instead of blessing the pattern generally.
+comment --
+comment -- `truncate(w)` is a **bound**, not an index, so `w == len` -- nothing culled --
+comment -- is legal rather than the fault an out-of-range removal would be (ch3
+comment -- §11.13.5, §11.13.3). This loop ascends, and correctly: it reads `i` and
+comment -- writes `w`, with `w <= i` always, so nothing is written over before it is
+comment -- read. `>..` is not a habit to acquire; it is the answer to `swap_remove`
+comment -- specifically.
+pub
+fn
+ident compact
+(
+ident rocks
+:
+!
+ident List
+[
+ident Rock
+]
+)
+ident w
+:
+ident usize
+=
+int 0
+for
+ident i
+in
+int 0
+..<
+ident rocks
+.
+ident len
+do
+if
+ident rocks
+[
+ident i
+]
+.
+ident radius
+>
+float 0.0
+then
+ident rocks
+!
+[
+ident w
+]
+=
+ident rocks
+[
+ident i
+]
+ident w
++=
+int 1
+end
+end
+ident rocks
+!
+.
+ident truncate
+(
+ident w
+)
+end
+comment -- Fixed-arity multiple returns, destructured at the call site. The returned
+comment -- group has no type, cannot be stored or passed on, and destructuring must be
+comment -- total (ch3 §14).
+pub
+fn
+ident extremes
+(
+ident f
+:
+ident Field
+)
+->
+$
+.
+ident vec2
+,
+$
+.
+ident vec2
+ident b
+:=
+ident unit_bounds
+(
+)
+return
+ident b
+.
+ident lo
+,
+ident b
+.
+ident hi
+if
+ident f
+.
+ident live
+==
+int 0
+ident b
+.
+ident lo
+,
+ident b
+.
+ident hi
+end
+comment -- Top level runs once, in the entry file only (#26). This is that file.
+$
+.
+ident print
+(
+string "reference program"
+)
+comment -- The canvas is *not* declared here: it is 1280x720 for every ludo program, a
+comment -- constant of the language (ch5 §9.1). What is declared is the style token, and
+comment -- this is its only legal site -- top level of the entry file, once, immutable
+comment -- for the process's life, because a token that differed between two frames
+comment -- would make every fit guarantee conditional (ch5 §9.3, §9.4).
+$
+.
+ident graphics
+.
+ident set_canvas
+(
+.
+ident crisp
+)
+persist
+ident tick
+:
+ident u64
+=
+int 0
+comment -- The line ADR-0045 §8 wrote as `persist name: TextBuf[32]`, with the
+comment -- initialiser chapter 5 §4.3.1 requires. `= {}` is complete because the
+comment -- mandated `TextBuf[N]` defaults both of its fields (ch2 §17.6) -- an author's
+comment -- written default, which is exactly what #9 permits and an implicit zero is not
+comment -- (ch2 §9.6). §17.6 spells that `bytes` default `{ [_] = 0 }`, and a
+comment -- user-declared type writes its own the same way -- ch3 §5.10.1, issue #116,
+comment -- exhibited by `Field` above.
+persist
+ident name
+:
+ident TextBuf
+[
+int 32
+]
+=
+{
+}
+comment -- A `persist` declaration holds a plain value with no pointer in it, so it
+comment -- survives a reload by the same rule a bare `[N]u8` does (ch3 §8.2, ADR-0042
+comment -- §7). A view could not appear here: `persist` is one of the positions a view
+comment -- is banned from (ch3 §6.3).
+persist
+ident field
+:
+!
+ident Field
+=
+{
+}
+comment -- A `persist` container is legal, and it is the one position where allocation
+comment -- failure is a fault rather than a value (ch3 §11.10): there is no `return` to
+comment -- `rescue` into, no signature to declare an error set on, and the fallback that
+comment -- would compile -- an empty list -- starts the program against an empty world.
+comment -- A conforming report calls that fault **allocation failure** -- the seventh
+comment -- member of the closed kind enum at ch5 §6.5.1 -- and it carries this
+comment -- declaration's name and type. It is the only position that raises the kind.
+comment -- `heap` is legal here and nowhere else (ch3 §1.6, §9.12), and the `List`
+comment -- implementation is runner-owned, which is what keeps this declaration clear of
+comment -- #17 §3's function-pointer check (ch3 §11.12).
+persist
+ident trail
+:
+!
+ident List
+[
+$
+.
+ident vec2
+]
+=
+ident List
+.
+ident from
+(
+ident heap
+,
+{
+$
+.
+ident vec2
+(
+float 0.0
+,
+float 0.0
+)
+}
+)
+comment -- The list the culls operate on. It is seeded rather than sized: there is no
+comment -- `List.with_capacity`, because `reserve` is already the one sizing spelling
+comment -- and a second would be a second way to say one thing (ch3 §11.13.8, §11.7).
+persist
+ident rocks
+:
+!
+ident List
+[
+ident Rock
+]
+=
+ident List
+.
+ident from
+(
+ident heap
+,
+{
+{
+ident pos
+=
+$
+.
+ident vec2
+(
+float 0.0
+,
+float 0.0
+)
+,
+ident vel
+=
+$
+.
+ident vec2
+(
+float 0.0
+,
+float 0.0
+)
+}
+}
+)
+comment -- The per-frame scratch list, and the dominant real use of `truncate` (ch3
+comment -- §11.13.5). It is `persist` so the *buffer* outlives the frame while its
+comment -- *contents* do not: `truncate(0)` at the top of every frame drops the elements
+comment -- and keeps the allocation, so this list allocates once at cold start and never
+comment -- again. A frame-arena list would allocate nothing but could not outlive the
+comment -- frame; a fresh `List` each frame would allocate every frame. This is the
+comment -- shape that does neither, and it is why `truncate` returns `()` and keeps the
+comment -- buffer rather than handing back the dropped tail.
+persist
+ident marks
+:
+!
+ident List
+[
+$
+.
+ident vec2
+]
+=
+ident List
+.
+ident from
+(
+ident heap
+,
+{
+$
+.
+ident vec2
+(
+float 0.0
+,
+float 0.0
+)
+}
+)
+frame
+(
+ident screen
+:
+!
+ident Target
+,
+ident scratch
+:
+!
+ident Scratch
+)
+ident tick
+!
++=
+int 1
+comment -- The batch op runs every frame, over exactly the live prefix.
+ident integrate_live
+(
+ident field
+!
+.
+ident pos
+,
+ident field
+.
+ident vel
+,
+ident field
+.
+ident live
+,
+float 1.0
+/
+float 60.0
+)
+comment -- Empty and refill. `truncate(0)` is the spelling: **there is no `clear()`**,
+comment -- because it would be a second spelling of one meaning and ch1 §7.10a admits
+comment -- one (ch3 §11.13.5). It cannot fail -- it drops, it never grows -- so unlike
+comment -- `push` and `reserve` below it needs no `rescue`.
+ident marks
+!
+.
+ident truncate
+(
+int 0
+)
+ident lo
+,
+ident hi
+:=
+ident extremes
+(
+ident field
+)
+comment -- total destructuring of a multi-return
+ident marks
+!
+.
+ident push
+(
+ident lo
+)
+rescue
+return
+ident marks
+!
+.
+ident push
+(
+ident hi
+)
+rescue
+return
+comment -- Removal on the pool and on a `List`, side by side, so the contrast is
+comment -- visible rather than asserted. The pool despawns by hand against `live`; the
+comment -- list culls through the mandated call. Both reorder, and only one says so in
+comment -- its name.
+ident despawn
+(
+ident field
+!
+,
+int 0
+)
+if
+ident field
+.
+ident live
+>
+int 0
+ident cull
+(
+ident rocks
+!
+)
+ident compact
+(
+ident rocks
+!
+)
+return
+unless
+ident tick
+%
+int 60
+==
+int 0
+comment -- statement modifier over a bool condition
+ident n
+:=
+ident spawn
+(
+ident field
+!
+,
+$
+.
+ident vec2
+(
+float 8.0
+,
+float 8.0
+)
+)
+comment -- The spawn's grid cell, in the integer vector set (ch6 §12.3). Asserted
+comment -- rather than drawn: this program has no grid, and the line exists because
+comment -- `$.ivec2` had no spelling until #119 and nothing exercised it.
+$
+.
+ident assert
+(
+ident cell_of
+(
+$
+.
+ident vec2
+(
+float 8.0
+,
+float 8.0
+)
+,
+float 4.0
+)
+.
+ident x
+==
+int 2
+,
+string "cell index truncates toward zero"
+)
+comment -- `reserve` is additional and idempotent -- room for 2 *beyond* `len` -- and
+comment -- exists for timing, not failure: a program that must not allocate mid-frame
+comment -- pre-sizes (ch3 §11.7). It allocates, so it is fallible like every other
+comment -- allocating call (ch3 §11.6). There is no `capacity()` to interrogate
+comment -- afterwards; having reserved is the answer (ch3 §11.8).
+ident trail
+!
+.
+ident reserve
+(
+int 2
+)
+rescue
+return
+comment -- `push` is argument-free because the `List` captured its allocator, and
+comment -- fallible because it may grow. The `rescue` is the ceremony ch3 §11.1 names,
+comment -- and it declares nothing on `frame`: propagation is local (ch3 §11.11).
+ident trail
+!
+.
+ident push
+(
+ident lo
+)
+rescue
+return
+ident trail
+!
+.
+ident push
+(
+ident hi
+)
+rescue
+return
+comment -- **The bound, and the honest note about which end it keeps.** Before this
+comment -- line the program pushed two points every 60 ticks forever: a live leak in
+comment -- the spec's own reference program, growing without limit for as long as it
+comment -- runs.
+comment --
+comment -- `truncate(64)` bounds it, and keeps the **oldest** 64 points -- the wrong
+comment -- end for a trail, which wants the most recent. This is not an oversight to
+comment -- be worked around here: the mandated container set has **no front-drop and
+comment -- no FIFO**, and the ring buffer that would answer it is blessed but
+comment -- unmandated, so a portable program cannot rely on it (ch3 §11.13.9,
+comment -- issue #108). A hand-rolled shift-down would cost O(n) every frame to
+comment -- simulate a container the set deliberately does not mandate.
+comment --
+comment -- The program therefore takes the bound and states the cost, which is what
+comment -- the spec's own exemplar owes a reader who is about to hit this.
+ident trail
+!
+.
+ident truncate
+(
+int 64
+)
+comment -- Mutable iteration. The mark is *postfix on the loop subject* -- `trail!`,
+comment -- never `!trail` -- because the subject is an ordinary expression and the
+comment -- mark rides the root binding there as it does everywhere else (ch1 §7.10,
+comment -- ch3 §12.2). Prefix `!` is type position only, which is why the declaration
+comment -- above reads `persist trail: !List[$.vec2]` and this line does not.
+comment --
+comment -- The mark fires *once*, at loop entry: the subject is evaluated once, so the
+comment -- kill is a single event and the loop does not invalidate `p` on the next
+comment -- turn. `p` is a writable view of the element, so `p!.y` is the same shape as
+comment -- `advance`'s `r!.pos` one function scope up.
+comment --
+comment -- Nothing here pushes, removes or truncates: the lend is exclusive for the
+comment -- loop's duration, and structural mutation inside it is a compile error
+comment -- rather than a documented invalidation hazard (ch3 §12.2).
+for
+ident p
+in
+ident trail
+!
+do
+ident p
+!
+.
+ident y
+=
+ident p
+.
+ident y
++
+float 1.0
+end
+comment -- `string` is the type of a literal and of nothing else; it widens one way
+comment -- to `[]u8` at parameter position (ch2 §17.1, §17.2).
+ident label
+:
+ident string
+=
+string "elapsed"
+comment -- `chars()` decodes UTF-8 and yields `char`; `bytes()` does not exist
+comment -- (ch2 §17.7, §2.6).
+ident glyphs
+:
+ident usize
+=
+int 0
+for
+ident c
+in
+ident label
+.
+ident chars
+(
+)
+do
+_
+=
+ident c
+ident glyphs
++=
+int 1
+end
+comment -- A cast is the only numeric conversion (ch2 §2.8). What this one yields for
+comment -- a lossy or out-of-range value is undecided — spec ch2 §20, issue #98.
+ident secs
+:=
+(
+ident tick
+/
+int 60
+)
+as
+ident f32
+comment -- `format` writes into a buffer the caller owns and returns a view of what it
+comment -- wrote; the format string is a literal the compiler checks (ch2 §17.5).
+ident buf
+:
+[
+int 32
+]
+ident u8
+=
+{
+[
+_
+]
+=
+int 0
+}
+ident line
+:=
+ident format
+(
+ident buf
+!
+,
+string "{}: {} ({} chars, {} live)"
+,
+ident label
+,
+ident secs
+,
+ident glyphs
+,
+ident n
+)
+$
+.
+ident print
+(
+ident line
+)
+comment -- The two reference forms, one line apart. `vec_utils` is the name the
+comment -- library claims for itself -- this file cannot rename or alias it (ch4
+comment -- §2.3, §2.4) -- and `hud` is this file's own module, bound from the stem of
+comment -- the path that named it (ch4 §3.4).
+comment --
+comment -- `vec_utils.EPSILON` is a library constant, and reaching it runs nothing:
+comment -- an imported module's top level is declarations only (ch4 §13.1, §13.3).
+comment --
+comment -- What this file may *not* write is `scale.halve(...)`. `vec_utils` reaches
+comment -- its own second file by path; that does not make the name visible here, and
+comment -- there is no `use` that would help -- non-transitivity is not a resolution
+comment -- question (ch4 §4.2, §4.3).
+ident reach
+:=
+ident hud
+.
+ident squared
+(
+ident lo
+.
+ident x
+,
+ident lo
+.
+ident y
+)
++
+ident vec_utils
+.
+ident EPSILON
+ident edge
+:
+[
+int 32
+]
+ident u8
+=
+{
+[
+_
+]
+=
+int 0
+}
+$
+.
+ident print
+(
+ident format
+(
+ident edge
+!
+,
+string "reach {} banner {}"
+,
+ident reach
+,
+ident hud
+.
+ident banner_radius
+(
+ident reach
+)
+)
+)
+comment -- ---------------------------------------------------------------------
+comment -- Chapter 6: the standard library.
+comment -- ---------------------------------------------------------------------
+comment -- Input is an ambient *constant*, not ambient state: the runner latches it
+comment -- once before this entry runs, so two calls in one frame cannot disagree
+comment -- (ch6 §6.8.1, §6.8.2). Nothing here names a key: `direction` unions the
+comment -- d-pad, the stick and the bound keys, and its magnitude is already dead-zoned
+comment -- and rescaled (ch6 §6.3.4, §6.3.5).
+ident move
+:=
+$
+.
+ident input
+.
+ident direction
+(
+)
+if
+$
+.
+ident input
+.
+ident button_pressed
+(
+.
+ident one
+)
+then
+comment -- `one` is the physically-south button on every pad, by the ordinal table
+comment -- and not by a per-platform remap (ch6 §6.2.3, §6.2.4).
+_
+=
+ident spawn
+(
+ident field
+!
+,
+ident move
+*
+float 16.0
+)
+end
+comment -- The target is a parameter, never fetched: there is no `$.graphics.screen()`
+comment -- (ch6 §4.2.6). UFCS gives the short spelling and is the same function as the
+comment -- qualified one (ch6 §1.7).
+comment -- No program types `1280`. `canvas_size` is a constant folded at compile time,
+comment -- not a query -- there is nothing to ask, and it leaks no bit about the
+comment -- player's hardware (ch5 §9.2). The real window size is not exposed at all
+comment -- (ch5 §9.15), and what the runner does with the difference is the fit:
+comment -- one uniform `k`, centred, with opaque black bars the program cannot reach
+comment -- (ch5 §9.5, §9.10, §9.11).
+ident screen
+!
+.
+ident fill_rect
+(
+{
+ident position
+=
+$
+.
+ident vec2
+(
+float 0.0
+,
+float 0.0
+)
+,
+ident size
+=
+$
+.
+ident graphics
+.
+ident canvas_size
+,
+ident paint
+=
+$
+.
+ident rgb8
+(
+int 12
+,
+int 12
+,
+int 16
+)
+,
+}
+)
+comment -- Every descriptor carries `paint`, not `color`: `Color` is a `Paint` variant
+comment -- and is no longer a field type anywhere (ch6 §4.3.7). `blend` is per-call and
+comment -- defaults to `alpha` (ch6 §4.5.3, §4.5.4).
+for
+ident p
+in
+ident positions
+(
+ident field
+)
+do
+ident screen
+!
+.
+ident fill_ellipse
+(
+{
+ident position
+=
+ident p
+,
+ident size
+=
+$
+.
+ident vec2
+(
+float 8.0
+,
+float 8.0
+)
+,
+ident paint
+=
+$
+.
+ident rgb8
+(
+int 220
+,
+int 90
+,
+int 40
+)
+,
+ident blend
+=
+.
+ident additive
+,
+}
+)
+end
+comment -- A stroke is a path with thickness, and `thickness` is not `width` because
+comment -- `width` is already the x of a `size` (ch6 §4.6.1, §4.5.7). The band of a
+comment -- stroked ellipse is not constant width, and the spec says so rather than
+comment -- letting implementations differ (ch6 §4.6.4).
+ident screen
+!
+.
+ident stroke_rect
+(
+{
+ident position
+=
+ident lo
+,
+ident size
+=
+ident hi
+-
+ident lo
+,
+ident thickness
+=
+float 2.0
+,
+ident paint
+=
+$
+.
+ident rgb8
+(
+int 255
+,
+int 255
+,
+int 255
+)
+,
+}
+)
+comment -- `fill_text`, never `draw_text`: the pair is reserved and `draw_` does not
+comment -- exist (ch6 §4.4.3, §4.8.8). `text` is `[]u8` because drawn text is not
+comment -- necessarily a literal (ch6 §4.8.7) -- which is exactly what `format` above
+comment -- returned.
+comment -- A `{...}` literal needs a target type, so this one is annotated (ch3 §5.1);
+comment -- the type lives in `$.graphics` because one-module-per-area covers types as
+comment -- well as functions (ch6 §1.6).
+ident label_desc
+:
+$
+.
+ident graphics
+.
+ident TextDesc
+=
+{
+ident text
+=
+ident line
+,
+ident font
+=
+$
+.
+ident graphics
+.
+ident default_font
+,
+ident font_size
+=
+float 16.0
+,
+ident position
+=
+$
+.
+ident vec2
+(
+float 8.0
+,
+float 8.0
+)
+,
+ident anchor
+=
+$
+.
+ident vec2
+(
+float 0.0
+,
+float 0.0
+)
+,
+ident paint
+=
+$
+.
+ident rgb8
+(
+int 255
+,
+int 255
+,
+int 255
+)
+,
+}
+ident screen
+!
+.
+ident fill_text
+(
+ident label_desc
+)
+comment -- `measure_text` is pure, takes no target, and takes the *same* descriptor,
+comment -- so what is measured is what is drawn (ch6 §4.8.1, §4.8.2).
+ident metrics
+:=
+$
+.
+ident graphics
+.
+ident measure_text
+(
+ident label_desc
+)
+comment -- The declared asset, drawn. Nothing here names a path or checks readiness:
+comment -- `rock` is a name the compiler knows and the runner has already resolved
+comment -- (ch5 §8.1, §8.3).
+ident screen
+!
+.
+ident fill_sprite
+(
+{
+ident image
+=
+ident rock
+,
+ident position
+=
+$
+.
+ident vec2
+(
+ident metrics
+.
+ident advance
++
+float 40.0
+,
+float 8.0
+)
+,
+ident size
+=
+$
+.
+ident vec2
+(
+float 16.0
+,
+float 16.0
+)
+,
+ident paint
+=
+$
+.
+ident rgb8
+(
+int 255
+,
+int 255
+,
+int 255
+)
+,
+}
+)
+comment -- A missing sprite draws nothing, and so does a correct transparent one. The
+comment -- debug image is a mandated *value*, reached explicitly -- never a fallback an
+comment -- implementation substitutes (ch6 §4.9.10).
+ident screen
+!
+.
+ident fill_sprite
+(
+{
+ident image
+=
+$
+.
+ident graphics
+.
+ident debug_image
+,
+ident position
+=
+$
+.
+ident vec2
+(
+ident metrics
+.
+ident advance
++
+float 16.0
+,
+float 8.0
+)
+,
+ident size
+=
+$
+.
+ident vec2
+(
+float 16.0
+,
+float 16.0
+)
+,
+ident paint
+=
+$
+.
+ident rgb8
+(
+int 255
+,
+int 255
+,
+int 255
+)
+,
+}
+)
+comment -- One voice, one call. `play` returns a handle and never absence: there is no
+comment -- voice cap to be exhausted (ch6 §5.1.3, §5.2.3). No abbreviation appears in
+comment -- any field name (ch6 §1.1.4).
+ident voice
+:=
+$
+.
+ident audio
+.
+ident play
+(
+{
+ident waveform
+=
+.
+ident square
+,
+ident frequency
+=
+float 440.0
+,
+ident amplitude
+=
+float 0.4
+,
+ident pan
+=
+float 0.0
+,
+}
+)
+comment -- `set` is one call with a patch whose absent fields mean unchanged; there are
+comment -- no per-parameter setters (ch6 §5.2.5). The change ramps linearly over one
+comment -- frame, in Hz and not in cents (ch6 §5.3.1, §5.3.2).
+$
+.
+ident audio
+.
+ident set
+(
+ident voice
+,
+{
+ident frequency
+=
+float 660.0
+}
+)
+comment -- The cursor is `SampleFrames`, and converting it takes the device rate as an
+comment -- argument so a stale-rate division is unspellable (ch6 §5.2.6, §5.2.7).
+ident elapsed
+:
+ident Seconds
+=
+$
+.
+ident audio
+.
+ident seconds
+(
+$
+.
+ident audio
+.
+ident cursor
+(
+)
+,
+$
+.
+ident audio
+.
+ident sample_rate
+(
+)
+)
+_
+=
+ident elapsed
+comment -- A preference the program may read and set but must not cache: the runner can
+comment -- change it without telling this program (ch6 §7.9). The getter reports the
+comment -- quantised grid value, never the argument (ch6 §7.11).
+if
+$
+.
+ident video
+.
+ident render_scale
+(
+)
+>
+float 0.5
+then
+$
+.
+ident video
+.
+ident set_render_scale
+(
+float 0.5
+)
+end
+comment -- Submit and forget: `write` never blocks, returns no completion, and the
+comment -- program never learns whether the disk was full (ch6 §8.8, §8.11). Oversize
+comment -- is the one failure it *can* see, and it is a value at the call site
+comment -- (ch6 §8.10). The payload is bytes, because the spec blesses no serializer
+comment -- (ch6 §8.5).
+ident save1
+.
+ident write
+(
+ident edge
+)
+rescue
+return
+comment -- The frame arena, and the only place it can be used: `scratch` is a
+comment -- parameter because only the runner can supply memory it resets at a boundary
+comment -- it alone controls, and its lifetime is exactly this call (ch5 §3.4, §3.10).
+comment -- It is `!` because allocating mutates it, and it may not be stored anywhere
+comment -- -- not in a struct, not in `persist` (ch3 §9.7).
+comment --
+comment -- Nothing resets it here. A program-owned arena would need that call, and a
+comment -- forgotten reset is a leak with no diagnostic; the runner simply does it
+comment -- (ADR-0042 §6).
+ident frame_names
+:
+!
+ident List
+[
+$
+.
+ident vec2
+]
+=
+ident List
+.
+ident from
+(
+ident scratch
+!
+,
+{
+ident lo
+,
+ident hi
+}
+)
+rescue
+return
+ident name
+!
+.
+ident clear
+(
+)
+ident name
+!
+.
+ident append
+(
+ident label
+)
+_
+=
+ident frame_names
+.
+ident len
+end

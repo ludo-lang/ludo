@@ -10,9 +10,8 @@ library when it exists.
 
 **Almost nothing is built yet.** This directory fixes the one seam ADR-0020
 says cannot be retrofitted, and it has a build, a coding standard and CI —
-which exist *before* the code they check (#135). There is no lexer, no parser,
-no typechecker and no interpreter: each library is a smoke target that proves
-the gate works.
+which exist *before* the code they check (#135). There is a **lexer** (#141)
+and nothing after it: no parser, no typechecker and no interpreter.
 
 ## What this is for
 
@@ -229,6 +228,31 @@ they check: a coding standard adopted after the code exists is a migration, not 
 `src/platform/` stays out of the build and out of CI until it has code, which leaves **how CI
 acquires SDL3** open; it waits on *which OS first*.
 
+## The lexer is a pull iterator, and its proof is a committed dump
+
+Settled by [#141](https://github.com/ludo-lang/ludo/issues/141), in
+`frontend/lexer.c` and argued in `frontend/include/ludo_frontend.h`.
+
+The lexer **allocates nothing**: it walks a caller-owned buffer and hands back one
+token at a time, so the arena #130 promised is the parser's to design, against a
+consumer that actually stores tokens. It is **total** — every byte lands in exactly
+one token, the tokens tile the buffer, and a problem in the source is a token
+carrying an error rather than a stop. **Trivia are tokens**: whitespace and
+comments ride the stream as #130 requires, and the parser skips them.
+
+The proof that it read the reference program is
+`frontend/tests/reference.tokens`, **committed and diffed by `make check`**. It
+holds no positions, so an edit to `reference.ludo` diffs as exactly the tokens it
+changed; `make tokens` regenerates it, and an edit to the reference program
+without one turns CI red. Spans are proved elsewhere: the fuzz target checks that
+the tokens tile every input, and that a token's bytes lexed alone are that token
+again.
+
+Two spec holes surfaced and were repaired in the spec text: `grammar.ebnf`'s
+`Keyword` and `TypeKeyword` had lost `impl` and `interface`, which ch1 §2.3–§2.4
+already listed, and nothing forbade a numeric literal running into a letter (ch1
+§3.1.1).
+
 ## Building it
 
 ```sh
@@ -238,6 +262,8 @@ make check      # the same suite under ASan + UBSan -- the everyday signal
 make cross      # compile-only macOS and Windows checks (zig cc only)
 make format     # apply .clang-format
 make standard   # the ban list a grep can see
+make tokens     # regenerate the committed token dump after editing reference.ludo
+make fuzz       # libFuzzer over the lexer (FUZZ_CC=clang, FUZZ_TIME=60)
 ```
 
 **`zig` 0.15.1 or newer** on a development host, and CI pins that exact version — `zig cc` is

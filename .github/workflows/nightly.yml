@@ -31,11 +31,25 @@ jobs:
             valgrind --error-exitcode=1 --leak-check=full --errors-for-leak-kinds=definite "$t"
           done
 
-  # The long fuzz run. The libFuzzer target lands with the lexer (#131), and its
-  # committed corpus under src/frontend/tests/corpus/ is the regression suite.
+  # The long fuzz run (#131), against the target that landed with the lexer
+  # (#141). Its committed corpus under src/frontend/tests/corpus/lexer/ is the
+  # regression suite, replayed by every `make check`; this job looks for new
+  # findings, and a kept one is minimised and committed by hand.
   fuzz:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: No fuzz target yet
-        run: echo "The libFuzzer target lands with the lexer (#131). Nothing to run."
+      # libFuzzer comes with an LLVM clang, not with zig cc.
+      - name: Install clang with libFuzzer
+        run: sudo apt-get update && sudo apt-get install -y clang-18 libclang-rt-18-dev
+      - name: Fuzz the lexer
+        run: make fuzz FUZZ_CC=clang-18 FUZZ_TIME=1800
+      - name: Keep the crashing input
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-lexer-crash
+          path: |
+            crash-*
+            leak-*
+            timeout-*

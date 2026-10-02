@@ -111,6 +111,11 @@ nameable without a `use`, and by §2.6's rule they cost nothing against §13.
 MAY contain `_` as a digit separator (`IntegerLiteral`). Float literals are
 decimal with a fractional part, an exponent, or both (`FloatLiteral`).
 
+**3.1.1** A numeric literal MUST NOT run straight into a letter, digit or `_` it
+cannot absorb. `0x`, `0b12`, `1e` and `2x` are each **one malformed literal**,
+never a literal followed by an identifier: with no statement separator (§1.3),
+`2x` read as `2` then `x` could parse. (#141, which found the grammar silent.)
+
 **3.2** A numeric literal's type is defaulted from its context. **Where the
 context does not determine it, the program is a compile error naming the
 ambiguity — never a silent pick.** (#11, inference: "numeric literals default,
