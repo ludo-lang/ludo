@@ -1,28 +1,20 @@
 # ludo
 
-A game-development-oriented programming language: Lua-simple syntax, Rust/Odin/C++-grade robustness, layered for beginners, veterans, and AI agents. Currently in language-design phase — the artifact is a spec, not a compiler.
+A game-development programming language: Lua-simple syntax, Rust/Odin/C++-grade robustness,
+layered for beginners, veterans and AI agents. `docs/spec/` is the normative spec; `src/` is
+the C bootstrap prototype built against it.
 
-## Agent skills
+## Build
 
-### Issue tracker
+`make check` is the everyday signal (ASan + UBSan). `CC` defaults to `zig cc`; without zig,
+`make CC=clang check`. After editing `docs/spec/reference/reference.ludo`, run `make tokens`
+and commit the dump — CI diffs it.
 
-Issues live as GitHub issues in `ludo-lang/ludo`, managed with the `gh` CLI. See `docs/agents/issue-tracker.md`.
+## Before you…
 
-### Triage labels
-
-The five canonical triage roles, each label string equal to its role name. See `docs/agents/triage-labels.md`.
-
-### Domain docs
-
-Single-context: `CONTEXT.md` and `docs/adr/` at your worktree's root. See `docs/agents/domain.md`.
-
-### The C standard
-
-The C11 subset, the warning configuration, the build and the sanitizer CI for `src/`.
-See `docs/agents/c-standard.md`; `make check` is the everyday signal.
-
-### Worktrees
-
-`~/ludo` is an ordinary checkout of `main`; feature branches get git worktrees under the
-git-ignored `.claude/worktrees/`. Read your own worktree, never main's. See
-`docs/agents/worktrees.md`.
+- **write C in `src/`** → `docs/agents/c-standard.md`
+- **touch an issue, PR or wayfinder map** → `docs/agents/issue-tracker.md`
+- **triage an issue** → `docs/agents/triage-labels.md`
+- **explore an area, name a domain term or write an ADR** → `docs/agents/domain.md`
+- **start a branch** → `docs/agents/worktrees.md`; read `CONTEXT.md`, ADRs and the spec from
+  your own worktree, never `main`'s
