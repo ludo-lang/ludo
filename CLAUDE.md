@@ -23,5 +23,6 @@ See `docs/agents/c-standard.md`; `make check` is the everyday signal.
 
 ### Worktrees
 
-This clone is a bare repo with sibling worktrees — one directory per branch. Read your own
-worktree, never a sibling. See `docs/agents/worktrees.md`.
+`~/ludo` is an ordinary checkout of `main`; feature branches get git worktrees under the
+git-ignored `.claude/worktrees/`. Read your own worktree, never main's. See
+`docs/agents/worktrees.md`.
