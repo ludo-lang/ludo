@@ -1,14 +1,15 @@
 # Worktrees
 
-This repository is an **ordinary checkout**: `~/ludo` holds `.git/` and the files of
-whatever branch is checked out there, normally `main`. Work that should not happen on
-`main` gets its own **git worktree** — a second directory sharing the same repository.
+This repository is an **ordinary checkout**: the checkout root holds `.git/` and
+the files of whatever branch is checked out there, normally `main`. Work that should
+not happen on `main` gets its own **git worktree** — a second directory sharing the
+same repository.
 
 ```
 ludo/
 ├── .git/                    the repository
 ├── docs/ src/ tools/ ...    main's files
-└── .claude/worktrees/       one directory per feature worktree; git-ignored
+└── .worktrees/              one directory per feature worktree; git-ignored
     └── lexer/
 ```
 
@@ -16,7 +17,7 @@ ludo/
 
 "The repo root" means **the root of the worktree you are working in**. Whenever a
 skill or doc says to read `CONTEXT.md`, `docs/adr/` or anything else "at the repo
-root", read your worktree's copy, not `~/ludo`'s.
+root", read your worktree's copy, not another checkout's.
 
 This matters because ADRs, the spec and `CONTEXT.md` are versioned content. A branch
 may be *editing* them; reading `main`'s copy from a feature worktree would silently
@@ -24,18 +25,22 @@ hide exactly the change under review.
 
 ## Where worktrees live
 
-Under `.claude/worktrees/`, which is git-ignored, one directory per branch. The
-desktop app creates them there itself; by hand:
+For manually created worktrees, use `.worktrees/`, which is git-ignored, one
+directory per branch:
 
 ```sh
-git worktree add .claude/worktrees/lexer -b lexer origin/main
+git worktree add .worktrees/lexer -b lexer origin/main
 ```
 
 and remove the worktree when the branch merges:
 
 ```sh
-git worktree remove .claude/worktrees/lexer
+git worktree remove .worktrees/lexer
 ```
+
+An agent app may manage worktrees in its own location (including
+`.claude/worktrees/`, which stays git-ignored). Use the path the app returns;
+the same rule about reading your own worktree applies there.
 
 A branch name containing `/` flattens with `-` in the directory name
 (`proto/07-syntax-candidates` → `proto-07-syntax-candidates`).

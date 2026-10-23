@@ -14,6 +14,8 @@ jobs:
         with:
           python-version: "3.12"
       # ADR-0051 §6: a convention in docs/agents/ ships with a checker.
+      - name: Shared agent instructions and skill adapters
+        run: python3 tools/check-agent-setup.py
       - name: Amendment stamps (#97)
         run: python3 tools/check-stamps.py
       - name: Absorption stamps (#126)
