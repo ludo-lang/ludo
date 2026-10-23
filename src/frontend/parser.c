@@ -201,9 +201,11 @@ static bool enter(parser *p) {
     return true;
 }
 
+static int precedence(ludo_token_kind kind);
 static ludo_node_id expression(parser *p);
 static ludo_node_id binary(parser *p, int minimum);
-static ludo_node_id type_expr(parser *p);
+static ludo_node_id type_expr(parser *p, bool body_boundary);
+static ludo_node_id expression_argument(parser *p);
 static ludo_node_id named_type(parser *p);
 static ludo_node_id block(parser *p, bool tail);
 static ludo_node_id statement(parser *p, bool tail);
@@ -263,9 +265,9 @@ static ludo_node_id type_args(parser *p) {
         /* Bare names overlap. Prefer expression shape, leaving their role to
            checking; prefix-only type forms cannot be expression operands. */
         if (type_start(peek(p)) && !expr_start(peek(p))) {
-            add(p, id, type_expr(p));
+            add(p, id, type_expr(p, false));
         } else {
-            add(p, id, expression(p));
+            add(p, id, expression_argument(p));
         }
         progress(p, before, id);
     } while (!p->exhausted && eat(p, LUDO_TOK_COMMA));
@@ -290,7 +292,7 @@ static ludo_node_id named_type(parser *p) {
     return finish(p, id, start);
 }
 
-static ludo_node_id prefix_type(parser *p) {
+static ludo_node_id prefix_type(parser *p, bool body_boundary) {
     if (!enter(p)) {
         return 0;
     }
@@ -301,7 +303,7 @@ static ludo_node_id prefix_type(parser *p) {
             peek(p) == LUDO_TOK_QUESTION ? LUDO_AST_OPTIONAL_TYPE : LUDO_AST_POINTER_TYPE;
         (void)take(p);
         id = node(p, kind, start);
-        add(p, id, prefix_type(p));
+        add(p, id, prefix_type(p, body_boundary));
     } else if (eat(p, LUDO_TOK_LBRACKET)) {
         bool view = peek(p) == LUDO_TOK_RBRACKET;
         id = node(p, view ? LUDO_AST_VIEW_TYPE : LUDO_AST_ARRAY_TYPE, start);
@@ -309,14 +311,14 @@ static ludo_node_id prefix_type(parser *p) {
             add(p, id, expression(p));
         }
         expect(p, LUDO_TOK_RBRACKET, id);
-        add(p, id, prefix_type(p));
+        add(p, id, prefix_type(p, body_boundary));
     } else if (eat(p, LUDO_TOK_KW_FN)) {
         id = node(p, LUDO_AST_FN_TYPE, start);
         expect(p, LUDO_TOK_LPAREN, id);
         ludo_node_id params = node(p, LUDO_AST_PARAMS, p->pos);
         if (peek(p) != LUDO_TOK_RPAREN) {
             do {
-                add(p, params, type_expr(p));
+                add(p, params, type_expr(p, false));
             } while (!p->exhausted && eat(p, LUDO_TOK_COMMA));
         }
         if (params != 0) {
@@ -325,7 +327,7 @@ static ludo_node_id prefix_type(parser *p) {
         add(p, id, params);
         expect(p, LUDO_TOK_RPAREN, id);
         if (eat(p, LUDO_TOK_ARROW)) {
-            add(p, id, type_expr(p));
+            add(p, id, type_expr(p, body_boundary));
         }
     } else if (peek(p) == LUDO_TOK_IDENT || peek(p) == LUDO_TOK_DOLLAR) {
         id = named_type(p);
@@ -336,16 +338,59 @@ static ludo_node_id prefix_type(parser *p) {
     return finish(p, id, start);
 }
 
-static ludo_node_id type_expr(parser *p) {
+/* Only a function result may run directly into a statement. A local type's
+   `E = initializer` is unambiguously a named error set. Here a complete name
+   followed by call/assignment syntax belongs to the next statement instead. */
+static bool error_set_ahead(const parser *p) {
+    size_t pos = p->pos;
+    if (token_at(p, pos).kind == LUDO_TOK_DOLLAR) {
+        pos = significant(p, pos + 1);
+        if (token_at(p, pos).kind != LUDO_TOK_DOT) {
+            return true;
+        }
+        pos = significant(p, pos + 1);
+    }
+    if (token_at(p, pos).kind != LUDO_TOK_IDENT) {
+        return true;
+    }
+    pos = significant(p, pos + 1);
+    while (token_at(p, pos).kind == LUDO_TOK_DOT) {
+        pos = significant(p, pos + 1);
+        if (token_at(p, pos).kind != LUDO_TOK_IDENT) {
+            return true;
+        }
+        pos = significant(p, pos + 1);
+    }
+    if (token_at(p, pos).kind == LUDO_TOK_LBRACKET) {
+        size_t depth = 1;
+        pos++;
+        while (depth != 0 && token_at(p, pos).kind != LUDO_TOK_EOF) {
+            if (token_at(p, pos).kind == LUDO_TOK_LBRACKET) {
+                depth++;
+            } else if (token_at(p, pos).kind == LUDO_TOK_RBRACKET) {
+                depth--;
+            }
+            pos++;
+        }
+        pos = significant(p, pos);
+    }
+    ludo_token_kind next = token_at(p, pos).kind;
+    return next != LUDO_TOK_COLON_EQ && next != LUDO_TOK_COLON && next != LUDO_TOK_EQ &&
+           next != LUDO_TOK_PLUS_EQ && next != LUDO_TOK_MINUS_EQ && next != LUDO_TOK_STAR_EQ &&
+           next != LUDO_TOK_SLASH_EQ && next != LUDO_TOK_PERCENT_EQ && next != LUDO_TOK_LPAREN &&
+           next != LUDO_TOK_BANG && next != LUDO_TOK_DOT && next != LUDO_TOK_QUESTION_DOT &&
+           next != LUDO_TOK_CARET && precedence(next) == 0;
+}
+
+static ludo_node_id type_expr(parser *p, bool body_boundary) {
     size_t start = p->pos;
     bool mutable = eat(p, LUDO_TOK_BANG);
-    ludo_node_id id = prefix_type(p);
+    ludo_node_id id = prefix_type(p, body_boundary);
     if (eat(p, LUDO_TOK_KW_RESCUE)) {
         ludo_node_id fallible = node(p, LUDO_AST_FALLIBLE_TYPE, start);
         add(p, fallible, id);
         if ((peek(p) == LUDO_TOK_IDENT || peek(p) == LUDO_TOK_DOLLAR) &&
-            ahead(p) != LUDO_TOK_COLON_EQ && ahead(p) != LUDO_TOK_COLON &&
-            ahead(p) != LUDO_TOK_EQ && ahead(p) != LUDO_TOK_LPAREN) {
+            (!body_boundary || error_set_ahead(p))) {
             add(p, fallible, named_type(p));
         }
         id = finish(p, fallible, start);
@@ -368,7 +413,7 @@ static ludo_node_id parameters(parser *p) {
             ludo_node_id param = node(p, LUDO_AST_PARAM, before);
             expect(p, LUDO_TOK_IDENT, param);
             expect(p, LUDO_TOK_COLON, param);
-            add(p, param, type_expr(p));
+            add(p, param, type_expr(p, false));
             if (eat(p, LUDO_TOK_EQ)) {
                 add(p, param, expression(p));
             }
@@ -389,7 +434,7 @@ static void signature(parser *p, ludo_node_id id, bool generic) {
         size_t start = take(p);
         ludo_node_id returns = node(p, LUDO_AST_RETURNS, start);
         do {
-            add(p, returns, type_expr(p));
+            add(p, returns, type_expr(p, true));
         } while (!p->exhausted && eat(p, LUDO_TOK_COMMA));
         add(p, id, finish(p, returns, start));
     }
@@ -405,7 +450,7 @@ static ludo_node_id type_body(parser *p) {
             ludo_node_id field = node(p, LUDO_AST_FIELD, before);
             expect(p, LUDO_TOK_IDENT, field);
             expect(p, LUDO_TOK_COLON, field);
-            add(p, field, type_expr(p));
+            add(p, field, type_expr(p, false));
             if (eat(p, LUDO_TOK_EQ)) {
                 add(p, field, expression(p));
             }
@@ -421,7 +466,7 @@ static ludo_node_id type_body(parser *p) {
             expect(p, LUDO_TOK_IDENT, variant);
             if (eat(p, LUDO_TOK_LPAREN)) {
                 do {
-                    add(p, variant, type_expr(p));
+                    add(p, variant, type_expr(p, false));
                 } while (!p->exhausted && eat(p, LUDO_TOK_COMMA));
                 expect(p, LUDO_TOK_RPAREN, variant);
             }
@@ -434,7 +479,7 @@ static ludo_node_id type_body(parser *p) {
         if (eat(p, LUDO_TOK_KW_NUMERIC) && id != 0) {
             p->nodes[id].flags |= LUDO_AST_NUMERIC;
         }
-        add(p, id, type_expr(p));
+        add(p, id, type_expr(p, false));
     } else if (eat(p, LUDO_TOK_KW_INTERFACE)) {
         id = node(p, LUDO_AST_INTERFACE, start);
         while (!p->exhausted && !block_end(peek(p))) {
@@ -449,7 +494,7 @@ static ludo_node_id type_body(parser *p) {
         }
         expect(p, LUDO_TOK_KW_END, id);
     } else {
-        return type_expr(p);
+        return type_expr(p, false);
     }
     return finish(p, id, start);
 }
@@ -624,7 +669,7 @@ static ludo_node_id binary(parser *p, int minimum) {
         size_t op = take(p);
         ludo_node_id parent = node(p, kind == LUDO_TOK_KW_AS ? LUDO_AST_CAST : LUDO_AST_BINARY, op);
         add(p, parent, id);
-        add(p, parent, kind == LUDO_TOK_KW_AS ? type_expr(p) : binary(p, power + 1));
+        add(p, parent, kind == LUDO_TOK_KW_AS ? type_expr(p, false) : binary(p, power + 1));
         id = finish(p, parent, start);
         range = power == 8;
     }
@@ -632,7 +677,27 @@ static ludo_node_id binary(parser *p, int minimum) {
     return id;
 }
 
-static ludo_node_id expression(parser *p) {
+static bool named_path(const parser *p, ludo_node_id id) {
+    bool member = false;
+    while (id != 0 && p->nodes[id].kind == LUDO_AST_MEMBER) {
+        member = true;
+        id = p->nodes[id].first_child;
+    }
+    return id != 0 &&
+           (p->nodes[id].kind == LUDO_AST_IDENT || (member && p->nodes[id].kind == LUDO_AST_ROOT));
+}
+
+static bool type_name_expression(const parser *p, ludo_node_id id) {
+    if (id == 0) {
+        return false;
+    }
+    if (p->nodes[id].kind == LUDO_AST_BRACKET) {
+        return named_path(p, p->nodes[id].first_child);
+    }
+    return p->nodes[id].kind != LUDO_AST_ROOT && named_path(p, id);
+}
+
+static ludo_node_id expression_impl(parser *p, bool type_argument) {
     if (!enter(p)) {
         return 0;
     }
@@ -640,6 +705,13 @@ static ludo_node_id expression(parser *p) {
     ludo_node_id id = binary(p, 1);
     if (!p->exhausted && peek(p) == LUDO_TOK_KW_RESCUE) {
         size_t op = take(p);
+        if (type_argument && type_name_expression(p, id) &&
+            (peek(p) == LUDO_TOK_COMMA || peek(p) == LUDO_TOK_RBRACKET)) {
+            ludo_node_id fallible = node(p, LUDO_AST_FALLIBLE_TYPE, op);
+            add(p, fallible, id);
+            p->depth--;
+            return finish(p, fallible, start);
+        }
         ludo_node_id rescue = node(p, LUDO_AST_RESCUE, op);
         add(p, rescue, id);
         if (peek(p) == LUDO_TOK_KW_RETURN || peek(p) == LUDO_TOK_KW_BREAK ||
@@ -664,6 +736,10 @@ static ludo_node_id expression(parser *p) {
     p->depth--;
     return id;
 }
+
+static ludo_node_id expression(parser *p) { return expression_impl(p, false); }
+
+static ludo_node_id expression_argument(parser *p) { return expression_impl(p, true); }
 
 static ludo_node_id pattern(parser *p) {
     if (!enter(p)) {
@@ -784,7 +860,7 @@ static ludo_node_id simple(parser *p, bool tail) {
         id = node(p, LUDO_AST_LET, start);
         add(p, id, bindings(p));
         if (eat(p, LUDO_TOK_COLON)) {
-            add(p, id, type_expr(p));
+            add(p, id, type_expr(p, false));
             expect(p, LUDO_TOK_EQ, id);
         } else {
             expect(p, LUDO_TOK_COLON_EQ, id);
@@ -990,7 +1066,7 @@ static ludo_node_id declaration(parser *p) {
         expect(p, LUDO_TOK_IDENT, id);
         if (kind == LUDO_TOK_KW_PERSIST || peek(p) == LUDO_TOK_COLON) {
             expect(p, LUDO_TOK_COLON, id);
-            add(p, id, type_expr(p));
+            add(p, id, type_expr(p, false));
         }
         if (kind == LUDO_TOK_KW_CONST || peek(p) == LUDO_TOK_EQ) {
             expect(p, LUDO_TOK_EQ, id);

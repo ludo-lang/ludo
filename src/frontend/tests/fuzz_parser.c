@@ -54,6 +54,22 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         for (size_t i = 1; i < file->ast.count; i++) {
             require(parents[i] == (i == file->ast.root ? 0U : 1U));
         }
+        /* One-parent counts also admit disconnected cycles; prove reachability
+           from the root with the same scratch array used as an explicit stack. */
+        size_t pending = 1;
+        size_t visited = 0;
+        parents[0] = file->ast.root;
+        while (pending != 0) {
+            ludo_node_id current = parents[--pending];
+            require(++visited < file->ast.count);
+            ludo_node_id child = ludo_ast_get(&file->ast, current)->first_child;
+            while (child != 0) {
+                require(pending < file->ast.count);
+                parents[pending++] = child;
+                child = ludo_ast_get(&file->ast, child)->next_sibling;
+            }
+        }
+        require(visited == file->ast.count - 1);
         require((errors == 0) == (file->diagnostic_count == 0));
         for (size_t i = 0; i < file->diagnostic_count; i++) {
             ludo_span span = file->diagnostics[i].primary;

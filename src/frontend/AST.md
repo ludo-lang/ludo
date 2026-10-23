@@ -77,6 +77,13 @@ Names, literals, break/continue, markers, root and discard have no children.
 `IdentPattern` deliberately stays unresolved between binding and nullary variant.
 A bracket argument that can be both a name/type and an expression retains the
 expression shape; type checking interprets it in the role the receiver requires.
+A bare `T rescue` argument retains a fallible-type node over that neutral name
+shape, rather than inventing a missing expression handler.
+The unresolved boundary between an elided fallible result type and a first
+identifier-led body expression is tracked by
+[Where an elided fallible result type ends before the function body](https://github.com/ludo-lang/ludo/issues/152).
+The current return-type-only heuristic is provisional, not a typechecking rule.
+
 A named aggregate retains its prefix for `#explicit`, with the same aggregate
 node kind as a bare literal. Trailing calls become function tails; frame and
 nested statement blocks never acquire tail position.

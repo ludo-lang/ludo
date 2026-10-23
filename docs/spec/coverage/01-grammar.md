@@ -317,3 +317,9 @@ The new ADR reverses no clause of an earlier ADR, so no amendment stamp is
 owed; its absorption stamp and this declaration land with the repairs.
 The token count does not grow: all these terminals already existed. Section 1
 reuses section 2's `GenericArgs` crossing rather than inventing a second list.
+
+The optional error-set/body boundary is **not resolved here**:
+[Where an elided fallible result type ends before the function body](https://github.com/ludo-lang/ludo/issues/152)
+records the ambiguous result-type and cast examples, and blocks Band 2. The
+parser's reference-reading heuristic is explicitly provisional in its tree
+contract; this coverage entry does not promote it into normative syntax.
