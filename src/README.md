@@ -11,7 +11,9 @@ library when it exists.
 **Almost nothing is built yet.** This directory fixes the one seam ADR-0020
 says cannot be retrofitted, and it has a build, a coding standard and CI —
 which exist *before* the code they check (#135). There is a **lexer** (#141)
-and nothing after it: no parser, no typechecker and no interpreter.
+and a **parser with a session-owned AST** (#142). There is no typechecker or
+interpreter yet. [`frontend/AST.md`](frontend/AST.md) describes the tree and
+recovery contract; `ludo ast FILE` dumps it and emits ch7 JSON diagnostics.
 
 ## What this is for
 

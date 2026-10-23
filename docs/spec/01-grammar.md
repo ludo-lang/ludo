@@ -301,6 +301,13 @@ discards a component. (#15 Q7.)
 single AST and no new semantics. **There is no `++` or `--`.** (#7, surface call
 2.)
 
+**6.5.1** A call used as a statement MAY carry its `rescue` tail. The
+underlying postfix expression MUST end in a call; an arbitrary non-call
+expression is legal only in a function's tail position. A following
+`if <condition> then` starts a new compound statement rather than modifying
+the preceding simple statement; without `then`, the modifier form applies.
+([ADR-0058](../adr/0058-rescue-propagation-is-bare-and-bracket-suffixes-are-neutral.md).)
+
 **6.6** `return` MAY carry a comma-separated expression list (`ReturnStatement`),
 matching §5.10.
 
@@ -491,6 +498,13 @@ default value (`rescue 0`), and a binding handler
 (`rescue err then ... end`). `rescue` is purely local with no stack
 involvement. (#10, propagation and handling.)
 
+**7.14.1** `rescue return` is **always bare error propagation**, not an ordinary
+`ReturnStatement` with optional return values. It MUST NOT consume the next
+expression. A handler returning a chosen value writes
+`rescue err then return value end`. This distinguishes propagation from the
+following statement without making newlines significant.
+([ADR-0058](../adr/0058-rescue-propagation-is-bare-and-bracket-suffixes-are-neutral.md).)
+
 **7.15** `or` handles **absence** and `rescue` handles **failure**. They are not
 duplicates: the word at the call site tells a reader which type they are looking
 at without consulting the signature. (#10.)
@@ -583,10 +597,15 @@ rejected** for this position: `!` is already the mutation mark, and one glyph
 MUST NOT denote two entities. (#10, representation.)
 
 **9.8** `Name[Args]` (`NamedType`, `GenericArgs`) applies generic arguments.
-**The type sublanguage owns `[...]` for this purpose and nothing else in the
-expression grammar changed to allow it.** (#7; #15 Q9 — prefix `[` is an array,
-postfix `[` after a name is a generic argument list, and the two are
-distinguishable without semantic information.)
+A postfix bracket list also appears in expression position, where it MAY
+instantiate a generic function (chapter 2 §5.8) or index a value. **The parser
+MUST NOT use name lookup to choose between those roles.** It retains the
+receiver and the argument list; checking decides the role. Indexing requires
+exactly one expression argument. Prefix `[` remains a view or array type.
+This amends the earlier claim that generic brackets changed nothing in the
+expression grammar: `compare[int]` was already required but not fully spelled.
+(#7; #15 Q9;
+[ADR-0058](../adr/0058-rescue-propagation-is-bare-and-bracket-suffixes-are-neutral.md).)
 
 **9.9** There is **no transparent type synonym**. `type X = <TypeExpr>` declares
 a nominal type, not an alias. (#11, nominal newtypes only.)

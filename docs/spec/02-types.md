@@ -340,7 +340,8 @@ semantics they rest on are:
 instantiated**. `compare[int]` is a value of type `fn(int, int) -> int`; bare
 `compare` is a **compile error naming the missing type argument**. There is
 **no inference of the instantiation from an expected function-pointer type**.
-(ADR-0017 §5.)
+(ADR-0017 §5.) The bracket suffix is syntactically neutral between indexing
+and instantiation; chapter 1 §9.8 assigns that distinction to checking.
 
 ---
 

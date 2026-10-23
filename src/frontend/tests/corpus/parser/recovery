@@ -1,0 +1,6 @@
+fn broken(a: [) ->
+  x := f(1,)
+  match x do V() then return end end
+end
+const good = 3
+-- malformed trivia is an error too

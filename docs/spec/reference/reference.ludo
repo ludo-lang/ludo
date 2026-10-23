@@ -463,7 +463,7 @@ end
 pub fn extremes(f: Field) -> $.vec2, $.vec2
   b := unit_bounds()
   return b.lo, b.hi if f.live == 0
-  b.lo, b.hi
+  return b.lo, b.hi
 end
 
 -- Top level runs once, in the entry file only (#26). This is that file.
@@ -475,7 +475,7 @@ $.print("reference program")
 -- this is its only legal site -- top level of the entry file, once, immutable
 -- for the process's life, because a token that differed between two frames
 -- would make every fit guarantee conditional (ch5 §9.3, §9.4).
-$.graphics.set_canvas(.crisp)
+$.graphics.set_canvas($.graphics.Style.crisp)
 
 persist tick: u64 = 0
 
@@ -650,7 +650,7 @@ frame(screen: !Target, scratch: !Scratch)
   -- d-pad, the stick and the bound keys, and its magnitude is already dead-zoned
   -- and rescaled (ch6 §6.3.4, §6.3.5).
   move := $.input.direction()
-  if $.input.button_pressed(.one) then
+  if $.input.button_pressed($.input.Button.one) then
     -- `one` is the physically-south button on every pad, by the ordinal table
     -- and not by a per-platform remap (ch6 §6.2.3, §6.2.4).
     _ = spawn(field!, move * 16.0)
@@ -679,7 +679,7 @@ frame(screen: !Target, scratch: !Scratch)
       position = p,
       size     = $.vec2(8.0, 8.0),
       paint    = $.rgb8(220, 90, 40),
-      blend    = .additive,
+      blend    = $.graphics.Blend.additive,
     })
   end
 
@@ -739,7 +739,7 @@ frame(screen: !Target, scratch: !Scratch)
   -- voice cap to be exhausted (ch6 §5.1.3, §5.2.3). No abbreviation appears in
   -- any field name (ch6 §1.1.4).
   voice := $.audio.play({
-    waveform  = .square,
+    waveform  = $.audio.Waveform.square,
     frequency = 440.0,
     amplitude = 0.4,
     pan       = 0.0,
