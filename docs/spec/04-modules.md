@@ -362,7 +362,7 @@ Cocoa/Metal/CoreAudio set — and it is a **triple**: window and input, renderer
 audio device. This section uses that sense throughout. Where a source says
 **renderer component**, it means the graphics third alone (D3D12, Metal,
 Vulkan, WebGPU, a WebGL2 context, a CPU rasteriser), which is a different
-quantity and is not what the toolchain supplies as a backend (§10.2.1). (`CONTEXT.md` §Backend, which
+quantity and is not what the toolchain supplies as a backend (§10.2.1). (`GLOSSARY.md` *Backend*, which
 holds; ADR-0037's stamp on ADR-0002, which records that ADR-0002 and ADR-0022
 §1 use "backend" for the component alone and that #74 found this collision to
 be half the term's ambiguity.)

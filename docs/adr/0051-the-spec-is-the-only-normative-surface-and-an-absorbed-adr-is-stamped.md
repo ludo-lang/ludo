@@ -18,7 +18,7 @@ It is not, and the correction matters because the two diagnoses call for opposit
 
 ## 1. The impression is half right, and the half that is right is new
 
-`CONTEXT.md` already answers the first half. A [hole](../../CONTEXT.md#hole) is *generated rather
+`CONTEXT.md` already answers the first half. A [hole](../../GLOSSARY.md) is *generated rather
 than enumerated, and unbounded by construction*; most holes found so far were transcription
 defects rather than undecided design ([ADR-0044](0044-the-map-ends-at-an-artifact-and-the-corpus-is-consolidated-into-a-spec.md) §3).
 Chapter transcription surfacing findings is the scanner working. That is not decay, and damping it
@@ -31,7 +31,7 @@ finite pass over a fixed corpus and drains as chapters land; the second is feedb
 only class that can diverge. Nothing recorded a hole's cause, so the two were indistinguishable,
 and a run of the second reads exactly like decay.
 
-`CONTEXT.md` now carries **[induced hole](../../CONTEXT.md#induced-hole)** for the second, and the
+`CONTEXT.md` now carries **[induced hole](../../GLOSSARY.md)** for the second, and the
 instrumentation that makes it countable is in `docs/agents/domain.md`.
 
 ## 2. The real cost is re-derivation, and it is what makes the queue grow

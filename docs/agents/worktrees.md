@@ -16,10 +16,10 @@ ludo/
 ## Read your own worktree, never main's
 
 "The repo root" means **the root of the worktree you are working in**. Whenever a
-skill or doc says to read `CONTEXT.md`, `docs/adr/` or anything else "at the repo
+skill or doc says to read `GLOSSARY.md`, `docs/adr/` or anything else "at the repo
 root", read your worktree's copy, not another checkout's.
 
-This matters because ADRs, the spec and `CONTEXT.md` are versioned content. A branch
+This matters because ADRs, the spec and `GLOSSARY.md` are versioned content. A branch
 may be *editing* them; reading `main`'s copy from a feature worktree would silently
 hide exactly the change under review.
 

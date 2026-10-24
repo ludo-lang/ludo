@@ -12,7 +12,7 @@ repo?* with a plain no.
 ## One repository
 
 **[`ludo-lang/ludo`](https://github.com/ludo-lang/ludo) holds everything**:
-`docs/adr/`, `docs/spec/`, `docs/research/`, `CONTEXT.md`, `docs/agents/`, the C
+`docs/adr/`, `docs/spec/`, `docs/research/`, `GLOSSARY.md`, `docs/agents/`, the C
 bootstrap under `src/`, and one issue tracker.
 [ADR-0046](adr/0046-the-repository-becomes-a-public-monorepo-in-the-ludo-lang-org.md)
 §3 settled this, and

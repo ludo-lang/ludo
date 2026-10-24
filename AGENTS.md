@@ -16,7 +16,7 @@ and commit the dump — CI diffs it.
 - **touch an issue, PR or wayfinder map** → `docs/agents/issue-tracker.md`
 - **triage an issue** → `docs/agents/triage-labels.md`
 - **explore an area, name a domain term or write an ADR** → `docs/agents/domain.md`
-- **start a branch** → `docs/agents/worktrees.md`; read `CONTEXT.md`, ADRs and the spec from
+- **start a branch** → `docs/agents/worktrees.md`; read `GLOSSARY.md`, ADRs and the spec from
   your own worktree, never `main`'s
 - **install or update skills, or configure an agent** → `docs/agents/setup.md`
 
