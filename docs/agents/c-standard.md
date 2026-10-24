@@ -92,11 +92,28 @@ pinned `clang-format` package instead. The config is `.clang-format` at the root
 
 ## What CI does
 
-`build.yml`, per push, `ubuntu-latest`, path-filtered to `src/**`, the `Makefile` and itself:
-`make check` (ASan+UBSan over the suite, `-fno-sanitize-recover=all`), `make format-check`,
-`make standard`, and `make cross` for the macOS and Windows compile-only checks.
+**What can run without a human, does.** A step stays manual only when it cannot be automated
+safely, and says why. This is a design default rather than a property of a file, so it has no
+checker (ADR-0051 §6).
 
-`nightly.yml`, on `schedule:`: Valgrind over the suite, and the long fuzz run.
+`build.yml`, on every PR, merge-queue entry and push to `main`, `ubuntu-latest`: `make check`
+(ASan+UBSan over the suite, `-fno-sanitize-recover=all`, with the token dump), `make
+format-check`, `make standard`, and `make cross` for the macOS and Windows compile-only checks.
+They run only when `src/`, `docs/spec/reference/`, the `Makefile`, `.clang-format`,
+`tools/check-c-standard.py` or `build.yml` changed. The filter is a `changes` job, not a trigger
+filter, so `build-ok` always reports and a docs-only PR is not left waiting on it.
+
+`checks.yml`, on the same events: the docs checkers, as `docs-conventions`.
+
+**`main` takes PRs only, through the merge queue.** The required checks are `build-ok` and
+`docs-conventions`; the queue re-runs them on the PR merged onto the latest `main`, so no one
+rebases by hand. Squash is the only merge method. An agent sets `gh pr merge --auto` once the
+user has said in that session that the PR is ready. The ruleset is changed by hand through `gh
+api`: applying it from CI would need a stored admin token.
+
+`nightly.yml`, on `schedule:`: Valgrind over the suite, and the long fuzz run. A failing job
+opens `nightly: <job> failing` (`needs-triage`, `bug`), or comments on it if it is open; the
+fixing PR closes it with `Fixes #n`.
 
 ## Fuzzing
 

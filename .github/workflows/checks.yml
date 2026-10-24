@@ -4,9 +4,12 @@ on:
   push:
     branches: [main]
   pull_request:
+  merge_group:
 
 jobs:
-  conventions:
+  # A required check: renamed from `conventions` so it does not share a name
+  # with build.yml's job.
+  docs-conventions:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
