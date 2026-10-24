@@ -40,13 +40,13 @@ keep source order. Attributes precede a declaration's other children.
 | extern-item | class identifier, path literal if present |
 | frame | params, block |
 | impl | named-type, constraints |
-| generic-params / constraints / params / returns / type-args | ordered members |
+| generic-params / constraints / params / returns / generic-args | ordered members |
 | generic-param | constraints if present; `usize` remains the annotation deciding value versus type parameter |
 | param / field | type, default expression if present |
 | struct / enum / interface | fields / variants / function signatures |
 | variant | payload types |
 | distinct | underlying type; `NUMERIC` flag records `numeric` |
-| named-type | root if present, qualified-name components, type-args if present |
+| named-type | root if present, qualified-name components, generic-args if present |
 | optional-type / pointer-type / view-type / mutable-type | inner type |
 | array-type | length expression, element type |
 | fallible-type | success type, named error set if present |
@@ -67,7 +67,7 @@ keep source order. Attributes precede a declaration's other children.
 | unary / cast / binary | operand / operand + type / left + right; token records operator |
 | member / optional-member | receiver; token records member name |
 | call | callee, then arguments |
-| bracket | receiver, type-args list; **not yet classified as indexing or generic instantiation** |
+| bracket | receiver, generic-args list; **not yet classified as indexing or generic instantiation** |
 | mark / deref / group | operand |
 | aggregate | optional prefix expression (`PREFIXED` flag), then items |
 | named-item / keyed-item | value (token names field) / key + value |
@@ -83,6 +83,9 @@ The unresolved boundary between an elided fallible result type and a first
 identifier-led body expression is tracked by
 [Where an elided fallible result type ends before the function body](https://github.com/ludo-lang/ludo/issues/152).
 The current return-type-only heuristic is provisional, not a typechecking rule.
+
+`ExplicitMarker` is the touching pair `#` `explicit` (ch1 §11.1.1); a spaced
+`# explicit` becomes one error node and is not read as an attribute.
 
 A named aggregate retains its prefix for `#explicit`, with the same aggregate
 node kind as a bare literal. Trailing calls become function tails; frame and
@@ -104,16 +107,19 @@ not a language nesting rule; `RESOURCE_LIMIT` is distinct from syntax failure.
 This adds an explicit host resource limit to the seam decision's allocation
 failure rather than pretending deeply nested valid source is malformed.
 
-The parser assigns these ch7 codes here (stable, never repurposed):
+Ch7 §5.7 leaves the spec's own codes to the follow-on toolchain effort, and
+§5.6.4 forbids a vendor to emit a `ludo:` code meanwhile. The prototype is a
+vendor, so its codes live under the owner `bootstrap`. They are provisional and
+give way to spec-assigned codes when those exist:
 
 | Code | Meaning |
 |---|---|
-| `ludo:parse-syntax` | input does not match a required grammar shape |
-| `ludo:lex-invalid-utf8` | ill-formed UTF-8 |
-| `ludo:lex-unexpected-character` | character begins no token |
-| `ludo:lex-unterminated-string` | string reaches newline or EOF |
-| `ludo:lex-bad-escape` | unsupported escape or invalid scalar escape |
-| `ludo:lex-malformed-number` | numeric token has invalid digits or glued-on text |
+| `bootstrap:parse-syntax` | input does not match a required grammar shape |
+| `bootstrap:lex-invalid-utf8` | ill-formed UTF-8 |
+| `bootstrap:lex-unexpected-character` | character begins no token |
+| `bootstrap:lex-unterminated-string` | string reaches newline or EOF |
+| `bootstrap:lex-bad-escape` | unsupported escape or invalid scalar escape |
+| `bootstrap:lex-malformed-number` | numeric token has invalid digits or glued-on text |
 
 `ludo_diagnostic_json` writes one version-1 compile/error envelope to the
 caller's buffer, with no newline, no stream, no invented entity and no guessed
@@ -128,10 +134,10 @@ diffs it alongside tokens. This does not typecheck or execute the tree.
 | EBNF region | Implementation | Regression cases |
 |---|---|---|
 | Module, declarations, attributes, signatures | module, declaration, attributes, signature | test_surface; declarations corpus; reference and its three companion files |
-| Statements and conditions | statement, simple, block, condition | test_surface/test_shape; control corpus; modifier/compound-if boundary |
+| Statements and conditions | statement, simple_statement, block, condition | test_surface/test_shape; control corpus; modifier/compound-if boundary |
 | Match and patterns | pattern, match branch in statement | literal, variant, struct, discard, nested arms; empty variant/struct pattern rejection |
 | Every expression precedence level and postfix form | binary, unary, postfix, expression, aggregate | precedence/associativity shape assertions; neutral brackets; rescue propagation/handler/default |
-| Type bodies and expressions | type_body, type_expr, prefix_type, named_type, type_args | all five bodies; function, pointer, optional, view, array, mutable and fallible types |
+| Type bodies and expressions | type_body, type_expr, prefix_type, named_type, generic_args | all five bodies; function, pointer, optional, view, array, mutable and fallible types |
 | Generic constraints/value parameters | generic_params, constraints | constrained/unconstrained/value parameters, interface/impl, multiple/type-only bracket arguments |
 | Malformed input | expect, error, progress; lexer-error scan | test_recovery and parser corpus; preserved later declarations |
 | Arbitrary bytes and arena growth | fuzz_parser | tree ownership, bounds, diagnostics/error-node agreement; corpus replay in every check |

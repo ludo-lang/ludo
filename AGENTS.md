@@ -7,8 +7,8 @@ the C bootstrap prototype built against it.
 ## Build
 
 `make check` is the everyday signal (ASan + UBSan). `CC` defaults to `zig cc`; without zig,
-`make CC=clang check`. After editing `docs/spec/reference/reference.ludo`, run `make tokens`
-and commit the dump — CI diffs it.
+`make CC=clang check`. After editing `docs/spec/reference/reference.ludo`, run `make tokens ast`
+and commit both dumps — CI diffs them.
 
 ## Before you…
 

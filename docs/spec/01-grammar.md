@@ -655,6 +655,14 @@ fault. `N = 0` is legal and has no special case. (ADR-0045 §7.)
 marks a module. There is no declaration-level form, no directory- or
 library-level form, and no compiler flag. (ADR-0029 §2.)
 
+**11.1.1** `ExplicitMarker` is the **single terminal `#explicit`**: `#` and
+`explicit` touch, with no trivia between them. `# explicit` is not the marker,
+and the marker is the one entry of §12.2 that marks a module rather than a
+declaration, so no `Attribute` reading applies either. An implementation
+reports it as a syntax error rather than reading it as something else. The lexer still charges only `#` (§13.4), so this
+constrains the parser, not the count.
+([The parser ticket](https://github.com/ludo-lang/ludo/issues/142).)
+
 **11.2** A layer choice **never crosses a library boundary** in any direction: a
 library cannot force `#explicit` on its consumers, cannot forbid it, and cannot
 see it. There is no `#explicit`-requiring signature and no query. (ADR-0029 §3.)

@@ -142,6 +142,18 @@ static void test_recovery(ludo_session *session) {
     LUDO_CHECK(find(file, LUDO_AST_CONST, "after") != 0);
     file = parse(session, "fn bad() x := (1 + ) end const after = 2", false);
     LUDO_CHECK(find(file, LUDO_AST_CONST, "after") != 0);
+    /* A spaced marker is its own error, not an attribute on the next item. */
+    file = parse(session, "# explicit const after = 2", false);
+    LUDO_CHECK(file->diagnostic_count == 1);
+    LUDO_CHECK(strcmp(file->diagnostics[0].message, "#explicit takes no space after #") == 0);
+    LUDO_CHECK(kind_count(file, LUDO_AST_ATTRIBUTE) == 0);
+    LUDO_CHECK(find(file, LUDO_AST_CONST, "after") != 0);
+    /* ch7 §5.6.4: the prototype is a vendor and never emits a `ludo:` code. */
+    file = parse(session, "const = \"\\q\" @", false);
+    LUDO_CHECK(file->diagnostic_count >= 3); /* one syntax error, two lex errors */
+    for (size_t i = 0; i < file->diagnostic_count; i++) {
+        LUDO_CHECK(strncmp(file->diagnostics[i].code, "bootstrap:", 10) == 0);
+    }
 }
 
 static void test_shape(ludo_session *session) {
@@ -212,10 +224,10 @@ static void test_sessions_and_limits(void) {
 }
 
 static void test_json(void) {
-    ludo_diagnostic diagnostic = {"ludo:parse-syntax", "a\"b\\c\n", {7, 13, 0}};
+    ludo_diagnostic diagnostic = {"bootstrap:parse-syntax", "a\"b\\c\n", {7, 13, 0}};
     static const char expected[] =
         "{\"version\":1,\"producer\":\"compile\",\"severity\":\"error\","
-        "\"code\":\"ludo:parse-syntax\",\"primary\":{\"file\":7,\"offset\":13,\"length\":0},"
+        "\"code\":\"bootstrap:parse-syntax\",\"primary\":{\"file\":7,\"offset\":13,\"length\":0},"
         "\"message\":\"a\\\"b\\\\c\\u000a\"}";
     char buffer[512];
     memset(buffer, 'X', sizeof buffer);

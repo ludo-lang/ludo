@@ -311,6 +311,7 @@ complete grammar. It found these gaps by implementing it:
 | ADR-0058: rescued call statements and compound-if priority | §6.5.1; `CallStatement` |
 | ADR-0058: neutral bracket suffix | §9.8; `Suffix` reuses `GenericArgs` |
 | ch6 §12.4: root-qualified blessed types | `QualifiedName` admits the existing `$.` root |
+| grammar `ExplicitMarker ::= "#explicit"` | §11.1.1: one terminal, so `# explicit` is a syntax error |
 | ch2 §4.6.1; FnDecl's one `TailExpr` | reference uses qualified enum constructors and explicit multiple-value return |
 
 The new ADR reverses no clause of an earlier ADR, so no amendment stamp is

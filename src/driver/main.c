@@ -114,21 +114,7 @@ static bool print_ast(const ludo_parsed_file *file) {
         if (node->flags != 0) {
             (void)printf(" flags=%u", node->flags);
         }
-        ludo_ast_kind kind = node->kind;
-        bool payload =
-            kind == LUDO_AST_IDENT || kind == LUDO_AST_LITERAL || kind == LUDO_AST_LIBRARY ||
-            kind == LUDO_AST_USE || kind == LUDO_AST_ATTRIBUTE || kind == LUDO_AST_TYPE_DECL ||
-            kind == LUDO_AST_CONST || kind == LUDO_AST_FN || kind == LUDO_AST_EXTERN_FN ||
-            kind == LUDO_AST_EXTERN_ITEM || kind == LUDO_AST_PERSIST ||
-            kind == LUDO_AST_GENERIC_PARAM || kind == LUDO_AST_PARAM || kind == LUDO_AST_FIELD ||
-            kind == LUDO_AST_VARIANT || kind == LUDO_AST_HANDLER ||
-            kind == LUDO_AST_BIND_CONDITION || kind == LUDO_AST_PATTERN_IDENT ||
-            kind == LUDO_AST_PATTERN_VARIANT || kind == LUDO_AST_PATTERN_FIELD ||
-            kind == LUDO_AST_PATTERN_LITERAL || kind == LUDO_AST_UNARY || kind == LUDO_AST_BINARY ||
-            kind == LUDO_AST_MEMBER || kind == LUDO_AST_OPTIONAL_MEMBER ||
-            kind == LUDO_AST_NAMED_ITEM || kind == LUDO_AST_COMPOUND_ASSIGN ||
-            kind == LUDO_AST_MODIFIER;
-        if (payload && node->token < file->token_count) {
+        if (ludo_ast_kind_has_token_text(node->kind) && node->token < file->token_count) {
             ludo_token token = file->tokens[node->token];
             (void)putchar(' ');
             print_text(file->source + token.offset, token.length);

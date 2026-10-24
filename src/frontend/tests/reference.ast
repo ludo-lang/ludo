@@ -280,7 +280,7 @@ module
     constraints
       named-type
         ident Ranked
-        type-args
+        generic-args
           ident Rock
   fn flags=1 rank
     params
@@ -300,7 +300,7 @@ module
         constraints
           named-type
             ident Ranked
-            type-args
+            generic-args
               ident T
     params
       param xs
@@ -516,7 +516,7 @@ module
         optional-type
           named-type
             ident Handle
-            type-args
+            generic-args
               ident Rock
   fn flags=1 unit_bounds
     params
@@ -556,7 +556,7 @@ module
         call
           member ivec2
             root
-          cast
+          cast as
             group
               binary /
                 member x
@@ -564,7 +564,7 @@ module
                 ident cell
             named-type
               ident i32
-          cast
+          cast as
             group
               binary /
                 member y
@@ -601,17 +601,17 @@ module
             bracket
               mark
                 ident pos
-              type-args
+              generic-args
                 ident i
             binary +
               bracket
                 ident pos
-                type-args
+                generic-args
                   ident i
               binary *
                 bracket
                   ident vel
-                  type-args
+                  generic-args
                     ident i
                 ident dt
   fn flags=1 integrate_live
@@ -640,13 +640,13 @@ module
           bracket
             mark
               ident pos
-            type-args
+            generic-args
               binary ..<
                 literal 0
                 ident live
           bracket
             ident vel
-            type-args
+            generic-args
               binary ..<
                 literal 0
                 ident live
@@ -666,7 +666,7 @@ module
         bracket
           member pos
             ident f
-          type-args
+          generic-args
             binary ..<
               literal 0
               member live
@@ -700,7 +700,7 @@ module
           member pos
             mark
               ident f
-          type-args
+          generic-args
             member live
               ident f
         ident at
@@ -709,7 +709,7 @@ module
           member vel
             mark
               ident f
-          type-args
+          generic-args
             member live
               ident f
         call
@@ -762,24 +762,24 @@ module
           member pos
             mark
               ident f
-          type-args
+          generic-args
             ident i
         bracket
           member pos
             ident f
-          type-args
+          generic-args
             ident last
       assign
         bracket
           member vel
             mark
               ident f
-          type-args
+          generic-args
             ident i
         bracket
           member vel
             ident f
-          type-args
+          generic-args
             ident last
       compound-assign -=
         member live
@@ -792,7 +792,7 @@ module
         mutable-type
           named-type
             ident List
-            type-args
+            generic-args
               ident Rock
     block
       for
@@ -815,7 +815,7 @@ module
               member radius
                 bracket
                   ident rocks
-                  type-args
+                  generic-args
                     ident i
               literal 0.0
   fn flags=1 compact
@@ -824,7 +824,7 @@ module
         mutable-type
           named-type
             ident List
-            type-args
+            generic-args
               ident Rock
     block
       let
@@ -847,7 +847,7 @@ module
                 member radius
                   bracket
                     ident rocks
-                    type-args
+                    generic-args
                       ident i
                 literal 0.0
               block
@@ -855,11 +855,11 @@ module
                   bracket
                     mark
                       ident rocks
-                    type-args
+                    generic-args
                       ident w
                   bracket
                     ident rocks
-                    type-args
+                    generic-args
                       ident i
                 compound-assign +=
                   ident w
@@ -924,7 +924,7 @@ module
   persist name
     named-type
       ident TextBuf
-      type-args
+      generic-args
         literal 32
     aggregate
   persist field
@@ -936,7 +936,7 @@ module
     mutable-type
       named-type
         ident List
-        type-args
+        generic-args
           member vec2
             root
     call
@@ -953,7 +953,7 @@ module
     mutable-type
       named-type
         ident List
-        type-args
+        generic-args
           ident Rock
     call
       member from
@@ -977,7 +977,7 @@ module
     mutable-type
       named-type
         ident List
-        type-args
+        generic-args
           member vec2
             root
     call
@@ -1175,7 +1175,7 @@ module
       let
         bindings
           ident secs
-        cast
+        cast as
           group
             binary /
               ident tick
@@ -1539,7 +1539,7 @@ module
         mutable-type
           named-type
             ident List
-            type-args
+            generic-args
               member vec2
                 root
         rescue

@@ -145,7 +145,7 @@ static void diagnostic(parser *p, size_t pos, const char *code, const char *mess
 }
 
 static ludo_node_id error(parser *p, const char *message) {
-    diagnostic(p, p->pos, "ludo:parse-syntax", message);
+    diagnostic(p, p->pos, "bootstrap:parse-syntax", message);
     return node(p, LUDO_AST_ERROR, p->pos);
 }
 
@@ -175,6 +175,11 @@ static bool type_start(ludo_token_kind kind) {
            kind == LUDO_TOK_KW_FN;
 }
 
+static bool assignment_operator(ludo_token_kind kind) {
+    return kind == LUDO_TOK_EQ || kind == LUDO_TOK_PLUS_EQ || kind == LUDO_TOK_MINUS_EQ ||
+           kind == LUDO_TOK_STAR_EQ || kind == LUDO_TOK_SLASH_EQ || kind == LUDO_TOK_PERCENT_EQ;
+}
+
 static bool block_end(ludo_token_kind kind) {
     return kind == LUDO_TOK_EOF || kind == LUDO_TOK_KW_END || kind == LUDO_TOK_KW_ELSE ||
            kind == LUDO_TOK_KW_ELSEIF;
@@ -188,11 +193,13 @@ static bool declaration_start(ludo_token_kind kind) {
 
 /* Bound the native parsing stack as a host resource. Exhaustion publishes no
    tree, just like a failed arena allocation. See the public status contract. */
+enum { MAX_PARSE_DEPTH = 256 };
+
 static bool enter(parser *p) {
     if (p->exhausted) {
         return false;
     }
-    if (p->depth == 256) {
+    if (p->depth == MAX_PARSE_DEPTH) {
         p->exhausted = true;
         p->failure = LUDO_FRONTEND_RESOURCE_LIMIT;
         return false;
@@ -257,9 +264,9 @@ static ludo_node_id generic_params(parser *p) {
     return finish(p, id, start);
 }
 
-static ludo_node_id type_args(parser *p) {
+static ludo_node_id generic_args(parser *p) {
     size_t start = take(p);
-    ludo_node_id id = node(p, LUDO_AST_TYPE_ARGS, start);
+    ludo_node_id id = node(p, LUDO_AST_GENERIC_ARGS, start);
     do {
         size_t before = p->pos;
         /* Bare names overlap. Prefer expression shape, leaving their role to
@@ -287,7 +294,7 @@ static ludo_node_id named_type(parser *p) {
         add(p, id, identifier(p));
     }
     if (peek(p) == LUDO_TOK_LBRACKET) {
-        add(p, id, type_args(p));
+        add(p, id, generic_args(p));
     }
     return finish(p, id, start);
 }
@@ -375,11 +382,9 @@ static bool error_set_ahead(const parser *p) {
         pos = significant(p, pos);
     }
     ludo_token_kind next = token_at(p, pos).kind;
-    return next != LUDO_TOK_COLON_EQ && next != LUDO_TOK_COLON && next != LUDO_TOK_EQ &&
-           next != LUDO_TOK_PLUS_EQ && next != LUDO_TOK_MINUS_EQ && next != LUDO_TOK_STAR_EQ &&
-           next != LUDO_TOK_SLASH_EQ && next != LUDO_TOK_PERCENT_EQ && next != LUDO_TOK_LPAREN &&
-           next != LUDO_TOK_BANG && next != LUDO_TOK_DOT && next != LUDO_TOK_QUESTION_DOT &&
-           next != LUDO_TOK_CARET && precedence(next) == 0;
+    return next != LUDO_TOK_COLON_EQ && next != LUDO_TOK_COLON && !assignment_operator(next) &&
+           next != LUDO_TOK_LPAREN && next != LUDO_TOK_BANG && next != LUDO_TOK_DOT &&
+           next != LUDO_TOK_QUESTION_DOT && next != LUDO_TOK_CARET && precedence(next) == 0;
 }
 
 static ludo_node_id type_expr(parser *p, bool body_boundary) {
@@ -587,7 +592,7 @@ static ludo_node_id postfix(parser *p) {
             can_name = false;
         } else if (kind == LUDO_TOK_LBRACKET) {
             size_t op = p->pos;
-            ludo_node_id args = type_args(p);
+            ludo_node_id args = generic_args(p);
             ludo_node_id index = node(p, LUDO_AST_BRACKET, op);
             add(p, index, id);
             add(p, index, args);
@@ -663,7 +668,8 @@ static ludo_node_id binary(parser *p, int minimum) {
     while (!p->exhausted && precedence(peek(p)) >= minimum) {
         ludo_token_kind kind = peek(p);
         int power = precedence(kind);
-        if (power == 8 && range) {
+        bool range_operator = kind == LUDO_TOK_RANGE || kind == LUDO_TOK_REV_RANGE;
+        if (range_operator && range) {
             break; /* RangeExpr permits exactly one range at this level. */
         }
         size_t op = take(p);
@@ -671,7 +677,7 @@ static ludo_node_id binary(parser *p, int minimum) {
         add(p, parent, id);
         add(p, parent, kind == LUDO_TOK_KW_AS ? type_expr(p, false) : binary(p, power + 1));
         id = finish(p, parent, start);
-        range = power == 8;
+        range = range_operator;
     }
     p->depth--;
     return id;
@@ -709,8 +715,8 @@ static ludo_node_id expression_impl(parser *p, bool type_argument) {
             (peek(p) == LUDO_TOK_COMMA || peek(p) == LUDO_TOK_RBRACKET)) {
             ludo_node_id fallible = node(p, LUDO_AST_FALLIBLE_TYPE, op);
             add(p, fallible, id);
-            p->depth--;
-            return finish(p, fallible, start);
+            id = finish(p, fallible, start);
+            goto done;
         }
         ludo_node_id rescue = node(p, LUDO_AST_RESCUE, op);
         add(p, rescue, id);
@@ -733,6 +739,7 @@ static ludo_node_id expression_impl(parser *p, bool type_argument) {
         }
         id = finish(p, rescue, start);
     }
+done:
     p->depth--;
     return id;
 }
@@ -836,7 +843,7 @@ static bool call_expression(const parser *p, ludo_node_id id) {
     return id != 0 && p->nodes[id].kind == LUDO_AST_CALL;
 }
 
-static ludo_node_id simple(parser *p, bool tail) {
+static ludo_node_id simple_statement(parser *p, bool tail) {
     if (!enter(p)) {
         return 0;
     }
@@ -855,7 +862,7 @@ static ludo_node_id simple(parser *p, bool tail) {
         id = node(p, LUDO_AST_CONTINUE, start);
     } else if (eat(p, LUDO_TOK_KW_DEFER)) {
         id = node(p, LUDO_AST_DEFER, start);
-        add(p, id, simple(p, false));
+        add(p, id, simple_statement(p, false));
     } else if (let_ahead(p)) {
         id = node(p, LUDO_AST_LET, start);
         add(p, id, bindings(p));
@@ -869,8 +876,7 @@ static ludo_node_id simple(parser *p, bool tail) {
     } else {
         ludo_node_id value = expression(p);
         ludo_token_kind kind = peek(p);
-        if (kind == LUDO_TOK_EQ || kind == LUDO_TOK_PLUS_EQ || kind == LUDO_TOK_MINUS_EQ ||
-            kind == LUDO_TOK_STAR_EQ || kind == LUDO_TOK_SLASH_EQ || kind == LUDO_TOK_PERCENT_EQ) {
+        if (assignment_operator(kind)) {
             size_t op = take(p);
             id = node(p, kind == LUDO_TOK_EQ ? LUDO_AST_ASSIGN : LUDO_AST_COMPOUND_ASSIGN, op);
             add(p, id, value);
@@ -973,7 +979,7 @@ static ludo_node_id statement(parser *p, bool tail) {
         }
         expect(p, LUDO_TOK_KW_END, id);
     } else {
-        id = simple(p, tail);
+        id = simple_statement(p, tail);
         if (peek(p) == LUDO_TOK_KW_IF || peek(p) == LUDO_TOK_KW_UNLESS) {
             size_t op = take(p);
             ludo_node_id following_condition = condition(p);
@@ -982,8 +988,7 @@ static ludo_node_id statement(parser *p, bool tail) {
                 if (id != 0) {
                     p->nodes[id].next_sibling = next;
                 }
-                p->depth--;
-                return id; /* simple() already fixed the first statement's span */
+                goto done; /* simple_statement() already fixed the first statement's span */
             }
             ludo_node_id modifier = node(p, LUDO_AST_MODIFIER, op);
             add(p, modifier, id);
@@ -991,8 +996,10 @@ static ludo_node_id statement(parser *p, bool tail) {
             id = modifier;
         }
     }
+    id = finish(p, id, start);
+done:
     p->depth--;
-    return finish(p, id, start);
+    return id;
 }
 
 static ludo_node_id block(parser *p, bool tail) {
@@ -1129,6 +1136,24 @@ static ludo_node_id declaration(parser *p) {
     return finish(p, id, start);
 }
 
+static const char *lex_error_code(ludo_lex_error error) {
+    switch (error) {
+    case LUDO_LEX_OK:
+        return NULL;
+    case LUDO_LEX_INVALID_UTF8:
+        return "bootstrap:lex-invalid-utf8";
+    case LUDO_LEX_UNEXPECTED_CHAR:
+        return "bootstrap:lex-unexpected-character";
+    case LUDO_LEX_UNTERMINATED_STRING:
+        return "bootstrap:lex-unterminated-string";
+    case LUDO_LEX_BAD_ESCAPE:
+        return "bootstrap:lex-bad-escape";
+    case LUDO_LEX_MALFORMED_NUMBER:
+        return "bootstrap:lex-malformed-number";
+    }
+    return NULL;
+}
+
 static bool text_is(const parser *p, size_t pos, const char *text) {
     ludo_token token = token_at(p, pos);
     size_t length = strlen(text);
@@ -1141,11 +1166,18 @@ static ludo_node_id module(parser *p) {
     if (peek(p) == LUDO_TOK_HASH) {
         size_t next = significant(p, p->pos + 1);
         ludo_token hash = token_at(p, p->pos);
-        if (token_at(p, next).kind == LUDO_TOK_IDENT && text_is(p, next, "explicit") &&
-            hash.offset + hash.length == token_at(p, next).offset) {
-            ludo_node_id marker = node(p, LUDO_AST_EXPLICIT, take(p));
-            (void)take(p);
-            add(p, id, finish(p, marker, start));
+        /* ch1 §11.1.1: the marker is the one spelling `#explicit`. A gap makes it
+           no marker, and no attribute either, so it gets its own error. */
+        if (token_at(p, next).kind == LUDO_TOK_IDENT && text_is(p, next, "explicit")) {
+            if (hash.offset + hash.length == token_at(p, next).offset) {
+                ludo_node_id marker = node(p, LUDO_AST_EXPLICIT, take(p));
+                (void)take(p);
+                add(p, id, finish(p, marker, start));
+            } else {
+                add(p, id, error(p, "#explicit takes no space after #"));
+                (void)take(p);
+                (void)take(p);
+            }
         }
     }
     while (!p->exhausted && peek(p) != LUDO_TOK_EOF) {
@@ -1173,17 +1205,8 @@ static ludo_node_id module(parser *p) {
        consumption. Each is a ch7 diagnostic and an explicit root error node. */
     for (size_t i = 0; !p->exhausted && i < p->unit->file.token_count; i++) {
         ludo_token token = token_at(p, i);
-        if (token.error != LUDO_LEX_OK) {
-            const char *code = "ludo:lex-invalid-utf8";
-            if (token.error == LUDO_LEX_UNEXPECTED_CHAR) {
-                code = "ludo:lex-unexpected-character";
-            } else if (token.error == LUDO_LEX_UNTERMINATED_STRING) {
-                code = "ludo:lex-unterminated-string";
-            } else if (token.error == LUDO_LEX_BAD_ESCAPE) {
-                code = "ludo:lex-bad-escape";
-            } else if (token.error == LUDO_LEX_MALFORMED_NUMBER) {
-                code = "ludo:lex-malformed-number";
-            }
+        const char *code = lex_error_code(token.error);
+        if (code != NULL) {
             diagnostic(p, i, code, ludo_lex_error_name(token.error));
             add(p, id, node(p, LUDO_AST_ERROR, i));
         }

@@ -58,8 +58,8 @@ const char *ludo_ast_kind_name(ludo_ast_kind kind) {
         return "fn-type";
     case LUDO_AST_NAMED_TYPE:
         return "named-type";
-    case LUDO_AST_TYPE_ARGS:
-        return "type-args";
+    case LUDO_AST_GENERIC_ARGS:
+        return "generic-args";
     case LUDO_AST_OPTIONAL_TYPE:
         return "optional-type";
     case LUDO_AST_POINTER_TYPE:
@@ -164,4 +164,94 @@ const char *ludo_ast_kind_name(ludo_ast_kind kind) {
         return "handler";
     }
     return "unknown";
+}
+
+/* Whether the node's token is a name, literal or operator, as opposed to a
+   syntactic anchor. AST.md's child-role table says which; this is its one copy. */
+bool ludo_ast_kind_has_token_text(ludo_ast_kind kind) {
+    switch (kind) {
+    case LUDO_AST_LIBRARY:
+    case LUDO_AST_USE:
+    case LUDO_AST_ATTRIBUTE:
+    case LUDO_AST_TYPE_DECL:
+    case LUDO_AST_CONST:
+    case LUDO_AST_FN:
+    case LUDO_AST_EXTERN_FN:
+    case LUDO_AST_EXTERN_ITEM:
+    case LUDO_AST_PERSIST:
+    case LUDO_AST_GENERIC_PARAM:
+    case LUDO_AST_PARAM:
+    case LUDO_AST_FIELD:
+    case LUDO_AST_VARIANT:
+    case LUDO_AST_COMPOUND_ASSIGN:
+    case LUDO_AST_MODIFIER:
+    case LUDO_AST_BIND_CONDITION:
+    case LUDO_AST_PATTERN_IDENT:
+    case LUDO_AST_PATTERN_VARIANT:
+    case LUDO_AST_PATTERN_FIELD:
+    case LUDO_AST_PATTERN_LITERAL:
+    case LUDO_AST_IDENT:
+    case LUDO_AST_LITERAL:
+    case LUDO_AST_UNARY:
+    case LUDO_AST_BINARY:
+    case LUDO_AST_CAST:
+    case LUDO_AST_MEMBER:
+    case LUDO_AST_OPTIONAL_MEMBER:
+    case LUDO_AST_NAMED_ITEM:
+    case LUDO_AST_HANDLER:
+        return true;
+    case LUDO_AST_ERROR:
+    case LUDO_AST_MODULE:
+    case LUDO_AST_EXPLICIT:
+    case LUDO_AST_FRAME:
+    case LUDO_AST_IMPL:
+    case LUDO_AST_GENERIC_PARAMS:
+    case LUDO_AST_CONSTRAINTS:
+    case LUDO_AST_PARAMS:
+    case LUDO_AST_RETURNS:
+    case LUDO_AST_STRUCT:
+    case LUDO_AST_ENUM:
+    case LUDO_AST_DISTINCT:
+    case LUDO_AST_INTERFACE:
+    case LUDO_AST_FN_TYPE:
+    case LUDO_AST_NAMED_TYPE:
+    case LUDO_AST_GENERIC_ARGS:
+    case LUDO_AST_OPTIONAL_TYPE:
+    case LUDO_AST_POINTER_TYPE:
+    case LUDO_AST_VIEW_TYPE:
+    case LUDO_AST_ARRAY_TYPE:
+    case LUDO_AST_MUTABLE_TYPE:
+    case LUDO_AST_FALLIBLE_TYPE:
+    case LUDO_AST_BLOCK:
+    case LUDO_AST_LET:
+    case LUDO_AST_BINDINGS:
+    case LUDO_AST_ASSIGN:
+    case LUDO_AST_EXPR_STMT:
+    case LUDO_AST_TAIL:
+    case LUDO_AST_RETURN:
+    case LUDO_AST_BREAK:
+    case LUDO_AST_CONTINUE:
+    case LUDO_AST_DEFER:
+    case LUDO_AST_IF:
+    case LUDO_AST_BRANCH:
+    case LUDO_AST_WHILE:
+    case LUDO_AST_FOR:
+    case LUDO_AST_UNSAFE:
+    case LUDO_AST_MATCH:
+    case LUDO_AST_ARM:
+    case LUDO_AST_PATTERN_STRUCT:
+    case LUDO_AST_PATTERN_DISCARD:
+    case LUDO_AST_ROOT:
+    case LUDO_AST_DISCARD:
+    case LUDO_AST_CALL:
+    case LUDO_AST_BRACKET:
+    case LUDO_AST_MARK:
+    case LUDO_AST_DEREF:
+    case LUDO_AST_GROUP:
+    case LUDO_AST_AGGREGATE:
+    case LUDO_AST_KEYED_ITEM:
+    case LUDO_AST_RESCUE:
+        return false;
+    }
+    return false;
 }

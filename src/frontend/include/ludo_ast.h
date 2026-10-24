@@ -5,6 +5,7 @@
 #ifndef LUDO_AST_H
 #define LUDO_AST_H
 
+#include <stdbool.h>
 #include <stddef.h>
 
 typedef size_t ludo_node_id;
@@ -45,7 +46,7 @@ typedef enum ludo_ast_kind {
     LUDO_AST_INTERFACE,
     LUDO_AST_FN_TYPE,
     LUDO_AST_NAMED_TYPE,
-    LUDO_AST_TYPE_ARGS,
+    LUDO_AST_GENERIC_ARGS,
     LUDO_AST_OPTIONAL_TYPE,
     LUDO_AST_POINTER_TYPE,
     LUDO_AST_VIEW_TYPE,
@@ -136,5 +137,6 @@ static inline ludo_node_id ludo_ast_child(const ludo_ast *ast, ludo_node_id id, 
 }
 
 const char *ludo_ast_kind_name(ludo_ast_kind kind);
+bool ludo_ast_kind_has_token_text(ludo_ast_kind kind);
 
 #endif
