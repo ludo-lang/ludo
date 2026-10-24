@@ -1,0 +1,1569 @@
+module
+  use "vec-utils"
+  use "./hud.ludo"
+  const MAX_ROCKS
+    literal 64
+  extern-item save1
+    ident storage
+  extern-item rock
+    ident image
+    literal "art/rock.png"
+  type-decl Rock
+    struct
+      field pos
+        named-type
+          root
+          ident vec2
+      field vel
+        named-type
+          root
+          ident vec2
+      field radius
+        named-type
+          ident f32
+        literal 4.0
+  type-decl Shape
+    enum
+      variant point
+      variant circle
+        named-type
+          ident f32
+      variant box
+        named-type
+          root
+          ident vec2
+        named-type
+          root
+          ident vec2
+  type-decl RockId
+    distinct
+      named-type
+        ident u32
+  type-decl FieldError
+    enum
+      variant empty
+      variant too_many
+        named-type
+          ident usize
+  fn flags=1 overlaps
+    params
+      param a
+        named-type
+          ident Rock
+      param b
+        named-type
+          ident Rock
+    returns
+      named-type
+        ident bool
+    block
+      let
+        bindings
+          ident dx
+        binary -
+          member x
+            member pos
+              ident a
+          member x
+            member pos
+              ident b
+      let
+        bindings
+          ident dy
+        binary -
+          member y
+            member pos
+              ident a
+          member y
+            member pos
+              ident b
+      let
+        bindings
+          ident r
+        binary +
+          member radius
+            ident a
+          member radius
+            ident b
+      tail
+        binary <
+          binary +
+            binary *
+              ident dx
+              ident dx
+            binary *
+              ident dy
+              ident dy
+          binary *
+            ident r
+            ident r
+  fn flags=1 advance
+    params
+      param r
+        mutable-type
+          named-type
+            ident Rock
+    block
+      assign
+        member pos
+          mark
+            ident r
+        binary +
+          member pos
+            ident r
+          member vel
+            ident r
+  fn flags=1 extent
+    params
+      param s
+        named-type
+          ident Shape
+    returns
+      named-type
+        ident f32
+    block
+      match
+        ident s
+        arm
+          pattern-ident point
+          block
+            return
+              literal 0.0
+        arm
+          pattern-variant circle
+            pattern-ident radius
+          block
+            return
+              ident radius
+        arm
+          pattern-variant box
+            pattern-ident lo
+            pattern-ident hi
+          block
+            return
+              binary -
+                member x
+                  ident hi
+                member x
+                  ident lo
+  fn flags=1 first
+    generic-params
+      generic-param T
+    params
+      param xs
+        view-type
+          named-type
+            ident T
+    returns
+      optional-type
+        named-type
+          ident T
+    block
+      for
+        bindings
+          ident x
+        ident xs
+        block
+          return
+            ident x
+      return
+        ident none
+  fn flags=1 radius_of
+    params
+      param xs
+        view-type
+          named-type
+            ident Rock
+    returns
+      named-type
+        ident f32
+    block
+      match
+        call
+          ident first
+          ident xs
+        arm
+          pattern-ident none
+          block
+            return
+              literal 0.0
+        arm
+          pattern-variant some
+            pattern-ident r
+          block
+            return
+              member radius
+                ident r
+  fn flags=1 lead_radius
+    params
+      param xs
+        view-type
+          named-type
+            ident Rock
+    returns
+      named-type
+        ident f32
+    block
+      tail
+        binary or
+          optional-member radius
+            call
+              ident first
+              ident xs
+          literal 0.0
+  fn flags=1 is_big
+    params
+      param r
+        named-type
+          ident Rock
+    returns
+      named-type
+        ident bool
+    block
+      tail
+        binary >
+          member radius
+            ident r
+          literal 8.0
+  fn flags=1 count_where
+    params
+      param xs
+        view-type
+          named-type
+            ident Rock
+      param keep
+        fn-type
+          params
+            named-type
+              ident Rock
+          named-type
+            ident bool
+    returns
+      named-type
+        ident usize
+    block
+      let
+        bindings
+          ident n
+        named-type
+          ident usize
+        literal 0
+      for
+        bindings
+          ident x
+        ident xs
+        block
+          modifier if
+            compound-assign +=
+              ident n
+              literal 1
+            call
+              ident keep
+              ident x
+      tail
+        ident n
+  type-decl flags=1 Ranked
+    generic-params
+      generic-param T
+    interface
+      fn rank
+        params
+          param v
+            named-type
+              ident T
+        returns
+          named-type
+            ident f32
+  impl
+    named-type
+      ident Rock
+    constraints
+      named-type
+        ident Ranked
+        generic-args
+          ident Rock
+  fn flags=1 rank
+    params
+      param v
+        named-type
+          ident Rock
+    returns
+      named-type
+        ident f32
+    block
+      tail
+        member radius
+          ident v
+  fn flags=1 best
+    generic-params
+      generic-param T
+        constraints
+          named-type
+            ident Ranked
+            generic-args
+              ident T
+    params
+      param xs
+        view-type
+          named-type
+            ident T
+    returns
+      optional-type
+        named-type
+          ident T
+    block
+      let
+        bindings
+          ident top
+        optional-type
+          named-type
+            ident T
+        ident none
+      let
+        bindings
+          ident best_rank
+        named-type
+          ident f32
+        literal 0.0
+      for
+        bindings
+          ident x
+        ident xs
+        block
+          let
+            bindings
+              ident r
+            call
+              ident rank
+              ident x
+          match
+            ident top
+            arm
+              pattern-ident none
+              block
+                assign
+                  ident top
+                  ident x
+                assign
+                  ident best_rank
+                  ident r
+            arm
+              pattern-variant some
+                pattern-discard
+              block
+                if
+                  branch
+                    binary >
+                      ident r
+                      ident best_rank
+                    block
+                      assign
+                        ident top
+                        ident x
+                      assign
+                        ident best_rank
+                        ident r
+      return
+        ident top
+  fn flags=1 checked_count
+    params
+      param xs
+        view-type
+          named-type
+            ident Rock
+    returns
+      fallible-type
+        named-type
+          ident usize
+    block
+      modifier if
+        return
+          member empty
+            ident FieldError
+        binary ==
+          member len
+            ident xs
+          literal 0
+      modifier if
+        return
+          call
+            member too_many
+              ident FieldError
+            member len
+              ident xs
+        binary >
+          member len
+            ident xs
+          ident MAX_ROCKS
+      tail
+        member len
+          ident xs
+  fn flags=1 report
+    params
+      param xs
+        view-type
+          named-type
+            ident Rock
+    returns
+      named-type
+        ident usize
+    block
+      let
+        bindings
+          ident lenient
+        rescue
+          call
+            ident checked_count
+            ident xs
+          literal 0
+      let
+        bindings
+          ident strict
+        rescue
+          call
+            ident checked_count
+            ident xs
+          handler err
+            block
+              match
+                ident err
+                arm
+                  pattern-ident empty
+                  block
+                    return
+                      literal 0
+                arm
+                  pattern-variant too_many
+                    pattern-ident n
+                  block
+                    return
+                      ident n
+      assign
+        discard
+        ident lenient
+      tail
+        ident strict
+  fn flags=1 total
+    params
+      param xs
+        view-type
+          named-type
+            ident Rock
+    returns
+      fallible-type
+        named-type
+          ident usize
+    block
+      let
+        bindings
+          ident n
+        rescue
+          call
+            ident checked_count
+            ident xs
+          return
+      tail
+        ident n
+  type-decl Bounds
+    attribute align
+      literal 16
+    struct
+      field lo
+        named-type
+          root
+          ident vec2
+      field hi
+        named-type
+          root
+          ident vec2
+  type-decl Field
+    struct
+      field pos
+        array-type
+          ident MAX_ROCKS
+          named-type
+            root
+            ident vec2
+        aggregate
+          keyed-item
+            discard
+            call
+              member vec2
+                root
+              literal 0.0
+              literal 0.0
+      field vel
+        array-type
+          ident MAX_ROCKS
+          named-type
+            root
+            ident vec2
+        aggregate
+          keyed-item
+            discard
+            call
+              member vec2
+                root
+              literal 0.0
+              literal 0.0
+      field live
+        named-type
+          ident usize
+        literal 0
+  type-decl Tracker
+    struct
+      field quarry
+        optional-type
+          named-type
+            ident Handle
+            generic-args
+              ident Rock
+  fn flags=1 unit_bounds
+    params
+    returns
+      named-type
+        ident Bounds
+    block
+      tail
+        aggregate
+          named-item lo
+            call
+              member vec2
+                root
+              literal 0.0
+              literal 0.0
+          named-item hi
+            call
+              member vec2
+                root
+              literal 1.0
+              literal 1.0
+  fn flags=1 cell_of
+    params
+      param p
+        named-type
+          root
+          ident vec2
+      param cell
+        named-type
+          ident f32
+    returns
+      named-type
+        root
+        ident ivec2
+    block
+      tail
+        call
+          member ivec2
+            root
+          cast as
+            group
+              binary /
+                member x
+                  ident p
+                ident cell
+            named-type
+              ident i32
+          cast as
+            group
+              binary /
+                member y
+                  ident p
+                ident cell
+            named-type
+              ident i32
+  fn flags=1 integrate
+    params
+      param pos
+        mutable-type
+          view-type
+            named-type
+              root
+              ident vec2
+      param vel
+        view-type
+          named-type
+            root
+            ident vec2
+      param dt
+        named-type
+          ident f32
+    block
+      for
+        bindings
+          ident i
+        binary ..<
+          literal 0
+          member len
+            ident pos
+        block
+          assign
+            bracket
+              mark
+                ident pos
+              generic-args
+                ident i
+            binary +
+              bracket
+                ident pos
+                generic-args
+                  ident i
+              binary *
+                bracket
+                  ident vel
+                  generic-args
+                    ident i
+                ident dt
+  fn flags=1 integrate_live
+    params
+      param pos
+        mutable-type
+          view-type
+            named-type
+              root
+              ident vec2
+      param vel
+        view-type
+          named-type
+            root
+            ident vec2
+      param live
+        named-type
+          ident usize
+      param dt
+        named-type
+          ident f32
+    block
+      tail
+        call
+          ident integrate
+          bracket
+            mark
+              ident pos
+            generic-args
+              binary ..<
+                literal 0
+                ident live
+          bracket
+            ident vel
+            generic-args
+              binary ..<
+                literal 0
+                ident live
+          ident dt
+  fn flags=1 positions
+    params
+      param f
+        named-type
+          ident Field
+    returns
+      view-type
+        named-type
+          root
+          ident vec2
+    block
+      tail
+        bracket
+          member pos
+            ident f
+          generic-args
+            binary ..<
+              literal 0
+              member live
+                ident f
+  fn flags=1 spawn
+    params
+      param f
+        mutable-type
+          named-type
+            ident Field
+      param at
+        named-type
+          root
+          ident vec2
+    returns
+      named-type
+        ident usize
+    block
+      modifier if
+        expr-stmt
+          call
+            member panic
+              root
+            literal "spawn into a full field"
+        binary >=
+          member live
+            ident f
+          ident MAX_ROCKS
+      assign
+        bracket
+          member pos
+            mark
+              ident f
+          generic-args
+            member live
+              ident f
+        ident at
+      assign
+        bracket
+          member vel
+            mark
+              ident f
+          generic-args
+            member live
+              ident f
+        call
+          member vec2
+            root
+          literal 0.0
+          literal 0.0
+      compound-assign +=
+        member live
+          mark
+            ident f
+        literal 1
+      let
+        bindings
+          ident v
+        call
+          ident positions
+          ident f
+      tail
+        member len
+          ident v
+  fn flags=1 despawn
+    params
+      param f
+        mutable-type
+          named-type
+            ident Field
+      param i
+        named-type
+          ident usize
+    block
+      expr-stmt
+        call
+          member assert
+            root
+          binary <
+            ident i
+            member live
+              ident f
+          literal "despawn index is not live"
+      let
+        bindings
+          ident last
+        binary -
+          member live
+            ident f
+          literal 1
+      assign
+        bracket
+          member pos
+            mark
+              ident f
+          generic-args
+            ident i
+        bracket
+          member pos
+            ident f
+          generic-args
+            ident last
+      assign
+        bracket
+          member vel
+            mark
+              ident f
+          generic-args
+            ident i
+        bracket
+          member vel
+            ident f
+          generic-args
+            ident last
+      compound-assign -=
+        member live
+          mark
+            ident f
+        literal 1
+  fn flags=1 cull
+    params
+      param rocks
+        mutable-type
+          named-type
+            ident List
+            generic-args
+              ident Rock
+    block
+      for
+        bindings
+          ident i
+        binary >..
+          member len
+            ident rocks
+          literal 0
+        block
+          modifier if
+            assign
+              discard
+              call
+                member swap_remove
+                  mark
+                    ident rocks
+                ident i
+            binary <=
+              member radius
+                bracket
+                  ident rocks
+                  generic-args
+                    ident i
+              literal 0.0
+  fn flags=1 compact
+    params
+      param rocks
+        mutable-type
+          named-type
+            ident List
+            generic-args
+              ident Rock
+    block
+      let
+        bindings
+          ident w
+        named-type
+          ident usize
+        literal 0
+      for
+        bindings
+          ident i
+        binary ..<
+          literal 0
+          member len
+            ident rocks
+        block
+          if
+            branch
+              binary >
+                member radius
+                  bracket
+                    ident rocks
+                    generic-args
+                      ident i
+                literal 0.0
+              block
+                assign
+                  bracket
+                    mark
+                      ident rocks
+                    generic-args
+                      ident w
+                  bracket
+                    ident rocks
+                    generic-args
+                      ident i
+                compound-assign +=
+                  ident w
+                  literal 1
+      tail
+        call
+          member truncate
+            mark
+              ident rocks
+          ident w
+  fn flags=1 extremes
+    params
+      param f
+        named-type
+          ident Field
+    returns
+      named-type
+        root
+        ident vec2
+      named-type
+        root
+        ident vec2
+    block
+      let
+        bindings
+          ident b
+        call
+          ident unit_bounds
+      modifier if
+        return
+          member lo
+            ident b
+          member hi
+            ident b
+        binary ==
+          member live
+            ident f
+          literal 0
+      return
+        member lo
+          ident b
+        member hi
+          ident b
+  expr-stmt
+    call
+      member print
+        root
+      literal "reference program"
+  expr-stmt
+    call
+      member set_canvas
+        member graphics
+          root
+      member crisp
+        member Style
+          member graphics
+            root
+  persist tick
+    named-type
+      ident u64
+    literal 0
+  persist name
+    named-type
+      ident TextBuf
+      generic-args
+        literal 32
+    aggregate
+  persist field
+    mutable-type
+      named-type
+        ident Field
+    aggregate
+  persist trail
+    mutable-type
+      named-type
+        ident List
+        generic-args
+          member vec2
+            root
+    call
+      member from
+        ident List
+      ident heap
+      aggregate
+        call
+          member vec2
+            root
+          literal 0.0
+          literal 0.0
+  persist rocks
+    mutable-type
+      named-type
+        ident List
+        generic-args
+          ident Rock
+    call
+      member from
+        ident List
+      ident heap
+      aggregate
+        aggregate
+          named-item pos
+            call
+              member vec2
+                root
+              literal 0.0
+              literal 0.0
+          named-item vel
+            call
+              member vec2
+                root
+              literal 0.0
+              literal 0.0
+  persist marks
+    mutable-type
+      named-type
+        ident List
+        generic-args
+          member vec2
+            root
+    call
+      member from
+        ident List
+      ident heap
+      aggregate
+        call
+          member vec2
+            root
+          literal 0.0
+          literal 0.0
+  frame
+    params
+      param screen
+        mutable-type
+          named-type
+            ident Target
+      param scratch
+        mutable-type
+          named-type
+            ident Scratch
+    block
+      compound-assign +=
+        mark
+          ident tick
+        literal 1
+      expr-stmt
+        call
+          ident integrate_live
+          member pos
+            mark
+              ident field
+          member vel
+            ident field
+          member live
+            ident field
+          binary /
+            literal 1.0
+            literal 60.0
+      expr-stmt
+        call
+          member truncate
+            mark
+              ident marks
+          literal 0
+      let
+        bindings
+          ident lo
+          ident hi
+        call
+          ident extremes
+          ident field
+      expr-stmt
+        rescue
+          call
+            member push
+              mark
+                ident marks
+            ident lo
+          return
+      expr-stmt
+        rescue
+          call
+            member push
+              mark
+                ident marks
+            ident hi
+          return
+      modifier if
+        expr-stmt
+          call
+            ident despawn
+            mark
+              ident field
+            literal 0
+        binary >
+          member live
+            ident field
+          literal 0
+      expr-stmt
+        call
+          ident cull
+          mark
+            ident rocks
+      expr-stmt
+        call
+          ident compact
+          mark
+            ident rocks
+      modifier unless
+        return
+        binary ==
+          binary %
+            ident tick
+            literal 60
+          literal 0
+      let
+        bindings
+          ident n
+        call
+          ident spawn
+          mark
+            ident field
+          call
+            member vec2
+              root
+            literal 8.0
+            literal 8.0
+      expr-stmt
+        call
+          member assert
+            root
+          binary ==
+            member x
+              call
+                ident cell_of
+                call
+                  member vec2
+                    root
+                  literal 8.0
+                  literal 8.0
+                literal 4.0
+            literal 2
+          literal "cell index truncates toward zero"
+      expr-stmt
+        rescue
+          call
+            member reserve
+              mark
+                ident trail
+            literal 2
+          return
+      expr-stmt
+        rescue
+          call
+            member push
+              mark
+                ident trail
+            ident lo
+          return
+      expr-stmt
+        rescue
+          call
+            member push
+              mark
+                ident trail
+            ident hi
+          return
+      expr-stmt
+        call
+          member truncate
+            mark
+              ident trail
+          literal 64
+      for
+        bindings
+          ident p
+        mark
+          ident trail
+        block
+          assign
+            member y
+              mark
+                ident p
+            binary +
+              member y
+                ident p
+              literal 1.0
+      let
+        bindings
+          ident label
+        named-type
+          ident string
+        literal "elapsed"
+      let
+        bindings
+          ident glyphs
+        named-type
+          ident usize
+        literal 0
+      for
+        bindings
+          ident c
+        call
+          member chars
+            ident label
+        block
+          assign
+            discard
+            ident c
+          compound-assign +=
+            ident glyphs
+            literal 1
+      let
+        bindings
+          ident secs
+        cast as
+          group
+            binary /
+              ident tick
+              literal 60
+          named-type
+            ident f32
+      let
+        bindings
+          ident buf
+        array-type
+          literal 32
+          named-type
+            ident u8
+        aggregate
+          keyed-item
+            discard
+            literal 0
+      let
+        bindings
+          ident line
+        call
+          ident format
+          mark
+            ident buf
+          literal "{}: {} ({} chars, {} live)"
+          ident label
+          ident secs
+          ident glyphs
+          ident n
+      expr-stmt
+        call
+          member print
+            root
+          ident line
+      let
+        bindings
+          ident reach
+        binary +
+          call
+            member squared
+              ident hud
+            member x
+              ident lo
+            member y
+              ident lo
+          member EPSILON
+            ident vec_utils
+      let
+        bindings
+          ident edge
+        array-type
+          literal 32
+          named-type
+            ident u8
+        aggregate
+          keyed-item
+            discard
+            literal 0
+      expr-stmt
+        call
+          member print
+            root
+          call
+            ident format
+            mark
+              ident edge
+            literal "reach {} banner {}"
+            ident reach
+            call
+              member banner_radius
+                ident hud
+              ident reach
+      let
+        bindings
+          ident move
+        call
+          member direction
+            member input
+              root
+      if
+        branch
+          call
+            member button_pressed
+              member input
+                root
+            member one
+              member Button
+                member input
+                  root
+          block
+            assign
+              discard
+              call
+                ident spawn
+                mark
+                  ident field
+                binary *
+                  ident move
+                  literal 16.0
+      expr-stmt
+        call
+          member fill_rect
+            mark
+              ident screen
+          aggregate
+            named-item position
+              call
+                member vec2
+                  root
+                literal 0.0
+                literal 0.0
+            named-item size
+              member canvas_size
+                member graphics
+                  root
+            named-item paint
+              call
+                member rgb8
+                  root
+                literal 12
+                literal 12
+                literal 16
+      for
+        bindings
+          ident p
+        call
+          ident positions
+          ident field
+        block
+          expr-stmt
+            call
+              member fill_ellipse
+                mark
+                  ident screen
+              aggregate
+                named-item position
+                  ident p
+                named-item size
+                  call
+                    member vec2
+                      root
+                    literal 8.0
+                    literal 8.0
+                named-item paint
+                  call
+                    member rgb8
+                      root
+                    literal 220
+                    literal 90
+                    literal 40
+                named-item blend
+                  member additive
+                    member Blend
+                      member graphics
+                        root
+      expr-stmt
+        call
+          member stroke_rect
+            mark
+              ident screen
+          aggregate
+            named-item position
+              ident lo
+            named-item size
+              binary -
+                ident hi
+                ident lo
+            named-item thickness
+              literal 2.0
+            named-item paint
+              call
+                member rgb8
+                  root
+                literal 255
+                literal 255
+                literal 255
+      let
+        bindings
+          ident label_desc
+        named-type
+          root
+          ident graphics
+          ident TextDesc
+        aggregate
+          named-item text
+            ident line
+          named-item font
+            member default_font
+              member graphics
+                root
+          named-item font_size
+            literal 16.0
+          named-item position
+            call
+              member vec2
+                root
+              literal 8.0
+              literal 8.0
+          named-item anchor
+            call
+              member vec2
+                root
+              literal 0.0
+              literal 0.0
+          named-item paint
+            call
+              member rgb8
+                root
+              literal 255
+              literal 255
+              literal 255
+      expr-stmt
+        call
+          member fill_text
+            mark
+              ident screen
+          ident label_desc
+      let
+        bindings
+          ident metrics
+        call
+          member measure_text
+            member graphics
+              root
+          ident label_desc
+      expr-stmt
+        call
+          member fill_sprite
+            mark
+              ident screen
+          aggregate
+            named-item image
+              ident rock
+            named-item position
+              call
+                member vec2
+                  root
+                binary +
+                  member advance
+                    ident metrics
+                  literal 40.0
+                literal 8.0
+            named-item size
+              call
+                member vec2
+                  root
+                literal 16.0
+                literal 16.0
+            named-item paint
+              call
+                member rgb8
+                  root
+                literal 255
+                literal 255
+                literal 255
+      expr-stmt
+        call
+          member fill_sprite
+            mark
+              ident screen
+          aggregate
+            named-item image
+              member debug_image
+                member graphics
+                  root
+            named-item position
+              call
+                member vec2
+                  root
+                binary +
+                  member advance
+                    ident metrics
+                  literal 16.0
+                literal 8.0
+            named-item size
+              call
+                member vec2
+                  root
+                literal 16.0
+                literal 16.0
+            named-item paint
+              call
+                member rgb8
+                  root
+                literal 255
+                literal 255
+                literal 255
+      let
+        bindings
+          ident voice
+        call
+          member play
+            member audio
+              root
+          aggregate
+            named-item waveform
+              member square
+                member Waveform
+                  member audio
+                    root
+            named-item frequency
+              literal 440.0
+            named-item amplitude
+              literal 0.4
+            named-item pan
+              literal 0.0
+      expr-stmt
+        call
+          member set
+            member audio
+              root
+          ident voice
+          aggregate
+            named-item frequency
+              literal 660.0
+      let
+        bindings
+          ident elapsed
+        named-type
+          ident Seconds
+        call
+          member seconds
+            member audio
+              root
+          call
+            member cursor
+              member audio
+                root
+          call
+            member sample_rate
+              member audio
+                root
+      assign
+        discard
+        ident elapsed
+      if
+        branch
+          binary >
+            call
+              member render_scale
+                member video
+                  root
+            literal 0.5
+          block
+            expr-stmt
+              call
+                member set_render_scale
+                  member video
+                    root
+                literal 0.5
+      expr-stmt
+        rescue
+          call
+            member write
+              ident save1
+            ident edge
+          return
+      let
+        bindings
+          ident frame_names
+        mutable-type
+          named-type
+            ident List
+            generic-args
+              member vec2
+                root
+        rescue
+          call
+            member from
+              ident List
+            mark
+              ident scratch
+            aggregate
+              ident lo
+              ident hi
+          return
+      expr-stmt
+        call
+          member clear
+            mark
+              ident name
+      expr-stmt
+        call
+          member append
+            mark
+              ident name
+          ident label
+      assign
+        discard
+        member len
+          ident frame_names

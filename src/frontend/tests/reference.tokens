@@ -1375,6 +1375,7 @@ ident f
 ident live
 ==
 int 0
+return
 ident b
 .
 ident lo
@@ -1401,6 +1402,11 @@ ident graphics
 .
 ident set_canvas
 (
+$
+.
+ident graphics
+.
+ident Style
 .
 ident crisp
 )
@@ -1966,6 +1972,11 @@ ident input
 .
 ident button_pressed
 (
+$
+.
+ident input
+.
+ident Button
 .
 ident one
 )
@@ -2080,6 +2091,11 @@ int 40
 ,
 ident blend
 =
+$
+.
+ident graphics
+.
+ident Blend
 .
 ident additive
 ,
@@ -2338,6 +2354,11 @@ ident play
 {
 ident waveform
 =
+$
+.
+ident audio
+.
+ident Waveform
 .
 ident square
 ,

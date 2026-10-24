@@ -102,9 +102,11 @@ pinned `clang-format` package instead. The config is `.clang-format` at the root
 
 The lexer's libFuzzer target is `src/frontend/tests/fuzz_lexer.c` (#141), and its committed
 corpus is `src/frontend/tests/corpus/lexer/` — the permanent regression suite #131 asked
-for. **Every `make check` replays it**: `fuzz_replay` drives the same entry point over each
+for. The parser's is `fuzz_parser.c` with `corpus/parser/` (#142). **Every `make check`
+replays both**: `fuzz_replay` and `fuzz_parser_replay` drive the same entry points over each
 corpus file and the reference program under any `CC`, sanitizers on, so a finding never
-comes back. `make fuzz` is the search, and it builds with `FUZZ_CC` (default `clang`)
+comes back. `make fuzz` is the search (`make fuzz-lexer` and `make fuzz-parser` run one
+each, and the nightly matrix runs them independently), and it builds with `FUZZ_CC` (default `clang`)
 rather than `CC`, because libFuzzer's runtime comes with an LLVM clang install, not with
 `zig cc` — #131 read *libFuzzer ships with the toolchain already chosen*, which holds for
 clang and not for the pinned `zig`. A finding worth keeping is minimised and committed to

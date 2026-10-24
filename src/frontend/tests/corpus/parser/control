@@ -1,0 +1,10 @@
+fn f() -> int
+  n := g() rescue return
+  if v := get() then g(v) elseif false then return 2 else return 0 end
+  while ready() do continue if skip() break if stop() end
+  for i, _ in 0..<n do unsafe do p!^ = &v end end
+  match item do A(x, _) then return x end {x=y,} then return y end _ then return 0 end end
+  defer cleanup()
+  g() rescue err then return fallback(err) end
+  n + 2*3 as int
+end

@@ -16,7 +16,7 @@ happened in each case.
 
 ---
 
-**Absorbed here:** ADR-0029, ADR-0045, ADR-0053.
+**Absorbed here:** ADR-0029, ADR-0045, ADR-0053, ADR-0058.
 
 Read by `tools/check-absorption.py`, which asserts that each carries the
 ADR-0051 §4 stamp naming this chapter, and that no ADR claims this chapter
@@ -299,3 +299,28 @@ Three further findings that are **not** phantoms but recorded corrections:
   [`03-memory.md`](03-memory.md) §0 with the three other sites of the same
   conflation, and in [`../../adr/SOURCES.md`](../../adr/SOURCES.md)'s #25 row so
   the next author is warned before citing it.
+
+## Parser repairs (The parser, the AST it mints, and the error nodes that survive a bad parse)
+
+[The parser ticket](https://github.com/ludo-lang/ludo/issues/142) consumes the
+complete grammar. It found these gaps by implementing it:
+
+| Source | Repaired surface |
+|---|---|
+| ADR-0058: bare propagation | §7.14.1; `RescueTail` no longer descends into `ReturnStatement` |
+| ADR-0058: rescued call statements and compound-if priority | §6.5.1; `CallStatement` |
+| ADR-0058: neutral bracket suffix | §9.8; `Suffix` reuses `GenericArgs` |
+| ch6 §12.4: root-qualified blessed types | `QualifiedName` admits the existing `$.` root |
+| grammar `ExplicitMarker ::= "#explicit"` | §11.1.1: one terminal, so `# explicit` is a syntax error |
+| ch2 §4.6.1; FnDecl's one `TailExpr` | reference uses qualified enum constructors and explicit multiple-value return |
+
+The new ADR reverses no clause of an earlier ADR, so no amendment stamp is
+owed; its absorption stamp and this declaration land with the repairs.
+The token count does not grow: all these terminals already existed. Section 1
+reuses section 2's `GenericArgs` crossing rather than inventing a second list.
+
+The optional error-set/body boundary is **not resolved here**:
+[Where an elided fallible result type ends before the function body](https://github.com/ludo-lang/ludo/issues/152)
+records the ambiguous result-type and cast examples, and blocks Band 2. The
+parser's reference-reading heuristic is explicitly provisional in its tree
+contract; this coverage entry does not promote it into normative syntax.

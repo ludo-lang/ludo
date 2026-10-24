@@ -192,7 +192,13 @@ CompoundAssign  ::= Place ( "+=" | "-=" | "*=" | "/=" | "%=" ) Expr
 
 Place           ::= PostfixExpr
 
-CallStatement   ::= PostfixExpr
+CallStatement   ::= PostfixExpr ( "rescue" RescueTail )?
+
+(* The PostfixExpr MUST end in a call. The rescue tail handles that call's
+   failure. A non-call expression is admitted only as FnDecl's TailExpr.
+   After any SimpleStatement, an `if` whose Condition is followed by `then`
+   starts the next IfStatement rather than modifying the preceding statement.
+   This priority is token-based; newlines remain insignificant. (#142.) *)
 
 ReturnStatement ::= "return" ( Expr ( "," Expr )* )?
 
@@ -254,14 +260,16 @@ Expr            ::= RescueExpr
 
 RescueExpr      ::= OrExpr ( "rescue" RescueTail )?
 
-RescueTail      ::= ReturnStatement
+RescueTail      ::= "return"
                   | "break"
                   | "continue"
                   | Identifier "then" Block "end"
                   | Expr
 
 (* Lookahead: the bind form is an Identifier followed by "then". Anything else
-   starting with an Identifier is the default-value form. *)
+   starting with an Identifier is the default-value form. `return` here is
+   always bare error propagation, never ReturnStatement's optional values;
+   a chosen return value is written in a bound handler. (#142.) *)
 
 OrExpr          ::= AndExpr ( "or" AndExpr )*
 
@@ -296,7 +304,7 @@ PostfixExpr     ::= PrimaryExpr Suffix*
 Suffix          ::= "." Identifier
                   | "?." Identifier
                   | "(" ArgList? ")"
-                  | "[" Expr "]"
+                  | GenericArgs
                   | "!"
                   | "^"                      (* dereference; unsafe-only *)
 
@@ -406,11 +414,19 @@ TypeList        ::= TypeExpr ( "," TypeExpr )*
 
 NamedType       ::= QualifiedName GenericArgs?
 
-QualifiedName   ::= Identifier ( "." Identifier )*
+QualifiedName   ::= ( "$" "." )? Identifier ( "." Identifier )*
 
 GenericArgs     ::= "[" TypeArg ( "," TypeArg )* "]"
 
 TypeArg         ::= TypeExpr | Expr
+
+(* A bracket suffix is parsed without deciding whether it indexes a value or
+   instantiates a generic. Checking resolves the role from the receiver. An
+   index has exactly one Expr; generic arguments may name types or values.
+   Overlapping names/chains remain neutral until that context is known.
+   A NamedType followed by an AggregateLiteral takes priority over separate
+   expressions, with no name lookup. The optional `$.' prefix is required by
+   ch6 section 12.4's blessed type spellings. (#142.) *)
 
 GenericParams   ::= "[" GenericParam ( "," GenericParam )* "]"
 

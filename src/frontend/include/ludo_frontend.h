@@ -1,11 +1,13 @@
 /* The frontend's umbrella header. One per library, ludo_ prefix on everything
-   exported, no varargs, no errno (#130). The session API is not here yet; the
-   lexer is the first stage that is (#141). */
+   exported, no varargs, no errno (#130). Lexer, per-file session parsing and
+   diagnostic values are embeddable without ambient I/O. */
 #ifndef LUDO_FRONTEND_H
 #define LUDO_FRONTEND_H
 
 #include <stdbool.h>
 #include <stddef.h>
+
+#include "ludo_ast.h"
 
 /* Compile-time identity of the library, so the gate has something to link. */
 const char *ludo_frontend_version(void);
@@ -169,5 +171,47 @@ const char *ludo_token_kind_name(ludo_token_kind kind);
 bool ludo_token_kind_has_fixed_spelling(ludo_token_kind kind);
 
 const char *ludo_lex_error_name(ludo_lex_error error);
+
+/* ---- Per-file parsing in a session (#130, #142) ----------------------------
+   Source and display-name buffers are borrowed until session_destroy. The
+   session mints file ids and owns a separate arena for each parsed file.
+   Parsing returns OK even for bad source: inspect diagnostics/error nodes.
+   On a host resource failure *out is NULL and no partial file is published.
+   Module mapping and checking arrive with their consumers, not in this stage. */
+typedef struct ludo_session ludo_session;
+
+typedef enum ludo_frontend_status {
+    LUDO_FRONTEND_OK,
+    LUDO_FRONTEND_OUT_OF_MEMORY,
+    LUDO_FRONTEND_RESOURCE_LIMIT /* bounded native parse stack exhausted */
+} ludo_frontend_status;
+
+typedef struct ludo_diagnostic {
+    const char *code;
+    const char *message;
+    ludo_span primary;
+} ludo_diagnostic;
+
+typedef struct ludo_parsed_file {
+    ludo_source_id id;
+    const char *name;
+    const char *source;
+    size_t length;
+    const ludo_token *tokens;
+    size_t token_count; /* includes trivia and final EOF */
+    ludo_ast ast;
+    const ludo_diagnostic *diagnostics;
+    size_t diagnostic_count;
+} ludo_parsed_file;
+
+ludo_frontend_status ludo_session_create(ludo_session **out);
+void ludo_session_destroy(ludo_session *session);
+ludo_frontend_status ludo_parse_file(ludo_session *session, const char *name, const char *source,
+                                     size_t length, const ludo_parsed_file **out);
+
+/* A single ch7 compile/error envelope, without newline or NUL. Returns the
+   required size; writes only if capacity suffices (NULL/0 queries the size).
+   Lex/parse errors have no named entity. The driver owns the stream. */
+size_t ludo_diagnostic_json(const ludo_diagnostic *diagnostic, char *buffer, size_t capacity);
 
 #endif /* LUDO_FRONTEND_H */
