@@ -1,29 +1,15 @@
 name: build
 
-# Path-filtered on purpose (#131): this repository produces docs-only commits
-# constantly, and none of them should pay for a sanitizer build.
+# Always triggered, path-filtered inside (#131): this repository produces
+# docs-only commits constantly, and none of them should pay for a sanitizer
+# build. The filter lives in the `changes` job rather than on the trigger so
+# that `build-ok` always reports, and can be a required check without blocking
+# a docs-only PR.
 on:
   push:
     branches: [main]
-    paths:
-      - "src/**"
-      - "Makefile"
-      - ".clang-format"
-      - "tools/check-c-standard.py"
-      # The committed token dump diffs against it (#141).
-      - "docs/spec/reference/**"
-      - "docs/spec/grammar.ebnf"
-      - ".github/workflows/build.yml"
   pull_request:
-    paths:
-      - "src/**"
-      - "Makefile"
-      - ".clang-format"
-      - "tools/check-c-standard.py"
-      # The committed token dump diffs against it (#141).
-      - "docs/spec/reference/**"
-      - "docs/spec/grammar.ebnf"
-      - ".github/workflows/build.yml"
+  merge_group:
 
 env:
   # Pinned: zig cc is clang, and clang's warning set drifts between releases.
@@ -31,8 +17,42 @@ env:
   CLANG_FORMAT_VERSION: "18.1.8"
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      build: ${{ steps.diff.outputs.build }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: diff
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          QUEUE_BASE: ${{ github.event.merge_group.base_sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          # The committed token dump diffs against docs/spec/reference/ (#141).
+          PATHS: '^(src/|docs/spec/reference/)|^(Makefile|\.clang-format|tools/check-c-standard\.py|\.github/workflows/build\.yml)$'
+        run: |
+          case "$EVENT" in
+            pull_request) base="$PR_BASE" ;;
+            merge_group)  base="$QUEUE_BASE" ;;
+            *)            base="$PUSH_BEFORE" ;;
+          esac
+          # A base that cannot be diffed (a new branch's all-zero `before`)
+          # builds everything rather than guessing.
+          if files=$(git diff --name-only "$base"...HEAD 2>/dev/null); then
+            if grep -qE "$PATHS" <<<"$files"; then build=true; else build=false; fi
+          else
+            build=true
+          fi
+          echo "build=$build" >> "$GITHUB_OUTPUT"
+          echo "build=$build"
+
   # Linux builds and runs; CI decides (docs/agents/c-standard.md).
   sanitizers:
+    needs: changes
+    if: needs.changes.outputs.build == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -45,6 +65,8 @@ jobs:
   # macOS and Windows are compile-only cross checks: without them ADR-0020's
   # single-binary cross-compilation claim is untested.
   cross:
+    needs: changes
+    if: needs.changes.outputs.build == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -55,6 +77,8 @@ jobs:
         run: make cross
 
   conventions:
+    needs: changes
+    if: needs.changes.outputs.build == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -68,3 +92,20 @@ jobs:
       # ADR-0051 §6: a convention in docs/agents/ ships with a checker.
       - name: C standard (#131)
         run: make standard
+
+  # The one required check from this workflow. A skipped build job is a pass
+  # only because `changes` succeeded and said nothing relevant changed.
+  build-ok:
+    needs: [changes, sanitizers, cross, conventions]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          CHANGES: ${{ needs.changes.result }}
+          RESULTS: ${{ needs.sanitizers.result }} ${{ needs.cross.result }} ${{ needs.conventions.result }}
+        run: |
+          echo "changes=$CHANGES build jobs=$RESULTS"
+          [ "$CHANGES" = success ] || exit 1
+          for r in $RESULTS; do
+            case "$r" in success|skipped) ;; *) exit 1 ;; esac
+          done

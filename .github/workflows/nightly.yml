@@ -57,3 +57,41 @@ jobs:
             crash-*
             leak-*
             timeout-*
+
+  # A failure lands in the tracker rather than in an email (#131's backstop
+  # only works if someone hears it): one open issue per failing job, commented
+  # on by later failures. The fixing PR closes it with `Fixes #n`; a green
+  # night does not, so a flaky finding is not closed unread.
+  report:
+    needs: [valgrind, fuzz]
+    if: always() && contains(needs.*.result, 'failure')
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    strategy:
+      matrix:
+        job: [valgrind, fuzz]
+    steps:
+      - if: needs[matrix.job].result == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          JOB: ${{ matrix.job }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="nightly: $JOB failing"
+          n=$(gh issue list --state open --search "\"$title\" in:title" \
+                --json number,title --jq "map(select(.title == \"$title\")) | .[0].number // empty")
+          if [ -n "$n" ]; then
+            gh issue comment "$n" --body "Still failing: $RUN"
+            exit 0
+          fi
+          body="The nightly \`$JOB\` job failed: $RUN
+
+          Close this from the fixing PR with \`Fixes #<this issue>\`; a green night does not close it."
+          if [ "$JOB" = fuzz ]; then
+            body="$body
+
+          A fuzz finding is kept by hand: download the \`fuzz-lexer-crash\` artifact, minimise it and commit it to \`src/frontend/tests/corpus/lexer/\`, so every \`make check\` replays it."
+          fi
+          gh issue create --title "$title" --label needs-triage --label bug --body "$body"
