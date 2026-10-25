@@ -321,5 +321,7 @@ make fuzz       # libFuzzer over the lexer (FUZZ_CC=clang, FUZZ_TIME=60)
 clang, and `-Werror` on a drifting warning set stops CI on code nobody touched. `CC` is
 overridable (`make CC=clang check`), which is what keeps `zig cc` the swappable build-time
 dependency ADR-0020 calls it; `make cross` is the one target that needs `zig` specifically.
-**`clang-format` is a separate pinned package** — `zig` exposes `zig cc` and `zig ar`, not
-`clang-format`.
+**`clang-format` is pinned separately** — `zig` exposes `zig cc` and `zig ar`, not
+`clang-format` — so the `Makefile` fetches the pinned release through `uvx`, which a host
+needs on its path. `make CLANG_FORMAT=clang-format format` uses a local one instead, at the
+risk of formatting differently from CI.

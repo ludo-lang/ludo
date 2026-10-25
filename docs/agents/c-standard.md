@@ -68,6 +68,11 @@ Nothing to remember: these fail the build.
 
 The remainder, in review:
 
+- **A tag-enum switch that lists kinds it does not decide** — a switch over a tag enum must
+  name every kind, so use one only where each kind needs its own decision: the main
+  dispatchers over expression and statement kinds. Code that handles a few kinds and treats
+  the rest alike tests those kinds with `if`. A switch whose cases mostly fall through to one
+  shared branch is this mistake (#143 wrote 1,052 such labels before converting them).
 - **Varargs functions of our own** — no `<stdarg.h>` in a definition we write. Calling
   `printf` from `driver/` or a test is fine; exporting a `ludo_*` function that takes `...`
   is not, because it defeats every prototype check the flags buy.
@@ -86,8 +91,8 @@ set red-lines CI on code nobody touched. CI pins the exact `zig` version; `src/R
 documents the minimum for a development host.
 
 **`clang-format` is pinned separately.** #131 assumed it shipped with the pinned toolchain;
-it does not — `zig` exposes `zig cc` and `zig ar`, not `clang-format` — so CI installs a
-pinned `clang-format` package instead. The config is `.clang-format` at the root: LLVM base,
+it does not — `zig` exposes `zig cc` and `zig ar`, not `clang-format` — so the `Makefile` pins
+the version and fetches it with `uvx`, the same on CI and on every host. The config is `.clang-format` at the root: LLVM base,
 4-space indent, 100 columns. `make format` applies it, `make format-check` is what CI runs.
 
 ## What CI does

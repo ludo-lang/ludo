@@ -14,7 +14,6 @@ on:
 env:
   # Pinned: zig cc is clang, and clang's warning set drifts between releases.
   ZIG_VERSION: "0.15.1"
-  CLANG_FORMAT_VERSION: "18.1.8"
 
 jobs:
   changes:
@@ -85,8 +84,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install pinned clang-format
-        run: pip install "clang-format==${{ env.CLANG_FORMAT_VERSION }}"
+      # The Makefile pins clang-format and fetches it through uvx.
+      - name: Install uv
+        run: pip install uv
       - name: Formatting
         run: make format-check
       # ADR-0051 §6: a convention in docs/agents/ ships with a checker.

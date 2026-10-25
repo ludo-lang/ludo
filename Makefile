@@ -155,13 +155,17 @@ cross-each:
 	  $(CC) $(STD) $(WARNINGS) $(INCLUDES) --target=$(TARGET) -c $$f -o /dev/null || exit 1; \
 	done
 
-# clang-format is not shipped by zig; CI pins it as a package (see
+# clang-format is not shipped by zig, and its output drifts between releases, so
+# the pin lives here and uvx fetches it: CI and every host format alike (see
 # docs/agents/c-standard.md).
+CLANG_FORMAT_VERSION := 18.1.8
+CLANG_FORMAT ?= uvx --from clang-format==$(CLANG_FORMAT_VERSION) clang-format
+
 format:
-	clang-format -i `git ls-files '*.c' '*.h'`
+	$(CLANG_FORMAT) -i `git ls-files '*.c' '*.h'`
 
 format-check:
-	clang-format --dry-run -Werror `git ls-files '*.c' '*.h'`
+	$(CLANG_FORMAT) --dry-run -Werror `git ls-files '*.c' '*.h'`
 
 standard:
 	python3 tools/check-c-standard.py
