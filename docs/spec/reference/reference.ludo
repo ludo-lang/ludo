@@ -70,7 +70,7 @@ use "vec-utils"
 -- chapter 4 §15.1: ADR-0014 §7 fixed the rule and never wrote the form.
 use "./hud.ludo"
 
-const MAX_ROCKS = 64
+const MAX_ROCKS: usize = 64
 
 -- A storage slot is declared, never opened: `extern` is reused and `storage`
 -- occupies the kind-noun slot, so the core grammar gains nothing and there is

@@ -1,20 +1,7 @@
-#include "arena.h"
-#include "ludo_frontend.h"
+#include "session.h"
 
 #include <stdint.h>
 #include <string.h>
-
-typedef struct parsed_unit {
-    ludo_parsed_file file;
-    ludo_arena arena;
-    struct parsed_unit *next;
-} parsed_unit;
-
-struct ludo_session {
-    ludo_arena arena;
-    parsed_unit *files;
-    size_t count;
-};
 
 typedef struct parser {
     parsed_unit *unit;
@@ -1238,6 +1225,7 @@ void ludo_session_destroy(ludo_session *session) {
         ludo_arena_destroy(&unit->arena);
         unit = unit->next;
     }
+    ludo_arena_destroy(&session->check_arena);
     /* The session itself lives in this arena. Do not touch it after release. */
     ludo_arena arena = session->arena;
     ludo_arena_destroy(&arena);

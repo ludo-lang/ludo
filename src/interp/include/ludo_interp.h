@@ -37,6 +37,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
+/* #130: interp/ includes the AST and the type table directly. */
+#include "ludo_frontend.h"
+
 const char *ludo_interp_version(void);
 
 /* ---------------------------------------------------------------------- */
@@ -552,5 +555,105 @@ ludo_vec2 ludo_input_direction_right(const ludo_frame_input *input, int player);
 bool ludo_input_button_down(const ludo_frame_input *input, ludo_button button, int player);
 bool ludo_input_button_pressed(const ludo_frame_input *input, ludo_button button, int player);
 bool ludo_input_button_released(const ludo_frame_input *input, ludo_button button, int player);
+
+/* ---------------------------------------------------------------------- */
+/* The evaluator (#143)                                                    */
+/* ---------------------------------------------------------------------- */
+
+/* A tree walker over a checked file. It runs only what the checker marked
+   CHECKED: a declaration a later band still owns is refused at the call, not
+   guessed at, so a band never runs down a path nothing checked (#129's
+   slicing, and #134's bitmap counting executed rather than correct).
+
+   It records an execution bit per node, unconditionally (#134): one evaluator,
+   two consumers, and a compile-time switch would make two that drift. #139
+   turns the bits into the report. */
+
+typedef enum ludo_value_kind {
+    LUDO_VALUE_UNIT,
+    LUDO_VALUE_BOOL,
+    LUDO_VALUE_INT,   /* bits: two's complement, sign-extended from type's width */
+    LUDO_VALUE_FLOAT, /* number: an f32's value is exactly representable as one */
+    /* A struct's fields, a variant's payload (tag is the variant), a vec2's two
+       components. Owned: copying the value copies the items. */
+    LUDO_VALUE_AGGREGATE,
+    LUDO_VALUE_VIEW,   /* items borrowed from whatever the view reads */
+    LUDO_VALUE_FN,     /* fn: the declaration, a non-capturing pointer (ch2 7.1) */
+    LUDO_VALUE_HANDLE, /* an extern item the host resolved */
+    LUDO_VALUE_REF     /* a ! parameter's place in its caller (ch1 7.10) */
+} ludo_value_kind;
+
+typedef struct ludo_value {
+    ludo_value_kind kind;
+    ludo_type_id type;
+    uint32_t tag;
+    size_t count;
+    struct ludo_value *items;
+    union {
+        bool boolean;
+        uint64_t bits;
+        double number;
+        ludo_node_id fn;
+        uint32_t handle;
+        struct ludo_value *ref;
+    } as;
+} ludo_value;
+
+typedef enum ludo_interp_status {
+    LUDO_INTERP_OK,
+    LUDO_INTERP_OUT_OF_MEMORY,
+    LUDO_INTERP_FAULT,     /* the program stopped: ludo_interp_fault says why */
+    LUDO_INTERP_UNCHECKED, /* no such declaration, or a later band owns it */
+    LUDO_INTERP_BAD_ARGUMENT
+} ludo_interp_status;
+
+/* ch5's fault enumeration, as far as band 1 reaches it. */
+typedef enum ludo_fault {
+    LUDO_FAULT_NONE,
+    LUDO_FAULT_OVERFLOW, /* ch2 8.3: integer overflow is always checked */
+    LUDO_FAULT_DIVISION_BY_ZERO,
+    LUDO_FAULT_MISSING_ASSET /* ch5 8.4: at top level, before any frame */
+} ludo_fault;
+
+typedef struct ludo_interp ludo_interp;
+
+/* Loads the program: folds its constants and resolves its extern items
+   against the constants, in declaration order. The checked file, the host and
+   the constants must outlive the interpreter. A FAULT here is ch5 8.4's: the
+   simulation never starts. */
+ludo_interp_status ludo_interp_create(const ludo_checked_file *program, const ludo_host *host,
+                                      const ludo_host_constants *constants, ludo_interp **out);
+void ludo_interp_destroy(ludo_interp *interp);
+
+/* Calls the top-level function called name. A ! parameter takes a REF to the
+   caller's value, which the call may write. */
+ludo_interp_status ludo_interp_call(ludo_interp *interp, const char *name, const ludo_value *args,
+                                    size_t count, ludo_value *result);
+
+/* A constant's or an extern item's loaded value. */
+ludo_interp_status ludo_interp_global(ludo_interp *interp, const char *name, ludo_value *out);
+
+/* Values a caller builds, for a test or a host. A struct takes its fields by
+   name, and a field left out takes its declared default, which the evaluator
+   runs (ch1 5.3); a field with no default is BAD_ARGUMENT, never zero (ch2
+   9.3). A view copies its items into the interpreter. */
+ludo_interp_status ludo_interp_make_struct(ludo_interp *interp, const char *type_name,
+                                           const char *const *fields, const ludo_value *values,
+                                           size_t count, ludo_value *out);
+ludo_interp_status ludo_interp_make_variant(ludo_interp *interp, const char *type_name,
+                                            const char *variant, const ludo_value *payload,
+                                            size_t count, ludo_value *out);
+ludo_interp_status ludo_interp_make_view(ludo_interp *interp, const ludo_value *items, size_t count,
+                                         ludo_value *out);
+ludo_interp_status ludo_interp_function(ludo_interp *interp, const char *name, ludo_value *out);
+
+ludo_value ludo_value_f32(float value);
+ludo_value ludo_value_vec2(ludo_interp *interp, float x, float y);
+ludo_value ludo_value_ref(ludo_value *place);
+
+/* One bit per node of the checked file, indexed by node id. */
+const bool *ludo_interp_executed(const ludo_interp *interp);
+
+ludo_fault ludo_interp_fault(const ludo_interp *interp);
 
 #endif /* LUDO_INTERP_H */

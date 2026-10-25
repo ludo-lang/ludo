@@ -165,6 +165,60 @@ static int dump_ast(const char *path) {
     return status;
 }
 
+static bool print_diagnostics(const ludo_diagnostic *diagnostics, size_t count) {
+    for (size_t i = 0; i < count; i++) {
+        size_t size = ludo_diagnostic_json(&diagnostics[i], NULL, 0);
+        char *json = malloc(size); /* ludo-allow-malloc */
+        if (json == NULL) {
+            return false;
+        }
+        (void)ludo_diagnostic_json(&diagnostics[i], json, size);
+        (void)fwrite(json, 1, size, stderr);
+        (void)fputc('\n', stderr);
+        free(json); /* ludo-allow-malloc */
+    }
+    return true;
+}
+
+/* Parse and check one file: diagnostics to stderr as NDJSON, then one line per
+   top-level declaration a later band still owns. Exit 0 clean, 1 with source
+   diagnostics, 2 on a host failure. */
+static int check_file(const char *path) {
+    size_t length = 0;
+    char *source = read_file(path, &length);
+    if (source == NULL) {
+        (void)fprintf(stderr, "ludo: cannot read %s\n", path);
+        return 2;
+    }
+    ludo_session *session = NULL;
+    const ludo_parsed_file *file = NULL;
+    const ludo_checked_file *checked = NULL;
+    int status = 2;
+    if (ludo_session_create(&session) == LUDO_FRONTEND_OK &&
+        ludo_parse_file(session, path, source, length, &file) == LUDO_FRONTEND_OK &&
+        ludo_check_file(session, file, &checked) == LUDO_FRONTEND_OK) {
+        status = checked->diagnostic_count == 0 ? 0 : 1;
+        if (!print_diagnostics(checked->diagnostics, checked->diagnostic_count)) {
+            status = 2;
+        }
+        for (ludo_node_id it = file->ast.nodes[file->ast.root].first_child; it != 0;
+             it = file->ast.nodes[it].next_sibling) {
+            if (checked->facts[it].state == LUDO_CHECK_PENDING) {
+                size_t name_length = 0;
+                const char *name = ludo_node_text(file, it, &name_length);
+                (void)printf("pending %s ", ludo_ast_kind_name(file->ast.nodes[it].kind));
+                print_text(name, name_length);
+                (void)putchar('\n');
+            }
+        }
+    } else {
+        (void)fputs("ludo: frontend resource exhausted\n", stderr);
+    }
+    ludo_session_destroy(session);
+    free(source); /* ludo-allow-malloc */
+    return status;
+}
+
 int main(int argc, char **argv) {
     if (argc == 3 && strcmp(argv[1], "tokens") == 0) {
         return dump_tokens(argv[2]);
@@ -172,8 +226,11 @@ int main(int argc, char **argv) {
     if (argc == 3 && strcmp(argv[1], "ast") == 0) {
         return dump_ast(argv[2]);
     }
+    if (argc == 3 && strcmp(argv[1], "check") == 0) {
+        return check_file(argv[2]);
+    }
     if (argc != 1) {
-        (void)fputs("usage: ludo [tokens FILE | ast FILE]\n", stderr);
+        (void)fputs("usage: ludo [tokens FILE | ast FILE | check FILE]\n", stderr);
         return 2;
     }
     (void)printf("ludo %s (interp %s)\n", ludo_frontend_version(), ludo_interp_version());

@@ -6,8 +6,10 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #include "ludo_ast.h"
+#include "ludo_types.h"
 
 /* Compile-time identity of the library, so the gate has something to link. */
 const char *ludo_frontend_version(void);
@@ -208,6 +210,40 @@ ludo_frontend_status ludo_session_create(ludo_session **out);
 void ludo_session_destroy(ludo_session *session);
 ludo_frontend_status ludo_parse_file(ludo_session *session, const char *name, const char *source,
                                      size_t length, const ludo_parsed_file **out);
+
+/* ---- Checking one file (#143) ---------------------------------------------
+   Collects every top-level declaration first, then checks each body against
+   the signatures. The facts table is indexed by node id and holds what the
+   tree deliberately does not: types, referents and generic instances.
+   Program errors are diagnostics, appended after the file's parse ones; a
+   declaration a later band checks is PENDING, and is never an error. */
+struct ludo_checked_file {
+    const ludo_parsed_file *file;
+    const ludo_type *types;
+    size_t type_count;           /* includes slot 0 */
+    const ludo_node_fact *facts; /* file->ast.count entries */
+    const ludo_instance *instances;
+    size_t instance_count;
+    const ludo_diagnostic *diagnostics; /* parse diagnostics, then check ones */
+    size_t diagnostic_count;
+};
+
+/* OK even for a bad program: inspect diagnostics. Owned by the session. */
+ludo_frontend_status ludo_check_file(ludo_session *session, const ludo_parsed_file *file,
+                                     const ludo_checked_file **out);
+
+/* The top-level declaration called name, or 0. Names are compared bytewise. */
+ludo_node_id ludo_checked_lookup(const ludo_checked_file *checked, const char *name,
+                                 size_t name_length);
+
+/* A literal node's value as written: an integer's magnitude (false if it does
+   not fit 64 bits; the checker already rejected it), and a float's nearest
+   double, which the caller narrows to the literal's type. */
+bool ludo_literal_integer(const ludo_parsed_file *file, ludo_node_id id, uint64_t *value);
+double ludo_literal_float(const ludo_parsed_file *file, ludo_node_id id);
+
+/* The text of a node's token: a declaration's name, a literal, an operator. */
+const char *ludo_node_text(const ludo_parsed_file *file, ludo_node_id id, size_t *length);
 
 /* A single ch7 compile/error envelope, without newline or NUL. Returns the
    required size; writes only if capacity suffices (NULL/0 queries the size).

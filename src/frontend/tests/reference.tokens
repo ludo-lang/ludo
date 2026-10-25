@@ -70,6 +70,8 @@ use
 string "./hud.ludo"
 const
 ident MAX_ROCKS
+:
+ident usize
 =
 int 64
 comment -- A storage slot is declared, never opened: `extern` is reused and `storage`
