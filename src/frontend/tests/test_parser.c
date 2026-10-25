@@ -186,6 +186,54 @@ static void test_shape(ludo_session *session) {
     LUDO_CHECK(file->tokens[0].kind == LUDO_TOK_COMMENT);
 }
 
+/* ch1 §9.7.1 (#152): where `T rescue` ends. Each source has one fallible type,
+   and the second field says whether it names its error set. */
+static void test_error_set_boundary(ludo_session *session) {
+    static const struct {
+        const char *source;
+        bool named;
+    } cases[] = {
+        {"fn f() -> T rescue n := g() rescue return n end", false},
+        {"fn f() -> T rescue result end", false},
+        {"fn f() -> T rescue E end", false},
+        {"fn f() -> T rescue E return x end", true},
+        {"fn f() -> T rescue E n := g() rescue return n end", true},
+        {"fn f() -> T rescue $.io.IOError return x end", true},
+        {"fn f() -> T rescue Box[U] return x end", true},
+        {"fn f() -> T rescue E, U return x, y end", true},
+        {"fn f() -> T rescue E (x) end", false},
+        {"fn f() -> T rescue n - 1 end", false},
+        {"fn f() -> T rescue return x end", false},
+        {"type R = interface fn f() -> T rescue E end", true},
+        {"type R = interface fn f() -> T rescue fn g() -> U end", false},
+        {"extern \"lib\" fn f() -> T rescue E const after = 1", true},
+        {"type S = struct a: T rescue b: U end", false},
+        {"type S = struct a: T rescue E b: U end", true},
+        {"const x: T rescue E = g()", true},
+        {"fn f(a: T rescue E = g()) end", true},
+    };
+    for (size_t i = 0; i < sizeof cases / sizeof cases[0]; i++) {
+        const ludo_parsed_file *file = parse(session, cases[i].source, true);
+        LUDO_CHECK(kind_count(file, LUDO_AST_FALLIBLE_TYPE) == 1);
+        ludo_node_id fallible = find(file, LUDO_AST_FALLIBLE_TYPE, "T");
+        if (fallible == 0) {
+            fallible = find(file, LUDO_AST_FALLIBLE_TYPE, "!");
+        }
+        bool named = ludo_ast_child(&file->ast, fallible, 1) != 0;
+        if (named != cases[i].named) {
+            (void)fprintf(stderr, "error set %s: %s\n", named ? "named" : "elided",
+                          cases[i].source);
+        }
+        LUDO_CHECK(named == cases[i].named);
+    }
+    /* A cast's target is a PrefixType (ch1 §7.13): `rescue` after it is the
+       expression's tail, never part of the type. */
+    const ludo_parsed_file *file =
+        parse(session, "fn f() -> int x as int rescue fallback end", true);
+    LUDO_CHECK(kind_count(file, LUDO_AST_FALLIBLE_TYPE) == 0);
+    LUDO_CHECK(kind_count(file, LUDO_AST_RESCUE) == 1);
+}
+
 static void test_sessions_and_limits(void) {
     ludo_session *session = NULL;
     LUDO_CHECK(ludo_session_create(&session) == LUDO_FRONTEND_OK);
@@ -246,6 +294,7 @@ LUDO_TEST_MAIN({
     test_surface(session);
     test_recovery(session);
     test_shape(session);
+    test_error_set_boundary(session);
     ludo_session_destroy(session);
     test_sessions_and_limits();
     test_json();

@@ -509,7 +509,10 @@ the receiver's type, and nowhere else. (#16; #11 Q8.)
 **7.13** `x as T` (`CastExpr`) is the cast form. (ADR-0021 §1 lists casts in
 the const-eval floor, which requires a spelling.) The spelling is authored by
 this chapter — see §14.6. **Chapter 2 §2.9 owns the conversion rules** — which
-casts are legal, and what each yields. (#98.)
+casts are legal, and what each yields. (#98.) **The target is a
+`PrefixType`, never a fallible type and never `!`-marked**: chapter 2 §2.9 makes
+every cast total and lists no fallible target, so `x as T rescue E` is a cast
+followed by a `rescue` tail (§7.14), not a cast to `T rescue E`. ([#152](https://github.com/ludo-lang/ludo/issues/152).)
 
 **7.14** `<expr> rescue <tail>` (`RescueExpr`) is the failure-handling form,
 with three tails (`RescueTail`): a diverging statement (`rescue return`), a
@@ -614,6 +617,35 @@ single-function interface. (#52 / ADR-0017.)
 set named elides to the enclosing file's declared error set. **Infix `!` was
 rejected** for this position: `!` is already the mutation mark, and one glyph
 MUST NOT denote two entities. (#10, representation.)
+
+**9.7.1** **Where `T rescue` ends.** Newlines are insignificant (§1.2) and the
+parser MUST NOT use name lookup, so a name after `rescue` could be the error set
+or whatever follows the type. The parser reads the complete `NamedType` — its
+qualified name and any `GenericArgs` — and takes it as the error set **unless
+the token after it shows the name began something else**:
+
+- **before `:`**, in any type position, the name begins the next field, and the
+  set is elided: `a: T rescue b: U`;
+- **in a function declaration's result** (`FnDecl`'s `ReturnType`, including an
+  `FnType` result nested in it), the name begins the body when that token is
+  `:=`, `=`, a compound assignment, `(`, `!`, `.`, `?.`, `^`, a binary operator,
+  or `end`. So `-> usize rescue n := g() rescue return` elides the set, and
+  `-> T rescue result end` elides it and returns `result`.
+
+Everywhere else the name is the set: `x: T rescue E = g()`, a parameter, a
+generic argument, an interface member and an `extern` signature, none of which
+runs into a body. The rule looks only at tokens. Its cost is three spellings
+that read differently from what a writer might mean, and **naming the set
+always resolves them**:
+
+- `-> T rescue E (x) end` is an elided set and the call `E(x)`;
+- `-> T rescue E end` is an elided set and the tail `E`, never a named set with
+  an empty body (which could not type anyway);
+- `-> T rescue a, b := f()` reads `a` as the set and `b` as a second result,
+  because `,` separates results in `ReturnType`; write
+  `-> T rescue E a, b := f()`.
+
+([#152](https://github.com/ludo-lang/ludo/issues/152); the parser's provisional heuristic from #142, made a rule.)
 
 **9.8** `Name[Args]` (`NamedType`, `GenericArgs`) applies generic arguments.
 A postfix bracket list also appears in expression position, where it MAY

@@ -79,10 +79,9 @@ A bracket argument that can be both a name/type and an expression retains the
 expression shape; type checking interprets it in the role the receiver requires.
 A bare `T rescue` argument retains a fallible-type node over that neutral name
 shape, rather than inventing a missing expression handler.
-The unresolved boundary between an elided fallible result type and a first
-identifier-led body expression is tracked by
-[Where an elided fallible result type ends before the function body](https://github.com/ludo-lang/ludo/issues/152).
-The current return-type-only heuristic is provisional, not a typechecking rule.
+Where `T rescue` ends is a token priority (ch1 §9.7.1): a `FALLIBLE_TYPE` has
+a second child exactly when the parser took the name after `rescue` as the error
+set. A cast's target is a prefix type, so it never holds a `FALLIBLE_TYPE`.
 
 `ExplicitMarker` is the touching pair `#` `explicit` (ch1 §11.1.1); a spaced
 `# explicit` becomes one error node and is not read as an attribute.

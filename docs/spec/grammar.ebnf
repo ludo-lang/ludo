@@ -291,7 +291,11 @@ AddExpr         ::= MulExpr ( ( "+" | "-" ) MulExpr )*
 
 MulExpr         ::= CastExpr ( ( "*" | "/" | "%" ) CastExpr )*
 
-CastExpr        ::= UnaryExpr ( "as" TypeExpr )*
+CastExpr        ::= UnaryExpr ( "as" PrefixType )*
+
+(* A cast's target is never fallible (chapter 2 §2.9: every cast is total), so
+   a `rescue` after it always starts RescueExpr's tail. (01-grammar.md §7.13,
+   #152.) *)
 
 UnaryExpr       ::= ( "not" | "-" | "~" ) UnaryExpr
                   | "&" UnaryExpr            (* address-of; unsafe-only, and
@@ -397,6 +401,13 @@ TypeExpr        ::= "!"? TypeCore
 TypeCore        ::= FallibleType
 
 FallibleType    ::= PrefixType ( "rescue" NamedType? )?
+
+(* Priority, by tokens alone: the complete NamedType after "rescue" is the
+   error set unless the next token is ":" (the next field), or, in FnDecl's
+   ReturnType only, one of ":=" "=" a compound assignment "(" "!" "." "?." "^"
+   a binary operator or "end" (the body's first statement or tail). Then the
+   set is elided and the name belongs to what follows. (01-grammar.md §9.7.1,
+   #152.) *)
 
 PrefixType      ::= "?" PrefixType
                   | "^" PrefixType           (* the raw pointer; the "^"
