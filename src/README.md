@@ -10,10 +10,12 @@ library when it exists.
 
 **Almost nothing is built yet.** This directory fixes the one seam ADR-0020
 says cannot be retrofitted, and it has a build, a coding standard and CI —
-which exist *before* the code they check (#135). There is a **lexer** (#141)
-and a **parser with a session-owned AST** (#142). There is no typechecker or
-interpreter yet. [`frontend/AST.md`](frontend/AST.md) describes the tree and
-recovery contract; `ludo ast FILE` dumps it and emits ch7 JSON diagnostics.
+which exist *before* the code they check (#135). There is a **lexer** (#141),
+a **parser with a session-owned AST** (#142), and the first band of a
+**checker and evaluator** grown region by region over `reference.ludo` (#143).
+[`frontend/AST.md`](frontend/AST.md) describes the tree and recovery contract;
+`ludo ast FILE` dumps it and `ludo check FILE` checks it, both emitting ch7 JSON
+diagnostics.
 
 ## What this is for
 
@@ -255,6 +257,52 @@ Two spec holes surfaced and were repaired in the spec text: `grammar.ebnf`'s
 already listed, and nothing forbade a numeric literal running into a letter (ch1
 §3.1.1).
 
+## The checker and the evaluator grow by band
+
+Settled by [#129](https://github.com/ludo-lang/ludo/issues/129)'s slicing and
+begun by [#143](https://github.com/ludo-lang/ludo/issues/143), band 1:
+`reference.ludo` lines 66–202, chapter 1's surface.
+
+**Declaration collection is whole-file; checking is band-local.**
+`frontend/check.c` collects every top-level name before it checks any body,
+then resolves types, then signatures and constants, then bodies — so a body may
+name a declaration written below it (ch4 §7.3's flat mapping), and band 2 does
+not rewrite the name table. A construct no band has checked yet is
+**PENDING**: its type satisfies every check silently and its declaration is
+marked PENDING rather than CHECKED. PENDING is never an error, so a later band's
+code produces no false diagnostic, and every diagnostic is about a construct
+the checker claims to understand. `ludo check` lists the PENDING declarations.
+
+**What the checker learns is a side table, never the tree.** Types are interned
+in one table per file with the primitives at fixed ids; one `ludo_node_fact`
+per node holds the node's type, what it refers to (a declaration, a local, a
+field, a variant) and, for a call to a generic, its **instantiation**. The
+**instantiation cache** is keyed by (declaration, type arguments) — `first[T]`
+is band 1's one generic — and a call needs only the signature to check
+(ch2 §5.3). Monomorphising off the cache is codegen's, and the evaluator does
+not need it.
+
+**The evaluator runs only CHECKED declarations.** `interp/eval.c` walks the
+tree reading the facts, refuses a PENDING declaration at the call rather than
+guessing at it, and records an **execution bit per node**, unconditionally
+(#134). Aggregates are copied out of a place on every read, so a value never
+aliases a place, and a `!` parameter receives a reference to its caller's
+place. Integer overflow and division by zero fault (ch2 §8.3); `f32`
+arithmetic is done at `f32` (ch2 §2.5).
+
+**Band 1 is run by a harness, not by the program.** None of its functions is
+called after line 202 — the frame body never calls `overlaps`, `advance` or
+`count_where` — so `interp/tests/test_interp.c` calls each one under all three
+of #134's stub tables and requires every executable band-1 node to be reached
+in the union. [#139](https://github.com/ludo-lang/ludo/issues/139)'s report,
+which runs the program itself, will list them as unreached, and that is a true
+statement about the reference program.
+
+Three spec holes were found and repaired in the text: an unannotated
+`const` had no type (ch1 §5.6.1), nothing said a function may not fall off its
+end (ch1 §6.7.2), and §12.2's `!` made every reassigned local unwritable
+(ch2 §12.2.1).
+
 ## Building it
 
 ```sh
@@ -265,6 +313,7 @@ make cross      # compile-only macOS and Windows checks (zig cc only)
 make format     # apply .clang-format
 make standard   # the ban list a grep can see
 make tokens     # regenerate the committed token dump after editing reference.ludo
+make ast        # and the AST dump
 make fuzz       # libFuzzer over the lexer (FUZZ_CC=clang, FUZZ_TIME=60)
 ```
 
@@ -272,5 +321,7 @@ make fuzz       # libFuzzer over the lexer (FUZZ_CC=clang, FUZZ_TIME=60)
 clang, and `-Werror` on a drifting warning set stops CI on code nobody touched. `CC` is
 overridable (`make CC=clang check`), which is what keeps `zig cc` the swappable build-time
 dependency ADR-0020 calls it; `make cross` is the one target that needs `zig` specifically.
-**`clang-format` is a separate pinned package** — `zig` exposes `zig cc` and `zig ar`, not
-`clang-format`.
+**`clang-format` is pinned separately** — `zig` exposes `zig cc` and `zig ar`, not
+`clang-format` — so the `Makefile` fetches the pinned release through `uvx`, which a host
+needs on its path. `make CLANG_FORMAT=clang-format format` uses a local one instead, at the
+risk of formatting differently from CI.

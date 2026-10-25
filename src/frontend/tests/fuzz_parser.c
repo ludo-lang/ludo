@@ -1,5 +1,8 @@
 /* Same entry point for search and every-check corpus replay. The parser must
-   terminate, retain source bounds, and publish a tree rather than a graph. */
+   terminate, retain source bounds, and publish a tree rather than a graph.
+   The checker then runs over whatever tree recovery produced (#143): it must
+   terminate, keep its diagnostics inside the source, and never index a node,
+   a type or an instance it did not mint. */
 #include "../arena.h"
 #include "ludo_frontend.h"
 
@@ -77,6 +80,20 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             require(span.offset <= size && span.length <= size - span.offset);
         }
         ludo_arena_destroy(&arena);
+        const ludo_checked_file *checked = NULL;
+        if (ludo_check_file(session, file, &checked) == LUDO_FRONTEND_OK) {
+            require(checked->diagnostic_count >= file->diagnostic_count);
+            for (size_t i = 0; i < checked->diagnostic_count; i++) {
+                ludo_span span = checked->diagnostics[i].primary;
+                require(span.offset <= size && span.length <= size - span.offset);
+            }
+            for (size_t i = 0; i < file->ast.count; i++) {
+                const ludo_node_fact *fact = &checked->facts[i];
+                require(fact->type < checked->type_count);
+                require(fact->target < file->ast.count);
+                require(fact->instance <= checked->instance_count);
+            }
+        }
     } else {
         require(file == NULL);
     }

@@ -17,7 +17,7 @@ library vec_utils
 
 -- A module may declare constants. Folding is not execution, so this costs no
 -- load-time side effect and #26's guarantee is untouched (ch4 §13.3, §12.6).
-pub const EPSILON = 0.0001
+pub const EPSILON: f32 = 0.0001
 
 -- Private is the default; `pub` marks public, so a declaration becomes API by
 -- its author's act (ch4 §5.2). `Polar` and `length_sq` are API. `near_zero`

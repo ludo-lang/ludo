@@ -2,6 +2,8 @@ module
   use "vec-utils"
   use "./hud.ludo"
   const MAX_ROCKS
+    named-type
+      ident usize
     literal 64
   extern-item save1
     ident storage

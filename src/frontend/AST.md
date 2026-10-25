@@ -121,6 +121,16 @@ give way to spec-assigned codes when those exist:
 | `bootstrap:lex-bad-escape` | unsupported escape or invalid scalar escape |
 | `bootstrap:lex-malformed-number` | numeric token has invalid digits or glued-on text |
 
+The checker's codes (#143) follow the same rule, under `bootstrap:check-`:
+`ambiguous-literal`, `ambiguous-none`, `literal-range`, `mismatch`,
+`operator`, `condition`, `arity`, `unknown-name`, `unknown-type`,
+`unknown-variant`, `not-a-type`, `not-a-value`, `not-callable`,
+`generic-value`, `uninferred`, `optional-as-value`, `immutable`,
+`unmarked-mutation`, `not-a-place`, `non-exhaustive`, `missing-return`,
+`not-constant`, `extern-class`, `duplicate` and `no-loop`. Each message ends in
+the name it is about. `src/frontend/tests/test_check.c` is the reject side for
+each rule band 1 introduced.
+
 `ludo_diagnostic_json` writes one version-1 compile/error envelope to the
 caller's buffer, with no newline, no stream, no invented entity and no guessed
 suggestion. `ludo ast FILE` sends that NDJSON stream to stderr and the tree to

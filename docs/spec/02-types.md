@@ -769,6 +769,19 @@ numeric literals.)
 **12.2** **Immutable is the default.** A binding, parameter or field is mutable
 only where `!` marks it. (#11 Q3.)
 
+**12.2.1** **What `!` guards is the place a binding names, not the name.** A
+local binding — `:=`, an annotated `let`, a `for` target — MAY be **replaced
+whole** by `=` or a compound assignment with no mark: `n += 1` and `top = x`
+rebind a local and mutate nothing another name can see. Writing **into** a
+place — a field, an element, or anything reached through a view, a pointer or a
+parameter — is mutation, and needs §12.2's `!` on the declaration and chapter 1
+§7.10's mark at the site: `r!.pos = v`. **A parameter is never rebound**: a
+parameter without `!` is not assignable at all, and one with `!` is written
+through its mark. Without this clause a `:=` binding could never be reassigned,
+having no type position to carry the `!`.
+([#143](https://github.com/ludo-lang/ludo/issues/143), which found
+`count_where`'s `n += 1` unwritable under §12.2 as worded.)
+
 **12.3** Because `!` is not a type constructor, **no variance, propagation or
 conversion question arises from it**: there is no `[]!T` versus `[]T`
 distinction to decide, and no rule converting between them. (#11 Q3.)

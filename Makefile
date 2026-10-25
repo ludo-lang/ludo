@@ -22,20 +22,23 @@ EXTRA ?=
 
 INCLUDES = -Isrc -Isrc/frontend/include -Isrc/interp/include
 ALL_CFLAGS = $(STD) $(WARNINGS) $(OPT) $(INCLUDES) $(EXTRA) $(CFLAGS)
+# fmod and fmodf: float % (ch2 16.2) evaluated at the operand's own width.
+LDLIBS = -lm
 
 # platform/ is the SDL3 host and has no code; it is deliberately not wired
 # into the build or CI until it does (#131).
 FRONTEND_SRC = src/frontend/frontend.c src/frontend/lexer.c src/frontend/arena.c \
-               src/frontend/parser.c src/frontend/ast.c src/frontend/diagnostic.c
-INTERP_SRC = src/interp/interp.c src/interp/stub_host.c
+               src/frontend/parser.c src/frontend/ast.c src/frontend/diagnostic.c \
+               src/frontend/check.c
+INTERP_SRC = src/interp/interp.c src/interp/stub_host.c src/interp/eval.c
 DRIVER_SRC = src/driver/main.c
 
-FRONTEND_HEADERS = $(wildcard src/frontend/include/*.h) src/frontend/arena.h
+FRONTEND_HEADERS = $(wildcard src/frontend/include/*.h) src/frontend/arena.h src/frontend/session.h
 HEADERS = $(FRONTEND_HEADERS) $(wildcard src/interp/include/*.h) src/test.h
 
 LIB_SRC = $(FRONTEND_SRC) $(INTERP_SRC)
 
-TESTS = $(BUILD)/test_frontend $(BUILD)/test_parser $(BUILD)/test_interp
+TESTS = $(BUILD)/test_frontend $(BUILD)/test_parser $(BUILD)/test_check $(BUILD)/test_interp
 
 # The lexer's committed token dump (#141). Committed rather than generated so a
 # change to what the lexer reads is a diff someone reviews. After an edit to
@@ -61,7 +64,7 @@ $(BUILD):
 	mkdir -p $(BUILD)
 
 $(BUILD)/ludo: $(DRIVER_SRC) $(LIB_SRC) $(HEADERS) | $(BUILD)
-	$(CC) $(ALL_CFLAGS) -o $@ $(DRIVER_SRC) $(LIB_SRC)
+	$(CC) $(ALL_CFLAGS) -o $@ $(DRIVER_SRC) $(LIB_SRC) $(LDLIBS)
 
 $(BUILD)/test_frontend: src/frontend/tests/test_frontend.c $(FRONTEND_SRC) $(FRONTEND_HEADERS) src/test.h | $(BUILD)
 	$(CC) $(ALL_CFLAGS) -o $@ src/frontend/tests/test_frontend.c $(FRONTEND_SRC)
@@ -69,8 +72,11 @@ $(BUILD)/test_frontend: src/frontend/tests/test_frontend.c $(FRONTEND_SRC) $(FRO
 $(BUILD)/test_parser: src/frontend/tests/test_parser.c $(FRONTEND_SRC) $(FRONTEND_HEADERS) src/test.h | $(BUILD)
 	$(CC) $(ALL_CFLAGS) -o $@ src/frontend/tests/test_parser.c $(FRONTEND_SRC)
 
-$(BUILD)/test_interp: src/interp/tests/test_interp.c $(INTERP_SRC) $(HEADERS) | $(BUILD)
-	$(CC) $(ALL_CFLAGS) -o $@ src/interp/tests/test_interp.c $(INTERP_SRC)
+$(BUILD)/test_check: src/frontend/tests/test_check.c $(FRONTEND_SRC) $(FRONTEND_HEADERS) src/test.h | $(BUILD)
+	$(CC) $(ALL_CFLAGS) -o $@ src/frontend/tests/test_check.c $(FRONTEND_SRC)
+
+$(BUILD)/test_interp: src/interp/tests/test_interp.c $(LIB_SRC) $(HEADERS) | $(BUILD)
+	$(CC) $(ALL_CFLAGS) -o $@ src/interp/tests/test_interp.c $(INTERP_SRC) $(FRONTEND_SRC) $(LDLIBS)
 
 $(BUILD)/fuzz_replay: src/frontend/tests/fuzz_replay.c $(FUZZ_SRC) $(FRONTEND_SRC) $(FRONTEND_HEADERS) src/test.h | $(BUILD)
 	$(CC) $(ALL_CFLAGS) -o $@ src/frontend/tests/fuzz_replay.c $(FUZZ_SRC) $(FRONTEND_SRC)
@@ -149,13 +155,17 @@ cross-each:
 	  $(CC) $(STD) $(WARNINGS) $(INCLUDES) --target=$(TARGET) -c $$f -o /dev/null || exit 1; \
 	done
 
-# clang-format is not shipped by zig; CI pins it as a package (see
+# clang-format is not shipped by zig, and its output drifts between releases, so
+# the pin lives here and uvx fetches it: CI and every host format alike (see
 # docs/agents/c-standard.md).
+CLANG_FORMAT_VERSION := 18.1.8
+CLANG_FORMAT ?= uvx --from clang-format==$(CLANG_FORMAT_VERSION) clang-format
+
 format:
-	clang-format -i `git ls-files '*.c' '*.h'`
+	$(CLANG_FORMAT) -i `git ls-files '*.c' '*.h'`
 
 format-check:
-	clang-format --dry-run -Werror `git ls-files '*.c' '*.h'`
+	$(CLANG_FORMAT) --dry-run -Werror `git ls-files '*.c' '*.h'`
 
 standard:
 	python3 tools/check-c-standard.py

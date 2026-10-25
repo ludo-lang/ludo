@@ -220,6 +220,15 @@ is a keyword rather than an inferred property of a binding's position.
 floor (ADR-0021 §1) and the compile error an ill-defined fold produces
 (ADR-0021 §5).
 
+**5.6.1** A `const` MAY annotate its type, `const <NAME>: <Type> = <expr>`
+(`ConstDecl`). **Without an annotation its type is its initialiser's type**,
+and a bare numeric literal has no context there, so `const MAX = 64` is §3.2's
+ambiguity and a compile error; the fix is `const MAX: usize = 64`. There is no
+untyped constant whose type each use site picks: a `const` means one thing
+everywhere (ADR-0021 §4), and a type that varies by use site would be a second
+meaning. ([#143](https://github.com/ludo-lang/ludo/issues/143), which found the
+reference program's own `MAX_ROCKS` untypable.)
+
 **5.7** `fn <name>(<params>) -> <returns>` followed by a block and `end`
 (`FnDecl`). **Every function is top-level and named.** There is no anonymous
 function literal, no closure and no nested `fn`. (#52 / ADR-0017.)
@@ -319,6 +328,16 @@ into a nested block hunting for the live value. (#7, surface call 3.)
 **6.7.1** The rule is structural in the grammar, not a side condition on it:
 `TailExpr` hangs off `FnDecl` and **not** off `Block`, so a nested block has no
 tail position to walk into. (#7, surface call 3.)
+
+**6.7.2** **A function with a return type MUST NOT reach the end of its body.**
+The body ends either in a tail expression or in a **diverging statement**, and
+the test is structural, on the same no-walking footing as §6.7: a statement
+diverges if it is a `return`, a call that panics (§6.14), an `if` with an
+`else` whose every branch ends in a diverging statement, or a `match` whose
+every arm does. A loop never diverges, whatever its condition. A body that can
+fall off its end is a compile error naming the function. (Authored —
+[#143](https://github.com/ludo-lang/ludo/issues/143), which found the corpus
+silent on what a function returns when control reaches its `end`.)
 
 **6.8** `break` and `continue` exit and advance the innermost enclosing loop.
 **There is no labelled break and no loop label.** (#24, first application of

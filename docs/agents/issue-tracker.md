@@ -43,3 +43,5 @@ Used by `/wayfinder`. The **map** is a single issue with **child** issues as tic
 - **Frontier query**: list the map's open children (`gh issue list --state open`, scoped to the map's sub-issues / task list), drop any with an open blocker (`issue_dependencies_summary.blocked_by > 0`, or an open issue in the `Blocked by` line) or an assignee; first in map order wins.
 - **Claim**: `gh issue edit <n> --add-assignee @me` — the session's first write.
 - **Resolve**: `gh issue comment <n> --body "<answer>"`, then `gh issue close <n>`, then append a context pointer (gist + link) to the map's Decisions-so-far.
+- **A ticket that ends in a PR**: the PR body says `Closes #<n>`, never `Refs #<n>`, so the merge closes the ticket. Post the resolution comment and the Decisions-so-far line when the PR opens; the ticket stays open until it merges.
+- **Decisions-so-far lines are one line each**: a gist of the outcome plus the link. The reasoning lives in the ticket's resolution comment; a reader who needs it follows the link.
