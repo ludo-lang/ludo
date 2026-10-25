@@ -313,14 +313,18 @@ complete grammar. It found these gaps by implementing it:
 | ch6 §12.4: root-qualified blessed types | `QualifiedName` admits the existing `$.` root |
 | grammar `ExplicitMarker ::= "#explicit"` | §11.1.1: one terminal, so `# explicit` is a syntax error |
 | ch2 §4.6.1; FnDecl's one `TailExpr` | reference uses qualified enum constructors and explicit multiple-value return |
+| [#152](https://github.com/ludo-lang/ludo/issues/152): where an elided error set ends | §9.7.1; `FallibleType` priority comment |
+| #152: `as T rescue E` | §7.13; `CastExpr` targets `PrefixType` |
+
+#152 authors a token priority over existing terminals and narrows one target;
+it reverses no clause and moves no budget, so it is repaired in the text
+(ADR-0044 §6) without an ADR.
 
 The new ADR reverses no clause of an earlier ADR, so no amendment stamp is
 owed; its absorption stamp and this declaration land with the repairs.
 The token count does not grow: all these terminals already existed. Section 1
 reuses section 2's `GenericArgs` crossing rather than inventing a second list.
 
-The optional error-set/body boundary is **not resolved here**:
-[Where an elided fallible result type ends before the function body](https://github.com/ludo-lang/ludo/issues/152)
-records the ambiguous result-type and cast examples, and blocks Band 2. The
-parser's reference-reading heuristic is explicitly provisional in its tree
-contract; this coverage entry does not promote it into normative syntax.
+The optional error-set/body boundary was left open here and resolved by
+[Where an elided fallible result type ends before the function body](https://github.com/ludo-lang/ludo/issues/152):
+§9.7.1 and §7.13, recorded in the table above.
