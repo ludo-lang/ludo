@@ -20,9 +20,11 @@ jobs:
           version: ${{ env.ZIG_VERSION }}
       - name: Install Valgrind
         run: sudo apt-get update && sudo apt-get install -y valgrind
-      # No sanitizers: Valgrind and ASan do not coexist.
+      # No sanitizers: Valgrind and ASan do not coexist. zig cc targets the
+      # host CPU, and on an AVX-512 runner that emits instructions Valgrind
+      # cannot decode, so it dies with SIGILL (#155): build for baseline x86-64.
       - name: Build the suite unsanitized
-        run: make test
+        run: make test EXTRA=-mcpu=baseline
       - name: Valgrind over the suite
         run: |
           set -e
