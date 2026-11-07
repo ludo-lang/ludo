@@ -630,6 +630,15 @@ void ludo_interp_destroy(ludo_interp *interp);
 ludo_interp_status ludo_interp_call(ludo_interp *interp, const char *name, const ludo_value *args,
                                     size_t count, ludo_value *result);
 
+/* Calls a generic with its type arguments, one per generic parameter: the
+   instance a call site would have recorded (ch2 5.1). The arguments must
+   satisfy every constraint (ch2 5.4), or the call is BAD_ARGUMENT. A
+   constraint member reached without them is UNCHECKED. */
+ludo_interp_status ludo_interp_call_instance(ludo_interp *interp, const char *name,
+                                             const ludo_type_id *type_args, size_t type_arg_count,
+                                             const ludo_value *args, size_t count,
+                                             ludo_value *result);
+
 /* Runs one turn of the frame entry against the latch driver/ took for it
    (ch6 6.8.1). UNCHECKED while the frame declaration is a later band's, which
    is every frame today: band 6 (#148) runs the body. The headless run calls it

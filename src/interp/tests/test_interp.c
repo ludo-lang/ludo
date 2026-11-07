@@ -292,7 +292,89 @@ static void run_band1(ludo_interp *in) {
     LUDO_CHECK(result.kind == LUDO_VALUE_HANDLE && result.as.handle == 3u);
 
     /* A later band's declaration is refused, not guessed at. */
-    LUDO_CHECK(ludo_interp_call(in, "best", &view, 1, &result) == LUDO_INTERP_UNCHECKED);
+    LUDO_CHECK(ludo_interp_call(in, "spawn", &view, 1, &result) == LUDO_INTERP_UNCHECKED);
+}
+
+/* ---- Band 2 (#144): interfaces, bounded generics and the failure line ---- */
+
+/* Lines 208-279. As in band 1, nothing in the program calls them, so this
+   harness does; the impl is checked here and is exempt from coverage. */
+static const char *const band2_declarations[] = {
+    "Ranked", "rank", "best", "checked_count", "report", "total",
+};
+
+static ludo_value rocks_view(ludo_interp *in, size_t count) {
+    static ludo_value rocks[65];
+    static const float radii[] = {9.0f, 4.0f, 10.0f};
+    ludo_value view = {0};
+    for (size_t i = 0; i < count && i < sizeof rocks / sizeof rocks[0]; i++) {
+        rocks[i] = rock_at(in, 0.0f, 0.0f, radii[i % 3], false);
+    }
+    LUDO_CHECK(ludo_interp_make_view(in, rocks, count, &view) == LUDO_INTERP_OK);
+    return view;
+}
+
+/* A fallible value: tag 0 is success, tag 1 is failure (ludo_types.h). */
+static bool failed_with(const ludo_value *value, uint32_t variant) {
+    return value->kind == LUDO_VALUE_AGGREGATE && value->tag == 1 && value->count == 1 &&
+           value->items[0].tag == variant;
+}
+
+static bool succeeded_with(const ludo_value *value, uint64_t n) {
+    return value->kind == LUDO_VALUE_AGGREGATE && value->tag == 0 && value->count == 1 &&
+           value->items[0].kind == LUDO_VALUE_INT && value->items[0].as.bits == n;
+}
+
+static void run_band2(ludo_interp *in, ludo_type_id rock) {
+    ludo_value result = {0};
+    ludo_value empty = rocks_view(in, 0);
+    ludo_value three = rocks_view(in, 3);
+    ludo_value many = rocks_view(in, 65); /* MAX_ROCKS + 1 */
+
+    /* The discharging function is an ordinary fn. */
+    ludo_value lone = rock_at(in, 0.0f, 0.0f, 9.0f, false);
+    LUDO_CHECK(ludo_interp_call(in, "rank", &lone, 1, &result) == LUDO_INTERP_OK);
+    LUDO_CHECK(as_f32(&result) == 9.0f);
+
+    /* best[Rock]: rank dispatches to it statically; radii 9, 4, 10 take the
+       none arm, then some without and with a new best. */
+    LUDO_CHECK(ludo_interp_call_instance(in, "best", &rock, 1, &empty, 1, &result) ==
+               LUDO_INTERP_OK);
+    LUDO_CHECK(result.kind == LUDO_VALUE_AGGREGATE && result.tag == 0);
+    LUDO_CHECK(ludo_interp_call_instance(in, "best", &rock, 1, &three, 1, &result) ==
+               LUDO_INTERP_OK);
+    LUDO_CHECK(result.kind == LUDO_VALUE_AGGREGATE && result.tag == 1 &&
+               as_f32(&result.items[0].items[2]) == 10.0f);
+    /* ch2 5.4: f32 has no impl of Ranked; and without its instance the
+       member has nothing to dispatch on. */
+    ludo_type_id f32 = LUDO_TYPE_ID_OF(LUDO_TYPE_F32);
+    LUDO_CHECK(ludo_interp_call_instance(in, "best", &f32, 1, &three, 1, &result) ==
+               LUDO_INTERP_BAD_ARGUMENT);
+    LUDO_CHECK(ludo_interp_call(in, "best", &three, 1, &result) == LUDO_INTERP_UNCHECKED);
+
+    /* Both failures, and the success. FieldError's variants: empty is 0,
+       too_many is 1. */
+    LUDO_CHECK(ludo_interp_call(in, "checked_count", &empty, 1, &result) == LUDO_INTERP_OK);
+    LUDO_CHECK(failed_with(&result, 0));
+    LUDO_CHECK(ludo_interp_call(in, "checked_count", &many, 1, &result) == LUDO_INTERP_OK);
+    LUDO_CHECK(failed_with(&result, 1) && result.items[0].items[0].as.bits == 65u);
+    LUDO_CHECK(ludo_interp_call(in, "checked_count", &three, 1, &result) == LUDO_INTERP_OK);
+    LUDO_CHECK(succeeded_with(&result, 3u));
+
+    /* The default and the handler's two arms: empty takes `rescue 0` and the
+       handler's `return 0`; too many returns n from the handler. */
+    LUDO_CHECK(ludo_interp_call(in, "report", &empty, 1, &result) == LUDO_INTERP_OK);
+    LUDO_CHECK(result.kind == LUDO_VALUE_INT && result.as.bits == 0u);
+    LUDO_CHECK(ludo_interp_call(in, "report", &many, 1, &result) == LUDO_INTERP_OK);
+    LUDO_CHECK(result.kind == LUDO_VALUE_INT && result.as.bits == 65u);
+    LUDO_CHECK(ludo_interp_call(in, "report", &three, 1, &result) == LUDO_INTERP_OK);
+    LUDO_CHECK(result.kind == LUDO_VALUE_INT && result.as.bits == 6u);
+
+    /* `rescue return` propagates the same error value. */
+    LUDO_CHECK(ludo_interp_call(in, "total", &empty, 1, &result) == LUDO_INTERP_OK);
+    LUDO_CHECK(failed_with(&result, 0));
+    LUDO_CHECK(ludo_interp_call(in, "total", &three, 1, &result) == LUDO_INTERP_OK);
+    LUDO_CHECK(succeeded_with(&result, 3u));
 }
 
 /* The exempt list the report reads (#139), so the band tests and the report
@@ -398,7 +480,7 @@ static void check_regions(void) {
     LUDO_CHECK(ludo_coverage_unreached(&ast, executed, &exempt, 2, stack, NULL, NULL) == 0u);
 }
 
-static void check_band1(void) {
+static void check_bands(void) {
     size_t length = 0;
     char *source = read_text("docs/spec/reference/reference.ludo", &length);
     ludo_session *session = NULL;
@@ -421,6 +503,18 @@ static void check_band1(void) {
         ludo_node_id decl = ludo_checked_lookup(checked, name, strlen(name));
         LUDO_CHECK(decl != 0 && checked->facts[decl].state == LUDO_CHECK_CHECKED);
     }
+
+    for (size_t i = 0; i < sizeof band2_declarations / sizeof band2_declarations[0]; i++) {
+        const char *name = band2_declarations[i];
+        ludo_node_id decl = ludo_checked_lookup(checked, name, strlen(name));
+        LUDO_CHECK(decl != 0 && checked->facts[decl].state == LUDO_CHECK_CHECKED);
+    }
+    /* impl Rock: Ranked[Rock], discharged by rank. */
+    ludo_node_id rank_decl = ludo_checked_lookup(checked, "rank", 4);
+    LUDO_CHECK(checked->impl_count == 1);
+    LUDO_CHECK(checked->impl_count == 1 && checked->impls[0].member_count == 1 &&
+               checked->impls[0].discharge[0] == rank_decl &&
+               checked->facts[checked->impls[0].node].state == LUDO_CHECK_CHECKED);
 
     /* ch2 5.1: one instance of first, keyed by (first, Rock). */
     ludo_node_id first_decl = ludo_checked_lookup(checked, "first", 5);
@@ -449,6 +543,7 @@ static void check_band1(void) {
             continue;
         }
         run_band1(in);
+        run_band2(in, checked->facts[rock_decl].type);
         /* The frame is band 6's (#148): the headless run's loop calls it and
            is refused, rather than running an unchecked body. */
         LUDO_CHECK(ludo_interp_frame(in, ludo_stub_frame(&state)) == LUDO_INTERP_UNCHECKED);
@@ -462,10 +557,19 @@ static void check_band1(void) {
     ludo_coverage_exempt exempt;
     static ludo_node_id stack[1u << 16];
     LUDO_CHECK(load_exempt(&exempt));
-    for (size_t i = 0; i < sizeof band1_declarations / sizeof band1_declarations[0]; i++) {
-        const char *name = band1_declarations[i];
-        ludo_node_id decl = ludo_checked_lookup(checked, name, strlen(name));
-        if (decl != 0) {
+    static const char *const *const bands[] = {band1_declarations, band2_declarations};
+    static const size_t band_sizes[] = {
+        sizeof band1_declarations / sizeof band1_declarations[0],
+        sizeof band2_declarations / sizeof band2_declarations[0],
+    };
+    for (size_t b = 0; b < 2; b++) {
+        for (size_t i = 0; i < band_sizes[b]; i++) {
+            const char *name = bands[b][i];
+            ludo_node_id decl = ludo_checked_lookup(checked, name, strlen(name));
+            LUDO_CHECK(decl != 0);
+            if (decl == 0) {
+                continue;
+            }
             LUDO_CHECK(ludo_coverage_unreached(&file->ast, union_bits, &exempt, decl, stack,
                                                print_region, (void *)&file->ast) == 0);
         }
@@ -515,5 +619,5 @@ LUDO_TEST_MAIN({
     check_stub_state();
     check_exempt_parse();
     check_regions();
-    check_band1();
+    check_bands();
 })

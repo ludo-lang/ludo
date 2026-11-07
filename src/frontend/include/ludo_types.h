@@ -45,15 +45,17 @@ typedef enum ludo_type_kind {
     LUDO_TYPE_STRING,
     LUDO_TYPE_VEC2, /* ch6 3.2: blessed, two f32 components x and y */
 
-    LUDO_TYPE_STRUCT,   /* decl is the type-decl */
-    LUDO_TYPE_ENUM,     /* decl is the type-decl */
-    LUDO_TYPE_DISTINCT, /* decl is the type-decl; inner is the base */
-    LUDO_TYPE_PARAM,    /* decl is the generic-param, opaque in the body (ch2 5.2) */
-    LUDO_TYPE_VIEW,     /* []inner */
-    LUDO_TYPE_OPTIONAL, /* ?inner: variant 0 is none, variant 1 is some(inner) */
-    LUDO_TYPE_FN,       /* params; inner is the result, UNIT when none is written */
-    LUDO_TYPE_EXTERN,   /* ch1 5.14: an extern item; extern_class says which */
-    LUDO_TYPE_MODULE    /* the name a `use` binds; band 4 gives it members */
+    LUDO_TYPE_STRUCT,    /* decl is the type-decl */
+    LUDO_TYPE_ENUM,      /* decl is the type-decl */
+    LUDO_TYPE_DISTINCT,  /* decl is the type-decl; inner is the base */
+    LUDO_TYPE_PARAM,     /* decl is the generic-param, opaque in the body (ch2 5.2) */
+    LUDO_TYPE_VIEW,      /* []inner */
+    LUDO_TYPE_OPTIONAL,  /* ?inner: variant 0 is none, variant 1 is some(inner) */
+    LUDO_TYPE_FN,        /* params; inner is the result, UNIT when none is written */
+    LUDO_TYPE_FALLIBLE,  /* inner rescue error: variant 0 is success(inner), 1 is failure(error) */
+    LUDO_TYPE_INTERFACE, /* decl is the type-decl; a constraint only, never a value's type */
+    LUDO_TYPE_EXTERN,    /* ch1 5.14: an extern item; extern_class says which */
+    LUDO_TYPE_MODULE     /* the name a `use` binds; band 4 gives it members */
 } ludo_type_kind;
 
 /* Fixed ids: id N is the primitive of kind N, for every kind up to VEC2. */
@@ -71,6 +73,7 @@ typedef struct ludo_type {
     ludo_type_kind kind;
     ludo_node_id decl;
     ludo_type_id inner;
+    ludo_type_id error;         /* FALLIBLE only: the error set, an ENUM */
     const ludo_type_id *params; /* FN only */
     size_t param_count;
     ludo_extern_class extern_class; /* EXTERN only */
@@ -86,6 +89,20 @@ typedef struct ludo_instance {
     size_t arg_count;
     ludo_type_id signature; /* the FN type with the arguments substituted */
 } ludo_instance;
+
+/* One `impl` line's discharge of one interface (ch2 6.7.3): the interface
+   applied to its written arguments, and per member, in the interface body's
+   order, the module-level fn matched to it by name and signature. A generic
+   body calls a constraint member; the evaluator finds the instance's impl here
+   and calls the discharging function. */
+typedef struct ludo_impl {
+    ludo_node_id node;      /* the impl declaration */
+    ludo_node_id interface; /* the interface's type-decl */
+    const ludo_type_id *args;
+    size_t arg_count;
+    const ludo_node_id *discharge; /* one fn declaration per member */
+    size_t member_count;
+} ludo_impl;
 
 /* Per top-level declaration. Checking is band-local but declaration collection
    is whole-file (#143): every top-level name is known before any body is
@@ -107,7 +124,12 @@ typedef enum ludo_ref_kind {
     LUDO_REF_COMPONENT, /* a vec2 component; index: 0 for x, 1 for y */
     LUDO_REF_VARIANT,   /* target: the variant node, 0 for none/some; index: its tag */
     LUDO_REF_GENERIC,   /* target: the generic-param */
-    LUDO_REF_VEC2_NEW   /* $.vec2, the positional constructor (ch6 3.5) */
+    LUDO_REF_VEC2_NEW,  /* $.vec2, the positional constructor (ch6 3.5) */
+    /* A constraint member called in a generic body (ch2 5.5.1). target: the
+       constraint's named-type, whose facts name the interface; index: the
+       member's position in the interface body. */
+    LUDO_REF_MEMBER,
+    LUDO_REF_LEN /* a view's .len (ch3 6.10) */
 } ludo_ref_kind;
 
 /* One record per node. Absent fields are 0. */

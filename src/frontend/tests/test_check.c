@@ -48,6 +48,85 @@ static void expect(const char *body, const char *code) {
     LUDO_CHECK(strcmp(got, code) == 0);
 }
 
+/* Band 2 (#144): interfaces, bounded generics and the failure line. */
+
+#define RANKED                                                                                     \
+    "type Ranked[T] = interface\n  fn rank(v: T) -> f32\nend\n"                                    \
+    "fn rank(v: Rock) -> f32\n  v.radius\nend\n"
+#define BEST                                                                                       \
+    "fn best[T: Ranked[T]](xs: []T) -> f32\n  r: f32 = 0.0\n  for x in xs do\n"                    \
+    "    r = rank(x)\n  end\n  r\nend\n"
+#define ERR "type Err = enum\n  bad\n  worse(i32)\nend\n"
+#define COUNT "fn g(n: i32) -> i32 rescue Err\n  return Err.bad if n < 0\n  n\nend\n"
+
+static void check_band2(void) {
+    /* ch2 6.7.3: an impl is discharged by name and signature. */
+    expect(RANKED "impl Rock: Ranked[Rock]\n" BEST "fn f(xs: []Rock) -> f32\n  best(xs)\nend\n",
+           "");
+    expect("type Ranked[T] = interface\n  fn rank(v: T) -> f32\nend\nimpl Rock: Ranked[Rock]\n",
+           "bootstrap:check-unsatisfied");
+    expect("type Ranked[T] = interface\n  fn rank(v: T) -> f32\nend\n"
+           "fn rank(v: Rock) -> i32\n  1\nend\nimpl Rock: Ranked[Rock]\n",
+           "bootstrap:check-unsatisfied");
+    expect(RANKED "impl Rock: Ranked\n", "bootstrap:check-arity");
+    expect(RANKED "impl Rock: Ranked[Rock]\nimpl Rock: Ranked[Rock]\n",
+           "bootstrap:check-duplicate");
+    expect(RANKED "impl f32: Ranked[f32]\n", "bootstrap:check-orphan-impl");
+    expect("impl Rock: Shape\n", "bootstrap:check-not-an-interface");
+
+    /* ch2 5.4: satisfaction is declared, never structural -- rank exists
+       but nothing says Rock is Ranked. */
+    expect(RANKED BEST "fn f(xs: []Rock) -> f32\n  best(xs)\nend\n", "bootstrap:check-unsatisfied");
+
+    /* ch2 6.4: an interface is a constraint only. */
+    expect(RANKED "fn f(r: Ranked[Rock])\nend\n", "bootstrap:check-interface-as-type");
+    expect("type Marker = interface\nend\nfn f(m: Marker)\nend\n",
+           "bootstrap:check-interface-as-type");
+
+    /* ch2 5.5.1: a member shadows the module's name, and two constraints
+       providing it are ambiguous. */
+    expect(RANKED "type Sized[T] = interface\n  fn rank(v: T) -> f32\nend\n"
+                  "fn both[T: Ranked[T] + Sized[T]](x: T) -> f32\n  rank(x)\nend\n",
+           "bootstrap:check-ambiguous-member");
+
+    /* ch2 10.6, 10.6.0a: a bare rescue needs exactly one named error set. */
+    expect(ERR COUNT "fn h(n: i32) -> i32 rescue\n  g(n) rescue return\nend\n", "");
+    expect(ERR "fn h(n: i32) -> i32 rescue\n  n\nend\n", "bootstrap:check-no-error-set");
+    expect(ERR COUNT "type Other = enum\n  x\nend\n"
+                     "fn k() -> i32 rescue Other\n  1\nend\nfn h() -> i32 rescue\n  1\nend\n",
+           "bootstrap:check-ambiguous-error-set");
+    expect("fn h() -> i32 rescue Rock\n  1\nend\n", "bootstrap:check-not-an-error-set");
+    expect(ERR "fn h() -> Err rescue Err\n  Err.bad\nend\n", "bootstrap:check-ambiguous-fallible");
+
+    /* ch2 10.8-10.13: the tails, and each word handling one thing. */
+    expect(ERR COUNT "fn h(n: i32) -> i32\n  g(n) rescue 0\nend\n", "");
+    expect(ERR COUNT "fn h(n: i32) -> i32\n  g(n) rescue 0.5\nend\n", "bootstrap:check-mismatch");
+    expect(ERR COUNT "fn h(n: i32) -> i32\n  g(n) rescue return\nend\n",
+           "bootstrap:check-propagation");
+    expect(ERR COUNT "type Other = enum\n  x\nend\n"
+                     "fn h(n: i32) -> i32 rescue Other\n  g(n) rescue return\nend\n",
+           "bootstrap:check-error-set-mismatch");
+    expect(ERR COUNT
+           "fn h(n: i32) -> i32\n  m := g(n) rescue e then\n    return 0\n  end\n  m\nend\n",
+           "");
+    expect(ERR COUNT
+           "fn h(n: i32) -> i32\n  k: i32 = 0\n  m := g(n) rescue e then\n    k += 1\n  end\n"
+           "  m\nend\n",
+           "bootstrap:check-handler-falls-through");
+    expect("fn h(n: i32) -> i32\n  n rescue 0\nend\n", "bootstrap:check-not-fallible");
+    expect("fn h(n: ?i32) -> i32\n  n rescue 0\nend\n", "bootstrap:check-rescue-on-optional");
+    expect(ERR COUNT "fn h(n: i32) -> i32\n  g(n) or 0\nend\n", "bootstrap:check-or-on-fallible");
+
+    /* ch2 10.11: must-use, discharged by one token. */
+    expect(ERR COUNT "fn h(n: i32)\n  g(n)\nend\n", "bootstrap:check-unused-fallible");
+    expect(ERR COUNT "fn h(n: i32)\n  g(n)\n  _ = n\nend\n", "bootstrap:check-unused-fallible");
+    expect(ERR COUNT "fn h(n: i32)\n  _ = g(n)\nend\n", "");
+
+    /* ch2 10.6.1: the returned value's static type picks the side. */
+    expect(ERR "fn h(n: i32) -> i32 rescue Err\n  return Err.worse(n) if n < 0\n  n\nend\n", "");
+    expect(ERR "fn h(n: i32) -> i32 rescue Err\n  return true\nend\n", "bootstrap:check-mismatch");
+}
+
 LUDO_TEST_MAIN({
     /* ch1 5.6.1: an unannotated const takes its initialiser's type, and a
        bare literal has none. */
@@ -107,4 +186,6 @@ LUDO_TEST_MAIN({
 
     expect("fn f() -> i32\n  nope\nend\n", "bootstrap:check-unknown-name");
     expect("fn f() -> i32\n  0\nend\nfn f() -> i32\n  1\nend\n", "bootstrap:check-duplicate");
+
+    check_band2();
 })
