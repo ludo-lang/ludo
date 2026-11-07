@@ -15,7 +15,7 @@ a **parser with a session-owned AST** (#142), and the first band of a
 **checker and evaluator** grown region by region over `reference.ludo` (#143).
 [`frontend/AST.md`](frontend/AST.md) describes the tree and recovery contract;
 `ludo ast FILE` dumps it and `ludo check FILE` checks it, both emitting ch7 JSON
-diagnostics.
+diagnostics. `make coverage` runs it headless and lists what never executed (#139).
 
 ## What this is for
 
@@ -129,11 +129,24 @@ grid and §7.12's silent clamp are owed by **every** host, and a clause each
 implementation re-derives is one each implementation gets subtly wrong. ch8 P15's
 vector is a test.
 
-Two things are **not** here. The **execution bit per AST node** that turns *was every
-construct reached* into a report needs an AST, a node index and an evaluator —
-[#139](https://github.com/ludo-lang/ludo/issues/139). And **`driver/` has no headless
-run yet**: the stub is a library with no consumer outside the test binary, and wiring
-the loop is #139's too, since a run with nothing to execute reports nothing.
+## What never ran is a report, not a gate
+
+Settled by #134, built by [#139](https://github.com/ludo-lang/ludo/issues/139).
+`ludo coverage FILE EXEMPT` (`make coverage`) runs the program against each stub
+table for two frames, unions the evaluator's execution bits, and prints each
+**maximal unreached region** — one line for an uncalled function, not one per node in
+it — with its position and node count. It exits 0 whatever it finds: there is **no
+threshold, no percentage and no CI gate**, because the destination is *played*.
+
+What an AST node is and a spec construct is not — a type expression, an `impl` with no
+body — is written down in [`interp/coverage.exempt`](interp/coverage.exempt), one kind
+per line with its reason. A kind missing from it is counted, so a new AST kind shows
+up in the report until someone says why it should not. `test_interp` reads the same
+file, so the band tests and the report cannot disagree about what counts.
+
+The frame is band 6's ([#148](https://github.com/ludo-lang/ludo/issues/148)):
+`ludo_interp_frame` is refused as UNCHECKED today, and the loop calls it anyway, so the
+report starts telling the truth the day the body runs.
 
 ## The frontend's API is a session, and the AST crosses as concrete structs
 
@@ -295,7 +308,7 @@ called after line 202 — the frame body never calls `overlaps`, `advance` or
 `count_where` — so `interp/tests/test_interp.c` calls each one under all three
 of #134's stub tables and requires every executable band-1 node to be reached
 in the union. [#139](https://github.com/ludo-lang/ludo/issues/139)'s report,
-which runs the program itself, will list them as unreached, and that is a true
+which runs the program itself, lists them as unreached, and that is a true
 statement about the reference program.
 
 Three spec holes were found and repaired in the text: an unannotated

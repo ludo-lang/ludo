@@ -1291,6 +1291,14 @@ ludo_interp_status ludo_interp_call(ludo_interp *interp, const char *name, const
                                                                    : LUDO_INTERP_OK;
 }
 
+ludo_interp_status ludo_interp_frame(ludo_interp *interp, const ludo_frame_input *input) {
+    /* No band checks a frame declaration before band 6 (#148), and PENDING is
+       never run, so there is no body to walk yet: #148 replaces this line. */
+    (void)interp;
+    (void)input;
+    return LUDO_INTERP_UNCHECKED;
+}
+
 ludo_interp_status ludo_interp_global(ludo_interp *interp, const char *name, ludo_value *out) {
     ludo_node_id decl = ludo_checked_lookup(interp->program, name, strlen(name));
     ludo_ast_kind kind = kind_of(interp, decl);

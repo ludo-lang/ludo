@@ -100,6 +100,11 @@ typedef enum ludo_ast_kind {
     LUDO_AST_HANDLER
 } ludo_ast_kind;
 
+/* A table keyed by kind sizes itself with this, not with an enumerator: a
+   COUNT member would be one more case every -Wswitch-enum switch must name.
+   It assumes HANDLER stays last, which is where a new kind is appended. */
+#define LUDO_AST_KIND_COUNT ((size_t)LUDO_AST_HANDLER + 1u)
+
 /* The token names a declaration/member/literal or records an operator; it is
    an index into the file's full token stream. SIZE_MAX means no token.
    flags are spelling metadata: pub on declarations, numeric on distinct,
