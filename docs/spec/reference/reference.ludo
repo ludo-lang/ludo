@@ -115,8 +115,8 @@ type RockId = distinct u32
 -- the three shipped quantities, and it ships because `$.time.now` returns it
 -- (ch6 §3.7).
 
--- One error set, declared in this file, so `rescue` with no set named elides to
--- it (spec ch2 §10.6).
+-- One error set, declared in this file. `checked_count` names it after `rescue`,
+-- which is what makes it the set a bare `rescue` elides to (spec ch2 §10.6).
 type FieldError = enum
   empty
   too_many(usize)
@@ -244,17 +244,18 @@ pub fn best[T: Ranked[T]](xs: []T) -> ?T
   return top
 end
 
--- Failure is a value in the return type, and the set is elided to this file's
--- one declared error enum (ch2 §10.1, §10.6). A failure is returned by
--- returning a value of the error set, qualified (ch2 §10.6.1, §4.6.1).
-pub fn checked_count(xs: []Rock) -> usize rescue
+-- Failure is a value in the return type (ch2 §10.1). Naming `FieldError` after
+-- `rescue` here is what makes it this file's error set, so the signatures below
+-- elide it (ch2 §10.6, §10.6.0a). A failure is returned by returning a value of
+-- the error set, qualified (ch2 §10.6.1, §4.6.1).
+pub fn checked_count(xs: []Rock) -> usize rescue FieldError
   return FieldError.empty if xs.len == 0
   return FieldError.too_many(xs.len) if xs.len > MAX_ROCKS
   xs.len
 end
 
 -- The three `rescue` tails, in order: a default, a bound handler, and a
--- diverging tail (ch2 §10.8).
+-- diverging tail (ch2 §10.8). A handler block diverges: it has no tail value.
 pub fn report(xs: []Rock) -> usize
   lenient := checked_count(xs) rescue 0
 
@@ -269,8 +270,8 @@ pub fn report(xs: []Rock) -> usize
     end
   end
 
-  _ = lenient                        -- must-use is discharged by one token
-  strict
+  _ = checked_count(xs)              -- must-use is discharged by one token
+  strict + lenient
 end
 
 pub fn total(xs: []Rock) -> usize rescue

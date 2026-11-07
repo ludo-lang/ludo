@@ -205,6 +205,23 @@ library boundary (ADR-0014).
 The one attribute that marks a module rather than a declaration, forbidding any spelling that
 omits a name and changing no semantics (ADR-0029).
 
+## Failure and constraints
+
+**Error set**:
+An enum named after `rescue` in at least one signature of its file; a bare `rescue` in that file
+denotes it, and a file with two is an error naming both (ch2 §10.6).
+_Avoid_: error type (there is no universal one, ch2 §10.5)
+
+**Constraint member**:
+A function signature an interface declares, callable by name inside a generic body whose
+parameter that interface constrains; it shadows a module-level name (ch2 §6.7.2).
+_Avoid_: method (no receiver exists)
+
+**Discharging function**:
+The ordinary module-level `fn` that an `impl` line's interface member is matched to by name and
+signature (ch2 §6.7.3).
+_Avoid_: implementation, impl body (an `impl` has no body)
+
 ## Memory
 
 **Allocator**:

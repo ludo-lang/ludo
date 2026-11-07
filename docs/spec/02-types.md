@@ -320,6 +320,16 @@ constraint. (#11 Q1, Q2.)
 **5.5** There are **no unconstrained templates**. A generic body MUST NOT use an
 operation its parameter's constraints do not provide. (#11 Q1.)
 
+**5.5.1** **A constraint member is named bare in the generic body**, and it
+**shadows** any module-level declaration of the same name there. In
+`best[T: Ranked[T]]`, `rank(x)` is `Ranked[T]`'s member, never the module's
+`rank(v: Rock)` — which is the discharging function §6.7.3 matches *by name*, so
+the collision is the ordinary case, not an accident. The call dispatches
+statically per instance (§6.3). Two constraints in scope providing the same
+member name is a compile error naming both. Overloading by argument type was
+rejected: the language has no overloading anywhere else. (Band 2,
+[#144](https://github.com/ludo-lang/ludo/issues/144).)
+
 **5.6** There is **no boxed or uniform representation**. `Pool[Entity]` MUST be
 a real contiguous `Entity` array, not an array of pointers. (#11 Q1; #8's data
 layout control.)
@@ -672,6 +682,16 @@ where the file declares **exactly one** sum type used in a `rescue` position.
 **Two candidates is a compile error naming both**, and nothing is ever inferred
 across files. (#10 Q2; #22.)
 
+**10.6.0a What makes a sum type a candidate.** An enum is its file's **error
+set** when **at least one signature in that file names it after `rescue`**; a
+bare `rescue` in the same file then denotes it. A file in which no signature
+names an error set has nothing to elide to, and a bare `rescue` there is a
+compile error. Being an enum, being constructed in a fallible function, or being
+named like an error makes nothing a candidate: each would read the set from a
+body or a name, and §5.3 checks a call from the signature alone. (Band 2,
+[#144](https://github.com/ludo-lang/ludo/issues/144): as written, §10.6 gave
+the reference program zero candidates, since every signature elided.)
+
 **10.6.1** A function whose return type is `T rescue E` **produces a failure by
 returning a value of `E`**, and a success by returning a value of `T`. The
 injection into the fallible type is by the returned value's **static type**, and
@@ -692,7 +712,12 @@ type as:
 - **a default value** (`rescue 0`) — the tail's expression MUST have type `T`,
   and the whole expression yields `T`;
 - **a binding handler** (`rescue err then ... end`) — `err` is bound to the
-  error value, typed as the function's error set.
+  error value, typed as the callee's error set, and **the handler block MUST
+  diverge** (chapter 1 §6.7.2's structural test, where `break` and `continue`
+  also diverge inside a loop). A nested block has no tail
+  value, so the handler has no way to supply a `T`; the expression yields `T` on
+  the path that continues, as for a diverging tail. (Band 2,
+  [#144](https://github.com/ludo-lang/ludo/issues/144).)
 
 (#10 Q5, Q7, Q16.)
 
