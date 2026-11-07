@@ -377,6 +377,8 @@ module
       fallible-type
         named-type
           ident usize
+        named-type
+          ident FieldError
     block
       modifier if
         return
@@ -442,9 +444,13 @@ module
                       ident n
       assign
         discard
-        ident lenient
+        call
+          ident checked_count
+          ident xs
       tail
-        ident strict
+        binary +
+          ident strict
+          ident lenient
   fn flags=1 total
     params
       param xs

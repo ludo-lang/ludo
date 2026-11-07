@@ -19,10 +19,15 @@ typedef struct slot {
     ludo_value value;
 } slot;
 
+/* A call to a generic carries its instance's type arguments (ch2 5.1): the
+   monomorphisation a codegen would emit, kept as data, so a constraint member
+   dispatches statically by them (ch2 6.3) rather than by any value. */
 typedef struct frame {
     slot *slots;
     size_t count;
     size_t capacity;
+    ludo_node_id generics;
+    const ludo_type_id *type_args;
 } frame;
 
 typedef enum flow { FLOW_NORMAL, FLOW_RETURN, FLOW_BREAK, FLOW_CONTINUE, FLOW_STOP } flow;
@@ -383,8 +388,8 @@ static bool compare(const ludo_value *a, const ludo_value *b, ludo_token_kind op
 
 static flow eval(ludo_interp *in, frame *f, ludo_node_id id, ludo_value *out);
 static flow exec_block(ludo_interp *in, frame *f, ludo_node_id block);
-static flow call(ludo_interp *in, ludo_node_id decl, const ludo_value *args, size_t count,
-                 ludo_value *out);
+static flow call(ludo_interp *in, ludo_node_id decl, const ludo_type_id *type_args,
+                 const ludo_value *args, size_t count, ludo_value *out);
 
 static flow eval_literal(ludo_interp *in, ludo_node_id id, ludo_value *out) {
     ludo_token_kind token = token_kind(in, id);
@@ -445,7 +450,37 @@ static size_t optional_depth(const ludo_interp *in, ludo_type_id type) {
    type and never flattens, so the count of ?s between the two static types is
    how many times the value is wrapped -- never the value's own type, which in
    a generic body names the parameter rather than its argument. */
+static flow coerce(ludo_interp *in, ludo_type_id to, ludo_type_id from, ludo_value *value);
+
+/* ch2 10.6.1: into T rescue E by the value's static type -- E is a failure,
+   anything else a success, itself injected into T. */
+static flow inject(ludo_interp *in, ludo_type_id to, ludo_type_id from, ludo_value *value) {
+    const ludo_type *fallible = type_at(in, to);
+    bool failure = from == fallible->error;
+    if (!failure) {
+        flow result = coerce(in, fallible->inner, from, value);
+        if (result != FLOW_NORMAL) {
+            return result;
+        }
+    }
+    ludo_value *payload = items(in, 1);
+    if (payload == NULL) {
+        return stop(in, LUDO_INTERP_OUT_OF_MEMORY);
+    }
+    payload[0] = *value;
+    *value = (ludo_value){.kind = LUDO_VALUE_AGGREGATE,
+                          .type = to,
+                          .tag = failure ? 1u : 0u,
+                          .count = 1,
+                          .items = payload};
+    return FLOW_NORMAL;
+}
+
 static flow coerce(ludo_interp *in, ludo_type_id to, ludo_type_id from, ludo_value *value) {
+    if (to != 0 && from != to && tkind(in, to) == LUDO_TYPE_FALLIBLE &&
+        tkind(in, from) != LUDO_TYPE_FALLIBLE) {
+        return inject(in, to, from, value);
+    }
     size_t want = optional_depth(in, to);
     size_t have = optional_depth(in, from);
     /* Innermost layer first: the w-th wrap has the type of `to` with w - 1 of
@@ -552,6 +587,64 @@ static flow eval_args(ludo_interp *in, frame *f, ludo_node_id first_arg, ludo_no
     return FLOW_NORMAL;
 }
 
+/* A type as the running instance sees it: a parameter of the frame's generic
+   is its argument. Only a bare parameter is resolved, which is every type
+   argument the program passes on. */
+static ludo_type_id concrete(const ludo_interp *in, const frame *f, ludo_type_id type) {
+    if (tkind(in, type) != LUDO_TYPE_PARAM || f->type_args == NULL) {
+        return type;
+    }
+    size_t index = 0;
+    for (ludo_node_id it = first(in, f->generics); it != 0; it = next(in, it), index++) {
+        if (it == type_at(in, type)->decl) {
+            return f->type_args[index];
+        }
+    }
+    return type;
+}
+
+/* The impl discharging a constraint for this instance's arguments. */
+static const ludo_impl *find_impl(const ludo_interp *in, const frame *f, ludo_node_id constraint) {
+    ludo_node_id interface = in->facts[constraint].target;
+    ludo_type_id args[16];
+    size_t count = 0;
+    for (ludo_node_id it = first(in, child_of_kind(in, constraint, LUDO_AST_GENERIC_ARGS));
+         it != 0 && count < 16; it = next(in, it)) {
+        args[count++] = concrete(in, f, in->facts[it].type);
+    }
+    for (size_t i = 0; i < in->program->impl_count; i++) {
+        const ludo_impl *impl = &in->program->impls[i];
+        if (impl->interface == interface && impl->arg_count == count &&
+            (count == 0 || memcmp(impl->args, args, count * sizeof *args) == 0)) {
+            return impl;
+        }
+    }
+    return NULL;
+}
+
+/* ch2 5.5.1, 6.3: a constraint member resolves to the discharging fn of the
+   impl for this instance's arguments. */
+static ludo_node_id dispatch(const ludo_interp *in, const frame *f, const ludo_node_fact *fact) {
+    const ludo_impl *impl = find_impl(in, f, fact->target);
+    return impl != NULL && fact->index < impl->member_count ? impl->discharge[fact->index] : 0;
+}
+
+/* The type arguments a call to a generic passes, from its instance. */
+static const ludo_type_id *instance_args(ludo_interp *in, const frame *f, ludo_node_id call_node) {
+    uint32_t instance = in->facts[call_node].instance;
+    if (instance == 0) {
+        return NULL;
+    }
+    const ludo_instance *entry = &in->program->instances[instance - 1];
+    ludo_type_id *args = ludo_arena_alloc(&in->arena, (entry->arg_count + 1) * sizeof *args);
+    if (args != NULL) {
+        for (size_t i = 0; i < entry->arg_count; i++) {
+            args[i] = concrete(in, f, entry->args[i]);
+        }
+    }
+    return args;
+}
+
 static flow eval_call(ludo_interp *in, frame *f, ludo_node_id id, ludo_value *out) {
     ludo_node_id callee = first(in, id);
     ludo_node_id args_node = next(in, callee);
@@ -587,8 +680,20 @@ static flow eval_call(ludo_interp *in, frame *f, ludo_node_id id, ludo_value *ou
         return optional(in, in->facts[id].type, &args[0], out); /* some(x) */
     }
     ludo_node_id decl = 0;
-    if (fact->ref == LUDO_REF_DECL && kind_of(in, fact->target) == LUDO_AST_FN) {
+    const ludo_type_id *type_args = NULL;
+    if (fact->ref == LUDO_REF_MEMBER) {
+        decl = dispatch(in, f, fact);
+        if (decl == 0) {
+            return stop(in, LUDO_INTERP_UNCHECKED); /* called without its type arguments */
+        }
+    } else if (fact->ref == LUDO_REF_DECL && kind_of(in, fact->target) == LUDO_AST_FN) {
         decl = fact->target;
+        if (in->facts[id].instance != 0) {
+            type_args = instance_args(in, f, id);
+            if (type_args == NULL) {
+                return stop(in, LUDO_INTERP_OUT_OF_MEMORY);
+            }
+        }
     } else if (fact->ref == LUDO_REF_LOCAL) {
         /* ch2 7.1: a function value is a pointer to a named declaration. */
         ludo_value pointer;
@@ -605,7 +710,7 @@ static flow eval_call(ludo_interp *in, frame *f, ludo_node_id id, ludo_value *ou
     if (result != FLOW_NORMAL) {
         return result;
     }
-    return call(in, decl, args, count, out);
+    return call(in, decl, type_args, args, count, out);
 }
 
 static flow eval_member(ludo_interp *in, frame *f, ludo_node_id id, ludo_value *out) {
@@ -620,6 +725,10 @@ static flow eval_member(ludo_interp *in, frame *f, ludo_node_id id, ludo_value *
     flow result = eval(in, f, receiver, &value);
     if (result != FLOW_NORMAL) {
         return result;
+    }
+    if (fact->ref == LUDO_REF_LEN) {
+        *out = integer(LUDO_TYPE_ID_OF(LUDO_TYPE_USIZE), (uint64_t)value.count);
+        return FLOW_NORMAL;
     }
     bool chained = kind_of(in, id) == LUDO_AST_OPTIONAL_MEMBER ||
                    (tkind(in, in->facts[receiver].type) == LUDO_TYPE_OPTIONAL);
@@ -713,6 +822,49 @@ static flow eval_unary(ludo_interp *in, frame *f, ludo_node_id id, ludo_value *o
     return arithmetic(in, LUDO_TOK_MINUS, type, &zero, &value, out);
 }
 
+/* ch2 10.8: success yields T; a failure takes the tail, which yields a T or
+   leaves (ch1 7.14.1: `rescue return` propagates the same error value). */
+static flow eval_rescue(ludo_interp *in, frame *f, ludo_node_id id, ludo_value *out) {
+    ludo_node_id operand = first(in, id);
+    ludo_node_id tail = next(in, operand);
+    ludo_value value;
+    flow result = eval(in, f, operand, &value);
+    if (result != FLOW_NORMAL) {
+        return result;
+    }
+    if (value.tag == 0) {
+        *out = value.items[0];
+        return FLOW_NORMAL;
+    }
+    in->executed[tail] = true;
+    ludo_ast_kind kind = kind_of(in, tail);
+    if (kind == LUDO_AST_RETURN) {
+        ludo_value *payload = items(in, 1);
+        if (payload == NULL) {
+            return stop(in, LUDO_INTERP_OUT_OF_MEMORY);
+        }
+        payload[0] = value.items[0];
+        in->returned = (ludo_value){.kind = LUDO_VALUE_AGGREGATE,
+                                    .type = in->result_type,
+                                    .tag = 1,
+                                    .count = 1,
+                                    .items = payload};
+        return FLOW_RETURN;
+    }
+    if (kind == LUDO_AST_BREAK || kind == LUDO_AST_CONTINUE) {
+        return kind == LUDO_AST_BREAK ? FLOW_BREAK : FLOW_CONTINUE;
+    }
+    if (kind == LUDO_AST_HANDLER) {
+        if (!bind(in, f, tail, value.items[0])) {
+            return stop(in, LUDO_INTERP_OUT_OF_MEMORY);
+        }
+        result = exec_block(in, f, first(in, tail));
+        /* ch2 10.8: the handler diverges, by checking. */
+        return result == FLOW_NORMAL ? stop(in, LUDO_INTERP_UNCHECKED) : result;
+    }
+    return eval(in, f, tail, out); /* a default value of type T */
+}
+
 static flow eval_kind(ludo_interp *in, frame *f, ludo_node_id id, ludo_value *out) {
     switch (kind_of(in, id)) {
     case LUDO_AST_LITERAL:
@@ -731,12 +883,13 @@ static flow eval_kind(ludo_interp *in, frame *f, ludo_node_id id, ludo_value *ou
         return eval_member(in, f, id, out);
     case LUDO_AST_CALL:
         return eval_call(in, f, id, out);
+    case LUDO_AST_RESCUE:
+        return eval_rescue(in, f, id, out);
     case LUDO_AST_ERROR:
     case LUDO_AST_CAST:
     case LUDO_AST_BRACKET:
     case LUDO_AST_DEREF:
     case LUDO_AST_AGGREGATE:
-    case LUDO_AST_RESCUE:
     case LUDO_AST_ROOT:
     case LUDO_AST_DISCARD:
     case LUDO_AST_NAMED_ITEM:
@@ -907,7 +1060,8 @@ static flow exec_assign(ludo_interp *in, frame *f, ludo_node_id id) {
     ludo_node_id value_node = next(in, target);
     ludo_value value;
     flow result = eval(in, f, value_node, &value);
-    if (result != FLOW_NORMAL) {
+    if (result != FLOW_NORMAL || kind_of(in, target) == LUDO_AST_DISCARD) {
+        in->executed[target] = true; /* ch1 2.2: `_ =` consumes the value */
         return result;
     }
     ludo_value *slot_value = place(in, f, target);
@@ -1122,12 +1276,13 @@ static flow exec_block(ludo_interp *in, frame *f, ludo_node_id block) {
 
 /* A fresh frame per call: every function is top-level and nothing captures
    (ch2 7.2, 7.3), so a body sees its parameters and its own bindings only. */
-static flow call(ludo_interp *in, ludo_node_id decl, const ludo_value *args, size_t count,
-                 ludo_value *out) {
+static flow call(ludo_interp *in, ludo_node_id decl, const ludo_type_id *type_args,
+                 const ludo_value *args, size_t count, ludo_value *out) {
     if (in->facts[decl].state != LUDO_CHECK_CHECKED) {
         return stop(in, LUDO_INTERP_UNCHECKED);
     }
-    frame f = {0};
+    frame f = {.generics = child_of_kind(in, decl, LUDO_AST_GENERIC_PARAMS),
+               .type_args = type_args};
     in->executed[decl] = true;
     ludo_node_id params = child_of_kind(in, decl, LUDO_AST_PARAMS);
     size_t i = 0;
@@ -1262,8 +1417,17 @@ void ludo_interp_destroy(ludo_interp *interp) {
     ludo_arena_destroy(&arena);
 }
 
+static bool satisfies(const ludo_interp *in, ludo_node_id decl, const ludo_type_id *type_args);
+
 ludo_interp_status ludo_interp_call(ludo_interp *interp, const char *name, const ludo_value *args,
                                     size_t count, ludo_value *result) {
+    return ludo_interp_call_instance(interp, name, NULL, 0, args, count, result);
+}
+
+ludo_interp_status ludo_interp_call_instance(ludo_interp *interp, const char *name,
+                                             const ludo_type_id *type_args, size_t type_arg_count,
+                                             const ludo_value *args, size_t count,
+                                             ludo_value *result) {
     ludo_node_id decl = ludo_checked_lookup(interp->program, name, strlen(name));
     if (kind_of(interp, decl) != LUDO_AST_FN) {
         return LUDO_INTERP_UNCHECKED;
@@ -1271,6 +1435,15 @@ ludo_interp_status ludo_interp_call(ludo_interp *interp, const char *name, const
     interp->status = LUDO_INTERP_OK;
     if (interp->facts[decl].state != LUDO_CHECK_CHECKED) {
         return LUDO_INTERP_UNCHECKED;
+    }
+    size_t generic_count = 0;
+    for (ludo_node_id it = first(interp, child_of_kind(interp, decl, LUDO_AST_GENERIC_PARAMS));
+         it != 0; it = next(interp, it)) {
+        generic_count++;
+    }
+    if (type_args != NULL &&
+        (type_arg_count != generic_count || !satisfies(interp, decl, type_args))) {
+        return LUDO_INTERP_BAD_ARGUMENT; /* ch2 5.4, as a call site would be checked */
     }
     /* A caller outside the program has no static types to offer, so its
        arguments are injected by their own (ch2 9.11). */
@@ -1287,8 +1460,23 @@ ludo_interp_status ludo_interp_call(ludo_interp *interp, const char *name, const
         }
         param = param != 0 ? next(interp, param) : 0;
     }
-    return call(interp, decl, coerced, count, result) == FLOW_STOP ? interp->status
-                                                                   : LUDO_INTERP_OK;
+    return call(interp, decl, type_args, coerced, count, result) == FLOW_STOP ? interp->status
+                                                                              : LUDO_INTERP_OK;
+}
+
+/* Each constraint of decl, with the arguments substituted, has an impl. */
+static bool satisfies(const ludo_interp *in, ludo_node_id decl, const ludo_type_id *type_args) {
+    frame f = {.generics = child_of_kind(in, decl, LUDO_AST_GENERIC_PARAMS),
+               .type_args = type_args};
+    for (ludo_node_id param = first(in, f.generics); param != 0; param = next(in, param)) {
+        for (ludo_node_id k = first(in, child_of_kind(in, param, LUDO_AST_CONSTRAINTS)); k != 0;
+             k = next(in, k)) {
+            if (in->facts[k].ref == LUDO_REF_DECL && find_impl(in, &f, k) == NULL) {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 ludo_interp_status ludo_interp_frame(ludo_interp *interp, const ludo_frame_input *input) {

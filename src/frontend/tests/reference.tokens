@@ -150,8 +150,8 @@ ident u32
 comment -- `Seconds` is likewise blessed and is no longer declared here: it is one of
 comment -- the three shipped quantities, and it ships because `$.time.now` returns it
 comment -- (ch6 §3.7).
-comment -- One error set, declared in this file, so `rescue` with no set named elides to
-comment -- it (spec ch2 §10.6).
+comment -- One error set, declared in this file. `checked_count` names it after `rescue`,
+comment -- which is what makes it the set a bare `rescue` elides to (spec ch2 §10.6).
 type
 ident FieldError
 =
@@ -580,9 +580,10 @@ end
 return
 ident top
 end
-comment -- Failure is a value in the return type, and the set is elided to this file's
-comment -- one declared error enum (ch2 §10.1, §10.6). A failure is returned by
-comment -- returning a value of the error set, qualified (ch2 §10.6.1, §4.6.1).
+comment -- Failure is a value in the return type (ch2 §10.1). Naming `FieldError` after
+comment -- `rescue` here is what makes it this file's error set, so the signatures below
+comment -- elide it (ch2 §10.6, §10.6.0a). A failure is returned by returning a value of
+comment -- the error set, qualified (ch2 §10.6.1, §4.6.1).
 pub
 fn
 ident checked_count
@@ -596,6 +597,7 @@ ident Rock
 ->
 ident usize
 rescue
+ident FieldError
 return
 ident FieldError
 .
@@ -626,7 +628,7 @@ ident xs
 ident len
 end
 comment -- The three `rescue` tails, in order: a default, a bound handler, and a
-comment -- diverging tail (ch2 §10.8).
+comment -- diverging tail (ch2 §10.8). A handler block diverges: it has no tail value.
 pub
 fn
 ident report
@@ -676,9 +678,14 @@ end
 end
 _
 =
-ident lenient
+ident checked_count
+(
+ident xs
+)
 comment -- must-use is discharged by one token
 ident strict
++
+ident lenient
 end
 pub
 fn

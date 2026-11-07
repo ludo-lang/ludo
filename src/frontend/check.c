@@ -39,6 +39,9 @@ typedef struct checker {
     ludo_instance *instances;
     size_t instance_count;
     size_t instance_capacity;
+    ludo_impl *impls;
+    size_t impl_count;
+    size_t impl_capacity;
     ludo_diagnostic *diagnostics;
     size_t diagnostic_count;
     size_t diagnostic_capacity;
@@ -47,6 +50,10 @@ typedef struct checker {
     size_t decl_count;
     size_t decl_capacity;
     bool unresolved_library; /* a library use whose bound name band 4 learns */
+    /* ch2 10.6.0a: the enums a signature names after `rescue`. A bare `rescue`
+       denotes the first, and is an error when there is none or a second. */
+    ludo_node_id error_set;
+    ludo_node_id second_error_set;
 
     local *locals;
     size_t local_count;
@@ -179,7 +186,7 @@ static void report(checker *c, ludo_node_id at_node, const char *code, const cha
 /* ---- Types --------------------------------------------------------------- */
 
 static bool same_type(const ludo_type *a, const ludo_type *b) {
-    if (a->kind != b->kind || a->decl != b->decl || a->inner != b->inner ||
+    if (a->kind != b->kind || a->decl != b->decl || a->inner != b->inner || a->error != b->error ||
         a->param_count != b->param_count || a->extern_class != b->extern_class) {
         return false;
     }
@@ -368,16 +375,20 @@ static void bind(checker *c, ludo_node_id def, ludo_type_id type, bool mutable_p
 /* ---- Type expressions ---------------------------------------------------- */
 
 static ludo_type_id resolve_type(checker *c, ludo_node_id id);
+static ludo_type_id resolve_fallible(checker *c, ludo_node_id id);
 
 static ludo_type_id nominal(checker *c, ludo_node_id decl) {
     ludo_node_id body = 0;
     for (ludo_node_id it = first(c, decl); it != 0; it = next(c, it)) {
         body = it;
     }
-    if (child_of_kind(c, decl, LUDO_AST_GENERIC_PARAMS) != 0) {
-        return pending(c); /* generic types are band 2's (Ranked[T]) */
-    }
     ludo_ast_kind kind = kind_of(c, body);
+    if (kind == LUDO_AST_INTERFACE) {
+        return intern(c, (ludo_type){.kind = LUDO_TYPE_INTERFACE, .decl = decl});
+    }
+    if (child_of_kind(c, decl, LUDO_AST_GENERIC_PARAMS) != 0) {
+        return pending(c); /* generic structs and enums: List[T] is band 3's */
+    }
     if (kind == LUDO_AST_STRUCT) {
         return intern(c, (ludo_type){.kind = LUDO_TYPE_STRUCT, .decl = decl});
     }
@@ -391,13 +402,28 @@ static ludo_type_id nominal(checker *c, ludo_node_id decl) {
     if (kind == LUDO_AST_ERROR) {
         return simple(LUDO_TYPE_INVALID);
     }
-    return pending(c); /* an interface or a type-expression body: band 2's */
+    return pending(c); /* a type-expression body (an alias) */
 }
+
+/* ch2 6.4: an interface appears only in a constraint position. */
+static ludo_type_id not_an_interface(checker *c, ludo_node_id decl, ludo_node_id head) {
+    if (tkind(c, c->facts[decl].type) != LUDO_TYPE_INTERFACE) {
+        return 0;
+    }
+    report(c, head, "bootstrap:check-interface-as-type",
+           "an interface is a constraint only, never a type", head);
+    return simple(LUDO_TYPE_INVALID);
+}
+
+static ludo_type_id resolve_head(checker *c, ludo_node_id id, ludo_node_id head);
 
 static ludo_type_id resolve_named(checker *c, ludo_node_id id) {
     ludo_node_id head = first(c, id);
     if (child_of_kind(c, id, LUDO_AST_GENERIC_ARGS) != 0) {
-        return pending(c); /* List[Rock], TextBuf[32], Ranked[Rock] */
+        ludo_node_id decl = kind_of(c, head) == LUDO_AST_IDENT ? lookup_decl(c, head) : 0;
+        ludo_type_id refused =
+            kind_of(c, decl) == LUDO_AST_TYPE_DECL ? not_an_interface(c, decl, head) : 0;
+        return refused != 0 ? refused : pending(c); /* List[Rock], TextBuf[32] */
     }
     if (kind_of(c, head) == LUDO_AST_ROOT) {
         ludo_node_id name = next(c, head);
@@ -409,6 +435,12 @@ static ludo_type_id resolve_named(checker *c, ludo_node_id id) {
     if (head == 0 || next(c, head) != 0) {
         return pending(c); /* a qualified name reaches a module: band 4 */
     }
+    return resolve_head(c, id, head);
+}
+
+/* One unqualified name in type position. A generic argument is written in
+   the neutral bracket shape (ch1 9.8), so there it is a bare ident. */
+static ludo_type_id resolve_head(checker *c, ludo_node_id id, ludo_node_id head) {
     ludo_node_id generic = lookup_generic(c, head);
     if (generic != 0) {
         c->facts[id].ref = LUDO_REF_GENERIC;
@@ -419,7 +451,8 @@ static ludo_type_id resolve_named(checker *c, ludo_node_id id) {
     if (decl != 0 && kind_of(c, decl) == LUDO_AST_TYPE_DECL) {
         c->facts[id].ref = LUDO_REF_DECL;
         c->facts[id].target = decl;
-        return c->facts[decl].type;
+        ludo_type_id refused = not_an_interface(c, decl, head);
+        return refused != 0 ? refused : c->facts[decl].type;
     }
     if (decl != 0) {
         report(c, head, "bootstrap:check-not-a-type", "this names a value, not a type", head);
@@ -454,6 +487,44 @@ static ludo_type_id resolve_fn_type(checker *c, ludo_node_id id) {
                .kind = LUDO_TYPE_FN, .inner = result_type, .params = buffer, .param_count = count});
 }
 
+/* ch2 10.6, 10.6.0a, 10.6.1: the set named, or the file's one error set. */
+static ludo_type_id resolve_fallible(checker *c, ludo_node_id id) {
+    ludo_node_id success = first(c, id);
+    ludo_node_id named_set = next(c, success);
+    ludo_type_id inner = resolve_type(c, success);
+    ludo_type_id error;
+    if (named_set != 0) {
+        error = resolve_type(c, named_set);
+        if (!soft(c, error) && tkind(c, error) != LUDO_TYPE_ENUM) {
+            report(c, named_set, "bootstrap:check-not-an-error-set",
+                   "an error set is a declared enum", named_set);
+            return simple(LUDO_TYPE_INVALID);
+        }
+    } else if (c->error_set == 0) {
+        report(c, id, "bootstrap:check-no-error-set",
+               "no signature in this file names an error set for a bare `rescue` to denote", 0);
+        return simple(LUDO_TYPE_INVALID);
+    } else if (c->second_error_set != 0) {
+        report(c, id, "bootstrap:check-ambiguous-error-set",
+               "a bare `rescue` could denote either error set", c->error_set);
+        report(c, id, "bootstrap:check-ambiguous-error-set",
+               "a bare `rescue` could denote either error set", c->second_error_set);
+        return simple(LUDO_TYPE_INVALID);
+    } else {
+        error = c->facts[c->error_set].type;
+    }
+    if (soft(c, inner) || soft(c, error)) {
+        return soft(c, inner) ? inner : error;
+    }
+    if (inner == error) {
+        report(c, id, "bootstrap:check-ambiguous-fallible",
+               "the success and error types are the same, so a returned value is ambiguous",
+               success);
+        return simple(LUDO_TYPE_INVALID);
+    }
+    return intern(c, (ludo_type){.kind = LUDO_TYPE_FALLIBLE, .inner = inner, .error = error});
+}
+
 static ludo_type_id resolve_type(checker *c, ludo_node_id id) {
     ludo_ast_kind kind = kind_of(c, id);
     ludo_type_id type;
@@ -470,10 +541,14 @@ static ludo_type_id resolve_type(checker *c, ludo_node_id id) {
         type = resolve_type(c, first(c, id));
     } else if (kind == LUDO_AST_FN_TYPE) {
         type = resolve_fn_type(c, id);
+    } else if (kind == LUDO_AST_FALLIBLE_TYPE) {
+        type = resolve_fallible(c, id);
+    } else if (kind == LUDO_AST_IDENT) {
+        type = resolve_head(c, id, id);
     } else if (kind == LUDO_AST_ERROR) {
         type = simple(LUDO_TYPE_INVALID);
     } else {
-        type = pending(c); /* raw pointers, fixed arrays, fallible types */
+        type = pending(c); /* raw pointers and fixed arrays: band 3's */
     }
     c->facts[id].type = type;
     return type;
@@ -501,6 +576,11 @@ static ludo_type_id substitute(checker *c, ludo_type_id type, ludo_node_id gener
     if (t->kind == LUDO_TYPE_VIEW || t->kind == LUDO_TYPE_OPTIONAL) {
         return wrap(c, t->kind, substitute(c, t->inner, generics, args));
     }
+    if (t->kind == LUDO_TYPE_FALLIBLE) {
+        ludo_type_id error = t->error;
+        ludo_type_id inner = substitute(c, t->inner, generics, args);
+        return intern(c, (ludo_type){.kind = LUDO_TYPE_FALLIBLE, .inner = inner, .error = error});
+    }
     if (t->kind != LUDO_TYPE_FN) {
         return type;
     }
@@ -520,7 +600,8 @@ static bool mentions_param(const checker *c, ludo_type_id type) {
     if (t->kind == LUDO_TYPE_PARAM) {
         return true;
     }
-    if (t->kind == LUDO_TYPE_VIEW || t->kind == LUDO_TYPE_OPTIONAL || t->kind == LUDO_TYPE_FN) {
+    if (t->kind == LUDO_TYPE_VIEW || t->kind == LUDO_TYPE_OPTIONAL || t->kind == LUDO_TYPE_FN ||
+        t->kind == LUDO_TYPE_FALLIBLE) {
         if (t->inner != 0 && mentions_param(c, t->inner)) {
             return true;
         }
@@ -559,6 +640,9 @@ static bool unify(checker *c, ludo_type_id param, ludo_type_id arg, ludo_node_id
     }
     if (p->kind == LUDO_TYPE_VIEW || p->kind == LUDO_TYPE_OPTIONAL) {
         return unify(c, p->inner, a->inner, generics, bound);
+    }
+    if (p->kind == LUDO_TYPE_FALLIBLE) {
+        return p->error == a->error && unify(c, p->inner, a->inner, generics, bound);
     }
     if (p->kind == LUDO_TYPE_FN) {
         if (p->param_count != a->param_count) {
@@ -872,6 +956,12 @@ static ludo_type_id check_binary(checker *c, ludo_node_id id, ludo_type_id expec
         if (soft(c, lt)) {
             return lt;
         }
+        if (tkind(c, lt) == LUDO_TYPE_FALLIBLE) {
+            /* ch2 10.13: each word handles one thing. */
+            report(c, left, "bootstrap:check-or-on-fallible",
+                   "`or` handles absence; a fallible value is handled with `rescue`", left);
+            return simple(LUDO_TYPE_INVALID);
+        }
         if (tkind(c, lt) == LUDO_TYPE_OPTIONAL) {
             /* ch2 9.8: a or b with a: ?T and b: T yields T. */
             ludo_type_id inner = type_at(c, lt)->inner;
@@ -947,6 +1037,10 @@ static ludo_type_id select_member(checker *c, ludo_node_id id, ludo_type_id rece
         c->facts[id].target = field;
         c->facts[id].index = index;
         return c->facts[field].type;
+    }
+    if (kind == LUDO_TYPE_VIEW && named(c, id, "len")) {
+        c->facts[id].ref = LUDO_REF_LEN; /* ch3 6.10 */
+        return simple(LUDO_TYPE_USIZE);
     }
     if (kind == LUDO_TYPE_VEC2 && (named(c, id, "x") || named(c, id, "y"))) {
         c->facts[id].ref = LUDO_REF_COMPONENT;
@@ -1106,6 +1200,132 @@ static ludo_type_id check_args(checker *c, ludo_node_id call, ludo_node_id first
     return fn->inner;
 }
 
+/* ---- Constraints and satisfaction (ch2 5.4, 5.5, 6.7) --------------------- */
+
+/* A constraint is an interface applied to written arguments (ch2 6.7.3.1).
+   Returns the interface's declaration, or 0 when it is a later band's or was
+   reported; the arguments' types are left on their nodes' facts. */
+static ludo_node_id resolve_constraint(checker *c, ludo_node_id id) {
+    ludo_node_id head = first(c, id);
+    ludo_node_id args = child_of_kind(c, id, LUDO_AST_GENERIC_ARGS);
+    if (kind_of(c, id) != LUDO_AST_NAMED_TYPE || kind_of(c, head) != LUDO_AST_IDENT ||
+        (next(c, head) != 0 && next(c, head) != args)) {
+        (void)pending(c); /* a qualified interface is band 4's */
+        return 0;
+    }
+    ludo_node_id decl = lookup_decl(c, head);
+    if (kind_of(c, decl) != LUDO_AST_TYPE_DECL ||
+        tkind(c, c->facts[decl].type) != LUDO_TYPE_INTERFACE) {
+        report(c, head, "bootstrap:check-not-an-interface", "a constraint names an interface",
+               head);
+        return 0;
+    }
+    c->facts[id].ref = LUDO_REF_DECL;
+    c->facts[id].target = decl;
+    if (child_count(c, args) != child_count(c, child_of_kind(c, decl, LUDO_AST_GENERIC_PARAMS))) {
+        report(c, id, "bootstrap:check-arity",
+               "the interface's arguments are written out, one per parameter", head);
+        return 0;
+    }
+    bool settled = true;
+    for (ludo_node_id it = first(c, args); it != 0; it = next(c, it)) {
+        settled = !soft(c, resolve_type(c, it)) && settled;
+    }
+    return settled ? decl : 0;
+}
+
+/* The written arguments of a resolved constraint, substituted. */
+static size_t constraint_args(checker *c, ludo_node_id constraint, ludo_node_id generics,
+                              const ludo_type_id *bound, ludo_type_id *out) {
+    size_t count = 0;
+    for (ludo_node_id it = first(c, child_of_kind(c, constraint, LUDO_AST_GENERIC_ARGS));
+         it != 0 && count < 16; it = next(c, it)) {
+        ludo_type_id type = c->facts[it].type;
+        out[count++] = bound != NULL ? substitute(c, type, generics, bound) : type;
+    }
+    return count;
+}
+
+static bool same_args(const ludo_type_id *a, size_t an, const ludo_type_id *b, size_t bn) {
+    return an == bn && (an == 0 || memcmp(a, b, an * sizeof *a) == 0);
+}
+
+/* An impl in this file, or -- for a type parameter -- the enclosing body's own
+   constraint (ch2 5.2: the body is checked against its constraints). */
+static bool satisfied(checker *c, ludo_node_id interface, const ludo_type_id *args, size_t count) {
+    for (size_t i = 0; i < c->impl_count; i++) {
+        const ludo_impl *impl = &c->impls[i];
+        if (impl->interface == interface && same_args(impl->args, impl->arg_count, args, count)) {
+            return true;
+        }
+    }
+    for (ludo_node_id param = first(c, c->generics); param != 0; param = next(c, param)) {
+        for (ludo_node_id k = first(c, child_of_kind(c, param, LUDO_AST_CONSTRAINTS)); k != 0;
+             k = next(c, k)) {
+            ludo_type_id own[16];
+            size_t own_count = constraint_args(c, k, 0, NULL, own);
+            if (c->facts[k].target == interface && same_args(own, own_count, args, count)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/* ch2 5.5.1: a constraint member, named bare, shadows a module-level name. */
+static ludo_node_id find_member(checker *c, ludo_node_id call, ludo_node_id name,
+                                ludo_node_id *constraint, uint32_t *index) {
+    ludo_node_id found = 0;
+    for (ludo_node_id param = first(c, c->generics); param != 0; param = next(c, param)) {
+        for (ludo_node_id k = first(c, child_of_kind(c, param, LUDO_AST_CONSTRAINTS)); k != 0;
+             k = next(c, k)) {
+            if (c->facts[k].ref != LUDO_REF_DECL) {
+                continue;
+            }
+            ludo_node_id body = child_of_kind(c, c->facts[k].target, LUDO_AST_INTERFACE);
+            uint32_t i = 0;
+            for (ludo_node_id member = first(c, body); member != 0; member = next(c, member), i++) {
+                if (!same_name(c, member, name)) {
+                    continue;
+                }
+                if (found != 0) {
+                    report(c, call, "bootstrap:check-ambiguous-member",
+                           "two constraints provide this member", first(c, *constraint));
+                    report(c, call, "bootstrap:check-ambiguous-member",
+                           "two constraints provide this member", first(c, k));
+                    return 0;
+                }
+                found = member;
+                *constraint = k;
+                *index = i;
+            }
+        }
+    }
+    return found;
+}
+
+static ludo_type_id check_args(checker *c, ludo_node_id call, ludo_node_id first_arg,
+                               const ludo_type *fn, ludo_node_id params_node);
+
+static ludo_type_id check_member_call(checker *c, ludo_node_id call, ludo_node_id callee,
+                                      ludo_node_id member, ludo_node_id constraint,
+                                      uint32_t index) {
+    if (soft(c, c->facts[member].type)) {
+        return c->facts[member].type;
+    }
+    ludo_node_id interface = c->facts[constraint].target;
+    ludo_type_id args[16];
+    (void)constraint_args(c, constraint, 0, NULL, args);
+    ludo_type_id signature = substitute(c, c->facts[member].type,
+                                        child_of_kind(c, interface, LUDO_AST_GENERIC_PARAMS), args);
+    c->facts[callee].ref = LUDO_REF_MEMBER;
+    c->facts[callee].target = constraint;
+    c->facts[callee].index = index;
+    c->facts[callee].type = signature;
+    return check_args(c, call, next(c, callee), type_at(c, signature),
+                      child_of_kind(c, member, LUDO_AST_PARAMS));
+}
+
 static ludo_type_id check_generic_call(checker *c, ludo_node_id call, ludo_node_id callee,
                                        ludo_node_id decl) {
     ludo_node_id generics = child_of_kind(c, decl, LUDO_AST_GENERIC_PARAMS);
@@ -1137,6 +1357,22 @@ static ludo_type_id check_generic_call(checker *c, ludo_node_id call, ludo_node_
         }
         if (soft(c, bound[i])) {
             return bound[i];
+        }
+    }
+    /* ch2 5.4: every constraint, with the arguments substituted. */
+    for (ludo_node_id param = first(c, generics); param != 0; param = next(c, param)) {
+        for (ludo_node_id k = first(c, child_of_kind(c, param, LUDO_AST_CONSTRAINTS)); k != 0;
+             k = next(c, k)) {
+            if (c->facts[k].ref != LUDO_REF_DECL) {
+                continue;
+            }
+            ludo_type_id args[16];
+            size_t args_count = constraint_args(c, k, generics, bound, args);
+            if (!satisfied(c, c->facts[k].target, args, args_count)) {
+                report(c, call, "bootstrap:check-unsatisfied",
+                       "the type argument does not satisfy this constraint", first(c, k));
+                return simple(LUDO_TYPE_INVALID);
+            }
         }
     }
     ludo_type_id signature = substitute(c, c->facts[decl].type, generics, bound);
@@ -1197,6 +1433,15 @@ static ludo_type_id check_call(checker *c, ludo_node_id id, ludo_type_id expecte
         c->facts[callee].ref = LUDO_REF_VARIANT;
         c->facts[callee].index = 1;
         return soft(c, got) ? got : wrap(c, LUDO_TYPE_OPTIONAL, got);
+    }
+    if (kind_of(c, callee) == LUDO_AST_IDENT && lookup_local(c, callee) == NULL &&
+        c->generics != 0) {
+        ludo_node_id constraint = 0;
+        uint32_t index = 0;
+        ludo_node_id member = find_member(c, id, callee, &constraint, &index);
+        if (member != 0) {
+            return check_member_call(c, id, callee, member, constraint, index);
+        }
     }
     if (kind_of(c, callee) == LUDO_AST_IDENT && lookup_local(c, callee) == NULL) {
         ludo_node_id decl = lookup_decl(c, callee);
@@ -1262,6 +1507,66 @@ static ludo_type_id check_unary(checker *c, ludo_node_id id, ludo_type_id expect
     return pending(c); /* &x is unsafe surface, band 3's */
 }
 
+static void check_block(checker *c, ludo_node_id block);
+static bool block_diverges(const checker *c, ludo_node_id block);
+
+/* ch2 10.8-10.9, 10.13: the three tails, each yielding the success type. */
+static ludo_type_id check_rescue(checker *c, ludo_node_id id) {
+    ludo_node_id operand = first(c, id);
+    ludo_node_id tail = next(c, operand);
+    ludo_type_id type = check_expr(c, operand, 0);
+    if (soft(c, type)) {
+        return type;
+    }
+    if (tkind(c, type) == LUDO_TYPE_OPTIONAL) {
+        report(c, operand, "bootstrap:check-rescue-on-optional",
+               "`rescue` handles failure; this is ?T, handled with `or` or a bind", operand);
+        return simple(LUDO_TYPE_INVALID);
+    }
+    if (tkind(c, type) != LUDO_TYPE_FALLIBLE) {
+        report(c, operand, "bootstrap:check-not-fallible",
+               "`rescue` applies only where a fallible value is produced", operand);
+        return simple(LUDO_TYPE_INVALID);
+    }
+    ludo_type_id inner = type_at(c, type)->inner;
+    ludo_type_id error = type_at(c, type)->error;
+    ludo_ast_kind kind = kind_of(c, tail);
+    if (kind == LUDO_AST_RETURN) {
+        /* ch1 7.14.1: bare propagation; ch2 10.7: into the same set only. */
+        if (soft(c, c->result)) {
+            return inner;
+        }
+        if (tkind(c, c->result) != LUDO_TYPE_FALLIBLE) {
+            report(c, tail, "bootstrap:check-propagation",
+                   "`rescue return` propagates the failure, so the function must be fallible", 0);
+        } else if (type_at(c, c->result)->error != error) {
+            report(c, operand, "bootstrap:check-error-set-mismatch",
+                   "propagation keeps the error set; convert it explicitly", operand);
+        }
+    } else if (kind == LUDO_AST_BREAK || kind == LUDO_AST_CONTINUE) {
+        if (c->loop_depth == 0) {
+            report(c, tail, "bootstrap:check-no-loop", "this is not inside a loop", 0);
+        }
+    } else if (kind == LUDO_AST_HANDLER) {
+        size_t mark = c->local_count;
+        bind(c, tail, error, false, false);
+        ludo_node_id block = first(c, tail);
+        check_block(c, block);
+        c->local_count = mark;
+        if (!block_diverges(c, block)) {
+            report(c, tail, "bootstrap:check-handler-falls-through",
+                   "a handler block must diverge: it has no value to yield", tail);
+        }
+    } else {
+        ludo_type_id got = check_expr(c, tail, inner);
+        if (!assignable(c, got, inner)) {
+            report(c, tail, "bootstrap:check-mismatch",
+                   "the default does not have the success type", tail);
+        }
+    }
+    return inner;
+}
+
 static ludo_type_id check_expr_kind(checker *c, ludo_node_id id, ludo_type_id expected) {
     switch (kind_of(c, id)) {
     case LUDO_AST_LITERAL:
@@ -1282,13 +1587,14 @@ static ludo_type_id check_expr_kind(checker *c, ludo_node_id id, ludo_type_id ex
         return check_call(c, id, expected);
     case LUDO_AST_MARK:
         return check_mark(c, id);
+    case LUDO_AST_RESCUE:
+        return check_rescue(c, id);
     case LUDO_AST_ERROR:
         return simple(LUDO_TYPE_INVALID); /* reported by the parser */
     case LUDO_AST_CAST:
     case LUDO_AST_BRACKET:
     case LUDO_AST_DEREF:
     case LUDO_AST_AGGREGATE:
-    case LUDO_AST_RESCUE:
     case LUDO_AST_ROOT:
     case LUDO_AST_DISCARD:
     case LUDO_AST_NAMED_ITEM:
@@ -1354,7 +1660,7 @@ static ludo_type_id check_expr_kind(checker *c, ludo_node_id id, ludo_type_id ex
     case LUDO_AST_PATTERN_FIELD:
     case LUDO_AST_PATTERN_LITERAL:
     case LUDO_AST_PATTERN_DISCARD:
-        /* Casts, indexing, aggregates and rescue are later bands'. */
+        /* Casts, indexing and aggregates are later bands'. */
         return pending(c);
     }
     return pending(c);
@@ -1368,7 +1674,6 @@ static ludo_type_id check_expr(checker *c, ludo_node_id id, ludo_type_id expecte
 
 /* ---- Statements ----------------------------------------------------------- */
 
-static void check_block(checker *c, ludo_node_id block);
 static void check_statement(checker *c, ludo_node_id id);
 
 static bool is_panic_call(const checker *c, ludo_node_id id) {
@@ -1380,13 +1685,14 @@ static bool is_panic_call(const checker *c, ludo_node_id id) {
            named(c, callee, "panic");
 }
 
-static bool block_diverges(const checker *c, ludo_node_id block);
-
 /* ch1 6.7.2: structural, never a walk into a nested block for a value. */
 static bool diverges(const checker *c, ludo_node_id id) {
     ludo_ast_kind kind = kind_of(c, id);
     if (kind == LUDO_AST_RETURN || kind == LUDO_AST_ERROR) {
         return true; /* an error node was reported by the parser; not twice */
+    }
+    if (kind == LUDO_AST_BREAK || kind == LUDO_AST_CONTINUE) {
+        return true; /* only inside a loop, which check-no-loop enforces */
     }
     if (kind == LUDO_AST_EXPR_STMT) {
         return is_panic_call(c, first(c, id));
@@ -1506,8 +1812,7 @@ static void check_assign(checker *c, ludo_node_id id) {
     ludo_node_id target = first(c, id);
     ludo_node_id value = next(c, target);
     if (kind_of(c, target) == LUDO_AST_DISCARD) {
-        (void)check_expr(c, value, 0);
-        (void)pending(c); /* must-use discharge is band 2's */
+        (void)check_expr(c, value, 0); /* ch1 2.2: any value, must-use or not */
         return;
     }
     ludo_type_id type = check_target(c, target);
@@ -1532,6 +1837,20 @@ static void check_assign(checker *c, ludo_node_id id) {
     }
 }
 
+/* ch2 10.6.1: a fallible function returns its success or its error set, and
+   the static type of the value picks which. */
+static ludo_type_id return_hint(const checker *c) {
+    return tkind(c, c->result) == LUDO_TYPE_FALLIBLE ? type_at(c, c->result)->inner : c->result;
+}
+
+static bool returnable(const checker *c, ludo_type_id got) {
+    if (tkind(c, c->result) == LUDO_TYPE_FALLIBLE && got != c->result) {
+        const ludo_type *fallible = type_at(c, c->result);
+        return got == fallible->error || assignable(c, got, fallible->inner);
+    }
+    return assignable(c, got, c->result);
+}
+
 static void check_return(checker *c, ludo_node_id id) {
     ludo_node_id value = first(c, id);
     if (value == 0) {
@@ -1544,8 +1863,8 @@ static void check_return(checker *c, ludo_node_id id) {
         (void)pending(c); /* multiple returns are band 3's */
         return;
     }
-    ludo_type_id got = check_expr(c, value, c->result);
-    if (!assignable(c, got, c->result)) {
+    ludo_type_id got = check_expr(c, value, return_hint(c));
+    if (!returnable(c, got)) {
         report(c, value, "bootstrap:check-mismatch", "this is not the function's return type",
                value);
     }
@@ -1766,12 +2085,19 @@ static void check_statement(checker *c, ludo_node_id id) {
         check_assign(c, id);
         return;
     case LUDO_AST_EXPR_STMT:
-        (void)check_expr(c, first(c, id), 0);
+        if (tkind(c, check_expr(c, first(c, id), 0)) == LUDO_TYPE_FALLIBLE) {
+            /* ch2 10.11, ch3 15.3: discarding costs one token. */
+            report(c, id, "bootstrap:check-unused-fallible",
+                   "a fallible value is handled, propagated, or discarded with `_ =`", 0);
+        }
         return;
     case LUDO_AST_TAIL: {
         ludo_node_id value = first(c, id);
-        ludo_type_id got = check_expr(c, value, c->result);
-        if (!assignable(c, got, c->result)) {
+        ludo_type_id got = check_expr(c, value, return_hint(c));
+        if (tkind(c, c->result) == LUDO_TYPE_UNIT && tkind(c, got) == LUDO_TYPE_FALLIBLE) {
+            report(c, id, "bootstrap:check-unused-fallible",
+                   "a fallible value is handled, propagated, or discarded with `_ =`", 0);
+        } else if (!returnable(c, got)) {
             report(c, value, "bootstrap:check-mismatch", "this is not the function's return type",
                    value);
         }
@@ -1895,8 +2221,10 @@ static void check_block(checker *c, ludo_node_id block) {
 /* ---- Declarations --------------------------------------------------------- */
 
 /* Types first, so a signature may name a type declared below it; then the
-   signatures and constants every body reads; then the bodies. */
-typedef enum pass { PASS_TYPES, PASS_SIGNATURES, PASS_BODIES } pass;
+   signatures and constants every body reads; then the impls, which match
+   signatures and which a call's constraints are checked against; then the
+   bodies. */
+typedef enum pass { PASS_TYPES, PASS_SIGNATURES, PASS_IMPLS, PASS_BODIES } pass;
 
 /* ch4 12.2's floor, checked structurally: literals, constants, arithmetic,
    comparison, bitwise operators and casts, and nothing else. */
@@ -1944,16 +2272,42 @@ static void check_const(checker *c, ludo_node_id id) {
     c->facts[id].type = type != 0 ? type : got;
 }
 
-static void check_fn_signature(checker *c, ludo_node_id id) {
-    ludo_node_id generics = child_of_kind(c, id, LUDO_AST_GENERIC_PARAMS);
+/* A value parameter's annotation is `usize` (ch2 5.7): band 3's TextBuf[N]. */
+static bool value_parameter(const checker *c, ludo_node_id param) {
+    ludo_node_id constraint = first(c, child_of_kind(c, param, LUDO_AST_CONSTRAINTS));
+    return constraint != 0 && named(c, first(c, constraint), "usize");
+}
+
+/* Each type parameter is opaque (ch2 5.2), and its constraints are resolved
+   against the parameters already in scope. */
+static void check_generic_params(checker *c, ludo_node_id generics) {
     c->generics = generics;
     for (ludo_node_id it = first(c, generics); it != 0; it = next(c, it)) {
-        /* Constrained and value parameters are band 2's: what a constraint
-           provides is what a body may use (ch2 5.5), and band 1 has none. */
-        c->facts[it].type = first(c, it) != 0
+        c->facts[it].type = value_parameter(c, it)
                                 ? pending(c)
                                 : intern(c, (ludo_type){.kind = LUDO_TYPE_PARAM, .decl = it});
     }
+    for (ludo_node_id it = first(c, generics); it != 0; it = next(c, it)) {
+        if (value_parameter(c, it)) {
+            continue;
+        }
+        for (ludo_node_id k = first(c, child_of_kind(c, it, LUDO_AST_CONSTRAINTS)); k != 0;
+             k = next(c, k)) {
+            (void)resolve_constraint(c, k);
+        }
+    }
+}
+
+static void check_signature(checker *c, ludo_node_id id);
+
+static void check_fn_signature(checker *c, ludo_node_id id) {
+    check_generic_params(c, child_of_kind(c, id, LUDO_AST_GENERIC_PARAMS));
+    check_signature(c, id);
+}
+
+/* The FN type of a declaration or an interface member, against the generics
+   in scope. */
+static void check_signature(checker *c, ludo_node_id id) {
     ludo_type_id params[16];
     size_t count = 0;
     for (ludo_node_id it = first(c, child_of_kind(c, id, LUDO_AST_PARAMS)); it != 0;
@@ -1998,6 +2352,89 @@ static void check_fn_body(checker *c, ludo_node_id id) {
                "this function can reach its end without returning a value", id);
     }
     c->local_count = 0;
+}
+
+/* ch2 6.7.1-6.7.2: members are signatures over the interface's own
+   parameters, with no receiver. */
+static void check_interface(checker *c, ludo_node_id id, ludo_node_id body) {
+    check_generic_params(c, child_of_kind(c, id, LUDO_AST_GENERIC_PARAMS));
+    for (ludo_node_id member = first(c, body); member != 0; member = next(c, member)) {
+        if (child_of_kind(c, member, LUDO_AST_GENERIC_PARAMS) != 0) {
+            c->facts[member].type = pending(c); /* a generic member: not in the program */
+            continue;
+        }
+        check_signature(c, member);
+    }
+}
+
+/* ch2 6.7.3: each member is discharged by the module-level fn of the same
+   name whose signature is the member's with the arguments substituted. */
+static void discharge(checker *c, ludo_node_id id, ludo_node_id constraint) {
+    ludo_node_id interface = resolve_constraint(c, constraint);
+    if (interface == 0) {
+        return;
+    }
+    ludo_type_id args[16];
+    size_t count = constraint_args(c, constraint, 0, NULL, args);
+    if (satisfied(c, interface, args, count)) {
+        report(c, constraint, "bootstrap:check-duplicate", "this satisfaction is already declared",
+               first(c, constraint));
+        return;
+    }
+    ludo_node_id body = child_of_kind(c, interface, LUDO_AST_INTERFACE);
+    ludo_node_id generics = child_of_kind(c, interface, LUDO_AST_GENERIC_PARAMS);
+    size_t members = child_count(c, body);
+    ludo_type_id *stored = ludo_arena_alloc(c->arena, (count + 1) * sizeof *stored);
+    ludo_node_id *fns = ludo_arena_alloc(c->arena, (members + 1) * sizeof *fns);
+    ludo_impl *grown = grow(c, c->impls, c->impl_count, &c->impl_capacity, sizeof *c->impls);
+    if (stored == NULL || fns == NULL || grown == NULL) {
+        c->exhausted = true;
+        return;
+    }
+    c->impls = grown;
+    memcpy(stored, args, count * sizeof *stored);
+    size_t i = 0;
+    bool complete = true;
+    for (ludo_node_id member = first(c, body); member != 0; member = next(c, member), i++) {
+        fns[i] = 0;
+        if (soft(c, c->facts[member].type)) {
+            complete = false;
+            (void)pending(c);
+            continue;
+        }
+        ludo_type_id want = substitute(c, c->facts[member].type, generics, args);
+        ludo_node_id fn = lookup_decl(c, member);
+        if (kind_of(c, fn) != LUDO_AST_FN || child_of_kind(c, fn, LUDO_AST_GENERIC_PARAMS) != 0 ||
+            c->facts[fn].type != want) {
+            report(c, id, "bootstrap:check-unsatisfied",
+                   "no module-level fn discharges this member with its signature", member);
+            complete = false;
+            continue;
+        }
+        fns[i] = fn;
+    }
+    if (complete) {
+        c->impls[c->impl_count++] = (ludo_impl){id, interface, stored, count, fns, members};
+    }
+}
+
+static void check_impl(checker *c, ludo_node_id id) {
+    ludo_node_id target = first(c, id);
+    c->generics = 0;
+    ludo_type_id type = resolve_type(c, target);
+    if (soft(c, type)) {
+        return;
+    }
+    ludo_type_kind kind = tkind(c, type);
+    if (kind != LUDO_TYPE_STRUCT && kind != LUDO_TYPE_ENUM && kind != LUDO_TYPE_DISTINCT) {
+        /* ch2 6.7.6: the impl lives with the type's declaration. */
+        report(c, target, "bootstrap:check-orphan-impl",
+               "an impl names a type this module declares", first(c, target));
+        return;
+    }
+    for (ludo_node_id k = first(c, next(c, target)); k != 0; k = next(c, k)) {
+        discharge(c, id, k);
+    }
 }
 
 static void check_type_decl(checker *c, ludo_node_id id, pass which) {
@@ -2076,9 +2513,21 @@ static void check_decl(checker *c, ludo_node_id id, pass which) {
     }
     c->pending = c->facts[id].state == LUDO_CHECK_PENDING;
     c->generics = 0;
-    if (kind == LUDO_AST_TYPE_DECL) {
-        if (which != PASS_SIGNATURES) {
+    ludo_node_id body = 0;
+    for (ludo_node_id it = first(c, id); it != 0; it = next(c, it)) {
+        body = it;
+    }
+    if (kind == LUDO_AST_TYPE_DECL && kind_of(c, body) == LUDO_AST_INTERFACE) {
+        if (which == PASS_SIGNATURES) {
+            check_interface(c, id, body);
+        }
+    } else if (kind == LUDO_AST_TYPE_DECL) {
+        if (which != PASS_SIGNATURES && which != PASS_IMPLS) {
             check_type_decl(c, id, which);
+        }
+    } else if (kind == LUDO_AST_IMPL) {
+        if (which == PASS_IMPLS) {
+            check_impl(c, id);
         }
     } else if (kind == LUDO_AST_FN) {
         if (which == PASS_SIGNATURES) {
@@ -2096,7 +2545,7 @@ static void check_decl(checker *c, ludo_node_id id, pass which) {
         }
     } else {
         /* use is the module mapping, band 4's (ch4 2.3, 3.4); persist, frame,
-           impl, extern fn and the entry file's top-level statements are the
+           extern fn and the entry file's top-level statements are the
            later bands'. */
         (void)pending(c);
     }
@@ -2133,6 +2582,29 @@ static void collect(checker *c) {
             c->facts[decl].type = nominal(c, decl);
             c->facts[decl].state = c->pending ? LUDO_CHECK_PENDING : LUDO_CHECK_CHECKED;
         }
+    }
+}
+
+/* ch2 10.6.0a: every enum a signature names after `rescue`. A fallible type
+   inside a block is a local's annotation, not a signature. */
+static void find_error_sets(checker *c, ludo_node_id id, bool in_block) {
+    for (ludo_node_id it = first(c, id); it != 0; it = next(c, it)) {
+        ludo_ast_kind kind = kind_of(c, it);
+        ludo_node_id set = kind == LUDO_AST_FALLIBLE_TYPE ? next(c, first(c, it)) : 0;
+        ludo_node_id head = first(c, set);
+        if (!in_block && kind_of(c, set) == LUDO_AST_NAMED_TYPE &&
+            kind_of(c, head) == LUDO_AST_IDENT && next(c, head) == 0) {
+            ludo_node_id decl = lookup_decl(c, head);
+            if (kind_of(c, decl) == LUDO_AST_TYPE_DECL &&
+                tkind(c, c->facts[decl].type) == LUDO_TYPE_ENUM) {
+                if (c->error_set == 0) {
+                    c->error_set = decl;
+                } else if (decl != c->error_set && c->second_error_set == 0) {
+                    c->second_error_set = decl;
+                }
+            }
+        }
+        find_error_sets(c, it, in_block || kind == LUDO_AST_BLOCK);
     }
 }
 
@@ -2187,6 +2659,7 @@ ludo_frontend_status ludo_check_file(ludo_session *session, const ludo_parsed_fi
 
     collect(&c);
     ludo_node_id root = file->ast.root;
+    find_error_sets(&c, root, false);
     for (ludo_node_id it = first(&c, root); it != 0 && !c.exhausted; it = next(&c, it)) {
         check_decl(&c, it, PASS_TYPES);
     }
@@ -2208,6 +2681,8 @@ ludo_frontend_status ludo_check_file(ludo_session *session, const ludo_parsed_fi
         .facts = c.facts,
         .instances = c.instances,
         .instance_count = c.instance_count,
+        .impls = c.impls,
+        .impl_count = c.impl_count,
         .diagnostics = c.diagnostics,
         .diagnostic_count = c.diagnostic_count,
     };

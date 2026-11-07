@@ -126,9 +126,14 @@ The checker's codes (#143) follow the same rule, under `bootstrap:check-`:
 `unknown-variant`, `not-a-type`, `not-a-value`, `not-callable`,
 `generic-value`, `uninferred`, `optional-as-value`, `immutable`,
 `unmarked-mutation`, `not-a-place`, `non-exhaustive`, `missing-return`,
-`not-constant`, `extern-class`, `duplicate` and `no-loop`. Each message ends in
-the name it is about. `src/frontend/tests/test_check.c` is the reject side for
-each rule band 1 introduced.
+`not-constant`, `extern-class`, `duplicate` and `no-loop`. Band 2 (#144) adds
+`interface-as-type`, `not-an-interface`, `unsatisfied`, `orphan-impl`,
+`ambiguous-member`, `no-error-set`, `ambiguous-error-set`, `not-an-error-set`,
+`ambiguous-fallible`, `not-fallible`, `rescue-on-optional`, `or-on-fallible`,
+`propagation`, `error-set-mismatch`, `handler-falls-through` and
+`unused-fallible`. Each message ends in the name it is about.
+`src/frontend/tests/test_check.c` is the reject side for each rule a band
+introduced.
 
 `ludo_diagnostic_json` writes one version-1 compile/error envelope to the
 caller's buffer, with no newline, no stream, no invented entity and no guessed

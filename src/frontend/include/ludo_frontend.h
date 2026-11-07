@@ -224,6 +224,8 @@ struct ludo_checked_file {
     const ludo_node_fact *facts; /* file->ast.count entries */
     const ludo_instance *instances;
     size_t instance_count;
+    const ludo_impl *impls;
+    size_t impl_count;
     const ludo_diagnostic *diagnostics; /* parse diagnostics, then check ones */
     size_t diagnostic_count;
 };

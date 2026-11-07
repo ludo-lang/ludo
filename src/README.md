@@ -292,8 +292,9 @@ per node holds the node's type, what it refers to (a declaration, a local, a
 field, a variant) and, for a call to a generic, its **instantiation**. The
 **instantiation cache** is keyed by (declaration, type arguments) — `first[T]`
 is band 1's one generic — and a call needs only the signature to check
-(ch2 §5.3). Monomorphising off the cache is codegen's, and the evaluator does
-not need it.
+(ch2 §5.3). Monomorphising off the cache is codegen's; the evaluator reads only
+an instance's type arguments, which a call to a generic carries into its frame
+(band 2).
 
 **The evaluator runs only CHECKED declarations.** `interp/eval.c` walks the
 tree reading the facts, refuses a PENDING declaration at the call rather than
@@ -315,6 +316,32 @@ Three spec holes were found and repaired in the text: an unannotated
 `const` had no type (ch1 §5.6.1), nothing said a function may not fall off its
 end (ch1 §6.7.2), and §12.2's `!` made every reassigned local unwritable
 (ch2 §12.2.1).
+
+**Band 2** ([#144](https://github.com/ludo-lang/ludo/issues/144)), lines
+208–279, adds interfaces, bounded generics and the failure line.
+
+- **An `impl` is checked in its own pass**, after signatures and before
+  bodies. It is discharged by name and signature, and recorded as a
+  `ludo_impl` in the checked file: the interface, its written arguments, and
+  the discharging fn per member.
+- **A constraint member called in a generic body is a fact pointing at its
+  constraint**, never at a function. The evaluator resolves it against the
+  frame's type arguments, which is static dispatch kept as data (ch2 §6.3).
+  `ludo_interp_call_instance` is how a caller outside the program supplies
+  those arguments, and it checks the constraints the way a call site would.
+- **A fallible value is a two-variant aggregate**: success is variant 0,
+  failure is variant 1. Injection on return is by static type (ch2 §10.6.1).
+  `rescue return` re-tags the same error value into the caller's result.
+
+Nothing in the program calls band 2's functions either, so the same harness
+runs them.
+
+Three more holes were repaired:
+
+- §10.6 gave the program zero error-set candidates (ch2 §10.6.0a).
+- Nothing said which name wins when a constraint member collides with its own
+  discharging function (ch2 §5.5.1).
+- Nothing said what a `rescue` handler yields (ch2 §10.8: it diverges).
 
 ## Building it
 
