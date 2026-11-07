@@ -180,8 +180,8 @@ static const char *const band1_declarations[] = {
     "advance",   "extent", "first", "radius_of", "lead_radius", "is_big", "count_where",
 };
 
-static char *read_reference(size_t *length) {
-    FILE *file = fopen("docs/spec/reference/reference.ludo", "rb");
+static char *read_text(const char *path, size_t *length) {
+    FILE *file = fopen(path, "rb");
     char *text = NULL;
     if (file == NULL) {
         return NULL;
@@ -295,120 +295,112 @@ static void run_band1(ludo_interp *in) {
     LUDO_CHECK(ludo_interp_call(in, "best", &view, 1, &result) == LUDO_INTERP_UNCHECKED);
 }
 
-/* Type-level nodes are not executed; #139's exempt list is where they go. */
-static bool executable(ludo_ast_kind kind) {
-    switch (kind) {
-    case LUDO_AST_NAMED_TYPE:
-    case LUDO_AST_OPTIONAL_TYPE:
-    case LUDO_AST_VIEW_TYPE:
-    case LUDO_AST_MUTABLE_TYPE:
-    case LUDO_AST_FN_TYPE:
-    case LUDO_AST_PARAMS:
-    case LUDO_AST_RETURNS:
-    case LUDO_AST_GENERIC_PARAMS:
-    case LUDO_AST_GENERIC_PARAM:
-    case LUDO_AST_ROOT:
-    case LUDO_AST_STRUCT:
-    case LUDO_AST_ENUM:
-    case LUDO_AST_DISTINCT:
-    case LUDO_AST_FIELD:
-    case LUDO_AST_VARIANT:
-    case LUDO_AST_TYPE_DECL:
-        return false;
-    case LUDO_AST_ERROR:
-    case LUDO_AST_MODULE:
-    case LUDO_AST_EXPLICIT:
-    case LUDO_AST_LIBRARY:
-    case LUDO_AST_USE:
-    case LUDO_AST_ATTRIBUTE:
-    case LUDO_AST_CONST:
-    case LUDO_AST_FN:
-    case LUDO_AST_EXTERN_FN:
-    case LUDO_AST_EXTERN_ITEM:
-    case LUDO_AST_PERSIST:
-    case LUDO_AST_FRAME:
-    case LUDO_AST_IMPL:
-    case LUDO_AST_CONSTRAINTS:
-    case LUDO_AST_PARAM:
-    case LUDO_AST_INTERFACE:
-    case LUDO_AST_GENERIC_ARGS:
-    case LUDO_AST_POINTER_TYPE:
-    case LUDO_AST_ARRAY_TYPE:
-    case LUDO_AST_FALLIBLE_TYPE:
-    case LUDO_AST_BLOCK:
-    case LUDO_AST_LET:
-    case LUDO_AST_BINDINGS:
-    case LUDO_AST_ASSIGN:
-    case LUDO_AST_COMPOUND_ASSIGN:
-    case LUDO_AST_EXPR_STMT:
-    case LUDO_AST_TAIL:
-    case LUDO_AST_RETURN:
-    case LUDO_AST_BREAK:
-    case LUDO_AST_CONTINUE:
-    case LUDO_AST_DEFER:
-    case LUDO_AST_MODIFIER:
-    case LUDO_AST_IF:
-    case LUDO_AST_BRANCH:
-    case LUDO_AST_WHILE:
-    case LUDO_AST_FOR:
-    case LUDO_AST_BIND_CONDITION:
-    case LUDO_AST_UNSAFE:
-    case LUDO_AST_MATCH:
-    case LUDO_AST_ARM:
-    case LUDO_AST_PATTERN_IDENT:
-    case LUDO_AST_PATTERN_VARIANT:
-    case LUDO_AST_PATTERN_STRUCT:
-    case LUDO_AST_PATTERN_FIELD:
-    case LUDO_AST_PATTERN_LITERAL:
-    case LUDO_AST_PATTERN_DISCARD:
-    case LUDO_AST_IDENT:
-    case LUDO_AST_DISCARD:
-    case LUDO_AST_LITERAL:
-    case LUDO_AST_UNARY:
-    case LUDO_AST_BINARY:
-    case LUDO_AST_CAST:
-    case LUDO_AST_MEMBER:
-    case LUDO_AST_OPTIONAL_MEMBER:
-    case LUDO_AST_CALL:
-    case LUDO_AST_BRACKET:
-    case LUDO_AST_MARK:
-    case LUDO_AST_DEREF:
-    case LUDO_AST_GROUP:
-    case LUDO_AST_AGGREGATE:
-    case LUDO_AST_NAMED_ITEM:
-    case LUDO_AST_KEYED_ITEM:
-    case LUDO_AST_RESCUE:
-    case LUDO_AST_HANDLER:
-        return true;
-    }
-    return true;
+/* The exempt list the report reads (#139), so the band tests and the report
+   cannot disagree about which nodes count. */
+static bool load_exempt(ludo_coverage_exempt *exempt) {
+    size_t length = 0;
+    size_t bad_line = 0;
+    char *text = read_text("src/interp/coverage.exempt", &length);
+    bool ok = text != NULL && ludo_coverage_exempt_parse(text, length, exempt, &bad_line);
+    free(text); /* ludo-allow-malloc */
+    return ok;
 }
 
-/* Every executable node under id was reached. A field default is the one
-   expression under a type declaration, so it is walked rather than exempt. */
-static size_t unreached(const ludo_ast *ast, const bool *executed, ludo_node_id id) {
-    const ludo_ast_node *node = ludo_ast_get(ast, id);
-    ludo_ast_kind kind = node->kind;
-    if (kind == LUDO_AST_NAMED_TYPE || kind == LUDO_AST_OPTIONAL_TYPE ||
-        kind == LUDO_AST_VIEW_TYPE || kind == LUDO_AST_MUTABLE_TYPE || kind == LUDO_AST_FN_TYPE ||
-        kind == LUDO_AST_GENERIC_PARAMS) {
-        return 0; /* a type expression, names included */
+static void print_region(void *context, ludo_node_id id, size_t unreached) {
+    const ludo_ast *ast = context;
+    (void)fprintf(stderr, "unreached %s at byte %zu (%zu nodes)\n",
+                  ludo_ast_kind_name(ast->nodes[id].kind), ast->nodes[id].span.offset, unreached);
+}
+
+static void check_exempt_parse(void) {
+    ludo_coverage_exempt exempt;
+    size_t bad = 0;
+    static const char good[] = "# comment\n\nsubtree named-type  a type\n  node struct shape\r\n";
+    LUDO_CHECK(ludo_coverage_exempt_parse(good, sizeof good - 1, &exempt, &bad));
+    LUDO_CHECK(exempt.kinds[LUDO_AST_NAMED_TYPE] == LUDO_EXEMPT_SUBTREE);
+    LUDO_CHECK(exempt.kinds[LUDO_AST_STRUCT] == LUDO_EXEMPT_NODE);
+    LUDO_CHECK(exempt.kinds[LUDO_AST_FN] == LUDO_EXEMPT_NONE);
+
+    /* Each of these is refused, and names its line. */
+    static const char *const bad_lists[] = {
+        "node struct\n",           /* no reason */
+        "node structure a typo\n", /* no such kind */
+        "skip struct a mode that is not one\n",
+        "node struct one\nnode struct two\n", /* two reasons, one stale */
+    };
+    static const size_t bad_lines[] = {1, 1, 1, 2};
+    for (size_t i = 0; i < sizeof bad_lists / sizeof bad_lists[0]; i++) {
+        LUDO_CHECK(!ludo_coverage_exempt_parse(bad_lists[i], strlen(bad_lists[i]), &exempt, &bad));
+        LUDO_CHECK(bad == bad_lines[i]);
     }
-    size_t missing = executable(kind) && !executed[id] ? 1u : 0u;
-    if (missing != 0) {
-        (void)fprintf(stderr, "unreached %s at byte %zu\n", ludo_ast_kind_name(node->kind),
-                      node->span.offset);
+
+    /* The committed list parses. */
+    LUDO_CHECK(load_exempt(&exempt));
+}
+
+typedef struct regions {
+    ludo_node_id ids[4];
+    size_t counts[4];
+    size_t count;
+} regions;
+
+static void collect_region(void *context, ludo_node_id id, size_t unreached) {
+    regions *r = context;
+    if (r->count < 4) {
+        r->ids[r->count] = id;
+        r->counts[r->count] = unreached;
     }
-    for (ludo_node_id child = node->first_child; child != 0;
-         child = ast->nodes[child].next_sibling) {
-        missing += unreached(ast, executed, child);
-    }
-    return missing;
+    r->count++;
+}
+
+static void check_regions(void) {
+    /* module { fn a: named-type { ident }   fn b { block { ident } } } */
+    static const ludo_ast_node nodes[] = {
+        {0},
+        {.kind = LUDO_AST_MODULE, .first_child = 2},
+        {.kind = LUDO_AST_FN, .first_child = 3, .next_sibling = 5},
+        {.kind = LUDO_AST_NAMED_TYPE, .first_child = 4},
+        {.kind = LUDO_AST_IDENT},
+        {.kind = LUDO_AST_FN, .first_child = 6},
+        {.kind = LUDO_AST_BLOCK, .first_child = 7},
+        {.kind = LUDO_AST_IDENT},
+    };
+    const ludo_ast ast = {nodes, sizeof nodes / sizeof nodes[0], 1};
+    ludo_coverage_exempt exempt = {0};
+    ludo_node_id stack[sizeof nodes / sizeof nodes[0]];
+    exempt.kinds[LUDO_AST_MODULE] = LUDO_EXEMPT_NODE;
+    exempt.kinds[LUDO_AST_NAMED_TYPE] = LUDO_EXEMPT_SUBTREE;
+
+    /* fn a ran; its type never runs and is exempt. fn b never ran, and is one
+       region of three nodes, not three lines. */
+    bool executed[8] = {false, false, true, false, false, false, false, false};
+    regions r = {0};
+    LUDO_CHECK(ludo_coverage_unreached(&ast, executed, &exempt, 1, stack, collect_region, &r) ==
+               3u);
+    LUDO_CHECK(r.count == 1 && r.ids[0] == 5 && r.counts[0] == 3);
+
+    /* A reached node inside an unreached region is not counted, and does not
+       split the region. */
+    executed[6] = true;
+    r = (regions){0};
+    LUDO_CHECK(ludo_coverage_unreached(&ast, executed, &exempt, 1, stack, collect_region, &r) ==
+               2u);
+    LUDO_CHECK(r.count == 1 && r.ids[0] == 5 && r.counts[0] == 2);
+
+    /* Everything ran: no region. A walk rooted at a node does not wander into
+       its siblings. */
+    memset(executed, 1, sizeof executed);
+    r = (regions){0};
+    LUDO_CHECK(ludo_coverage_unreached(&ast, executed, &exempt, 1, stack, collect_region, &r) ==
+               0u);
+    LUDO_CHECK(r.count == 0);
+    executed[5] = false;
+    LUDO_CHECK(ludo_coverage_unreached(&ast, executed, &exempt, 2, stack, NULL, NULL) == 0u);
 }
 
 static void check_band1(void) {
     size_t length = 0;
-    char *source = read_reference(&length);
+    char *source = read_text("docs/spec/reference/reference.ludo", &length);
     ludo_session *session = NULL;
     const ludo_parsed_file *file = NULL;
     const ludo_checked_file *checked = NULL;
@@ -457,6 +449,9 @@ static void check_band1(void) {
             continue;
         }
         run_band1(in);
+        /* The frame is band 6's (#148): the headless run's loop calls it and
+           is refused, rather than running an unchecked body. */
+        LUDO_CHECK(ludo_interp_frame(in, ludo_stub_frame(&state)) == LUDO_INTERP_UNCHECKED);
         const bool *bits = ludo_interp_executed(in);
         for (size_t n = 0; n < file->ast.count && n < sizeof union_bits; n++) {
             union_bits[n] = union_bits[n] || bits[n];
@@ -464,11 +459,15 @@ static void check_band1(void) {
         ludo_interp_destroy(in);
     }
 
+    ludo_coverage_exempt exempt;
+    static ludo_node_id stack[1u << 16];
+    LUDO_CHECK(load_exempt(&exempt));
     for (size_t i = 0; i < sizeof band1_declarations / sizeof band1_declarations[0]; i++) {
         const char *name = band1_declarations[i];
         ludo_node_id decl = ludo_checked_lookup(checked, name, strlen(name));
         if (decl != 0) {
-            LUDO_CHECK(unreached(&file->ast, union_bits, decl) == 0);
+            LUDO_CHECK(ludo_coverage_unreached(&file->ast, union_bits, &exempt, decl, stack,
+                                               print_region, (void *)&file->ast) == 0);
         }
     }
 
@@ -514,5 +513,7 @@ LUDO_TEST_MAIN({
     check_render_scale_grid();
     check_stub_tables();
     check_stub_state();
+    check_exempt_parse();
+    check_regions();
     check_band1();
 })

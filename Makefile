@@ -30,7 +30,7 @@ LDLIBS = -lm
 FRONTEND_SRC = src/frontend/frontend.c src/frontend/lexer.c src/frontend/arena.c \
                src/frontend/parser.c src/frontend/ast.c src/frontend/diagnostic.c \
                src/frontend/check.c
-INTERP_SRC = src/interp/interp.c src/interp/stub_host.c src/interp/eval.c
+INTERP_SRC = src/interp/interp.c src/interp/stub_host.c src/interp/eval.c src/interp/coverage.c
 DRIVER_SRC = src/driver/main.c
 
 FRONTEND_HEADERS = $(wildcard src/frontend/include/*.h) src/frontend/arena.h src/frontend/session.h
@@ -56,7 +56,7 @@ FUZZ_SRC = src/frontend/tests/fuzz_lexer.c
 FUZZ_CORPUS = src/frontend/tests/corpus/lexer
 FUZZ_INPUTS = $(wildcard $(FUZZ_CORPUS)/*) $(wildcard docs/spec/reference/*.ludo)
 
-.PHONY: all test check cross clean format format-check standard tokens tokens-check ast ast-check fuzz fuzz-lexer fuzz-parser
+.PHONY: all test check cross clean format format-check standard tokens tokens-check ast ast-check coverage fuzz fuzz-lexer fuzz-parser
 
 all: $(BUILD)/ludo
 
@@ -99,6 +99,13 @@ ast-check: $(BUILD)/ludo
 
 $(BUILD)/fuzz_parser_replay: src/frontend/tests/fuzz_replay.c src/frontend/tests/fuzz_parser.c $(FRONTEND_SRC) $(FRONTEND_HEADERS) | $(BUILD)
 	$(CC) $(ALL_CFLAGS) -o $@ src/frontend/tests/fuzz_replay.c src/frontend/tests/fuzz_parser.c $(FRONTEND_SRC)
+
+# #49's hole-finder (#139): run the reference program headless against every
+# stub table and print what never executed. A report, not a gate, so neither
+# `test` nor CI runs it; src/interp/coverage.exempt says what it does not count.
+COVERAGE_EXEMPT = src/interp/coverage.exempt
+coverage: $(BUILD)/ludo
+	$(BUILD)/ludo coverage $(TOKEN_SRC) $(COVERAGE_EXEMPT)
 
 tokens: $(BUILD)/ludo
 	$(BUILD)/ludo tokens $(TOKEN_SRC) > $(TOKEN_DUMP)

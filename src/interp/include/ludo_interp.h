@@ -630,6 +630,12 @@ void ludo_interp_destroy(ludo_interp *interp);
 ludo_interp_status ludo_interp_call(ludo_interp *interp, const char *name, const ludo_value *args,
                                     size_t count, ludo_value *result);
 
+/* Runs one turn of the frame entry against the latch driver/ took for it
+   (ch6 6.8.1). UNCHECKED while the frame declaration is a later band's, which
+   is every frame today: band 6 (#148) runs the body. The headless run calls it
+   anyway, so the loop around it is real before the body is. */
+ludo_interp_status ludo_interp_frame(ludo_interp *interp, const ludo_frame_input *input);
+
 /* A constant's or an extern item's loaded value. */
 ludo_interp_status ludo_interp_global(ludo_interp *interp, const char *name, ludo_value *out);
 
@@ -655,5 +661,50 @@ ludo_value ludo_value_ref(ludo_value *place);
 const bool *ludo_interp_executed(const ludo_interp *interp);
 
 ludo_fault ludo_interp_fault(const ludo_interp *interp);
+
+/* ---------------------------------------------------------------------- */
+/* The coverage report (#139)                                              */
+/* ---------------------------------------------------------------------- */
+
+/* #134: executed-at-least-once is measured, and it is a report, not a gate --
+   no threshold, no percentage. The gap between an AST node and a spec
+   construct is written down rather than hidden in a ratio: a committed exempt
+   list, one kind per line with a reason, which driver/ and the tests read.
+
+   An entry exempts a node of that kind, or the node and everything under it.
+   A type expression is the second kind: the names inside it resolve when the
+   program is checked, and nothing in it runs. A struct is the first: its
+   fields' defaults are expressions the evaluator runs (ch1 5.3). */
+typedef enum ludo_exemption {
+    LUDO_EXEMPT_NONE,
+    LUDO_EXEMPT_NODE,
+    LUDO_EXEMPT_SUBTREE
+} ludo_exemption;
+
+typedef struct ludo_coverage_exempt {
+    ludo_exemption kinds[LUDO_AST_KIND_COUNT];
+} ludo_coverage_exempt;
+
+/* Parses the list from a caller's buffer. A line is blank, a # comment, or
+   `node|subtree <kind> <reason>`, where kind is ludo_ast_kind_name's spelling.
+   false on the first line that is none of those, names an unknown kind,
+   repeats one, or gives no reason; *bad_line is its 1-based number. */
+bool ludo_coverage_exempt_parse(const char *text, size_t length, ludo_coverage_exempt *out,
+                                size_t *bad_line);
+
+/* Walks the tree under root and reports each maximal unreached region: a
+   node that is not exempt and whose bit is clear, and whose ancestors were not
+   reported already. region is called once per region, in source order, with
+   the count of unreached non-exempt nodes in it; the return is their total.
+   A whole uncalled function is therefore one line, not one per node in it.
+
+   stack is the caller's scratch for ast->count ids: the walk is iterative, as
+   driver/'s AST dump is, because a long left-associated expression nests as
+   deeply as it is long. */
+size_t ludo_coverage_unreached(const ludo_ast *ast, const bool *executed,
+                               const ludo_coverage_exempt *exempt, ludo_node_id root,
+                               ludo_node_id *stack,
+                               void (*region)(void *context, ludo_node_id id, size_t unreached),
+                               void *context);
 
 #endif /* LUDO_INTERP_H */

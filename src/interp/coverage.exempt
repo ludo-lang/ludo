@@ -1,0 +1,42 @@
+# What the coverage report (#139) does not count, and why.
+#
+# The report lists every node the evaluator never marked. Some nodes are not
+# constructs that run, and this file is where that gap is written down instead
+# of being hidden in a ratio (#134). One kind per line:
+#
+#   node|subtree <kind> <reason>
+#
+# `node` exempts the node alone; `subtree` exempts it and everything under it.
+# The kind is spelled as `ludo ast` prints it. A kind missing from this list is
+# counted, so a new AST kind shows up in the report until someone gives it a
+# line here, with its reason.
+
+# Type expressions. The names inside them resolve when the program is checked,
+# and nothing in them runs.
+subtree named-type     a type expression: resolved by the checker, never evaluated
+subtree optional-type  a type expression: resolved by the checker, never evaluated
+subtree view-type      a type expression: resolved by the checker, never evaluated
+subtree mutable-type   a type expression: resolved by the checker, never evaluated
+subtree fn-type        a type expression: resolved by the checker, never evaluated
+subtree array-type     a type expression: its length is a constant the checker folds
+subtree pointer-type   a type expression: resolved by the checker, never evaluated
+subtree fallible-type  a type expression: resolved by the checker, never evaluated
+subtree generic-params a declaration's type parameters: instantiated by the checker (ch2 5.1)
+
+# Declarations the checker discharges whole. Nothing in them is code.
+subtree use        names another module; the module mapping resolves it (ch4)
+subtree attribute  #align is type-level layout, read by the checker (ch3 8.3)
+subtree interface  signatures only, no bodies (ch2 6.7.2)
+subtree impl       a satisfaction assertion with no body (ch2 6.7.3); the fns that discharge it are counted
+
+# Declaration structure. These carry names and shape; what runs is below them.
+node module      the file itself: its declarations are what load and run
+node root        the `$` a path starts from: the checker resolves it, the access on it runs
+node type-decl   declares a type; only its fields' defaults run (ch1 5.3)
+node struct      a type's shape; only its fields' defaults run (ch1 5.3)
+node field       a field's name and type; its default, if any, is counted
+node enum        a type's shape: a variant runs when an expression names it
+node variant     a variant's declaration; constructing one is the expression that names it
+node distinct    a type's shape, with no runtime part
+node params      a parameter list; each param is marked when a call binds it
+node returns     a declared result type, which the checker reads
